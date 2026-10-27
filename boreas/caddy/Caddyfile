@@ -1,0 +1,45 @@
+# Boreas – Caddy Reverse Proxy
+# Proxies .home domains to Mnemosyne via Tailscale after relocation.
+{
+    auto_https disable_redirects
+}
+
+git.home {
+    tls internal
+    reverse_proxy https://100.x.x.x {
+        header_up Host git.home
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }
+}
+
+grafana.home {
+    tls internal
+    reverse_proxy https://100.x.x.x {
+        header_up Host grafana.home
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }
+}
+
+prometheus.home {
+    tls internal
+    reverse_proxy https://100.x.x.x {
+        header_up Host prometheus.home
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }
+}
+
+alertmanager.home {
+    tls internal
+    reverse_proxy https://100.x.x.x {
+        header_up Host alertmanager.home
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }
+}

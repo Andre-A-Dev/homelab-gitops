@@ -1,0 +1,23 @@
+# =============================================================================
+# verify-backup.service  ->  /etc/systemd/system/verify-backup.service
+# =============================================================================
+# Daily quick verification of the local backup.
+# =============================================================================
+
+[Unit]
+Description=Daily quick verification of the local backup
+Documentation=file:///home/andre/homelab-infra/mnemosyne/scripts/verify-backup.sh
+RequiresMountsFor=/mnt/backup
+# Never verify a backup that is still being written.
+After=backup-services.service
+
+[Service]
+Type=oneshot
+# Runs as root, as it did via sudo in the old workflow.
+ExecStart=/usr/local/bin/verify-backup.sh
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,126 @@
+# -- Services -----------------------------------------------------------------------
+
+services:
+
+  # -- Nextcloud  -------------------------------------------------------------------
+
+  nextcloud:
+    # Pinned to major: Nextcloud cannot skip major versions on upgrade.
+    image: nextcloud:35-apache
+    container_name: nextcloud
+    labels:
+      homelab.update-class: "A"
+      # Diun: new tags from the pinned one upward; move the lower bound with the tag.
+      diun.watch_repo: "true"
+      diun.include_tags: '^(3[5-9]|[4-9][0-9])-apache$$'
+    environment:
+      - MYSQL_HOST=nextcloud-db
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - NEXTCLOUD_TRUSTED_DOMAINS=${NEXTCLOUD_TRUSTED_DOMAINS}
+      - NEXTCLOUD_ADMIN_USER=${NEXTCLOUD_ADMIN_USER}
+      - NEXTCLOUD_ADMIN_PASSWORD=${NEXTCLOUD_ADMIN_PASSWORD}
+      - PHP_MEMORY_LIMIT=768M
+      - PHP_UPLOAD_LIMIT=2G
+      - REDIS_HOST=redis
+    volumes:
+      - /mnt/codex/nextcloud/data:/var/www/html
+      - ./php/zz-opcache-nojit.ini:/usr/local/etc/php/conf.d/zz-opcache-nojit.ini:ro  # JIT off, see file
+    networks:
+      - internal
+      - caddy_proxy
+    depends_on:
+      nextcloud-db:
+        condition: service_healthy  # wait until DB passes healthcheck
+      redis:
+        condition: service_healthy  # was: service_started
+    restart: unless-stopped
+    healthcheck:
+      # Healthy as long as Apache returns ANY HTTP response.
+      # Segfaulting workers yield no response (curl code 000) -> unhealthy.
+      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' --max-time 8 http://localhost/status.php | grep -qv '^000$'"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s  # entrypoint may run occ upgrade on first start
+
+  # -- Nextcloud DB  -----------------------------------------------------------------
+
+  nextcloud-db:
+    # Pinned to minor: the lts tag silently jumps to the next LTS release.
+    image: mariadb:12.3
+    container_name: nextcloud-db
+    labels:
+      homelab.update-class: "A"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    volumes:
+      - /mnt/codex/nextcloud/db:/var/lib/mysql
+    networks:
+      - internal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s  # give MariaDB time before first check
+
+  # -- Redis -------------------------------------------------------------------------
+
+  redis:
+    image: redis:8-alpine
+    container_name: nextcloud-redis
+    labels:
+      homelab.update-class: "B"
+    networks:
+      - internal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]  # returns PONG when ready
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s  # Redis is fast, 5s is enough
+
+  # -- Push-Proxy --------------------------------------------------------------------
+
+  notify_push:
+    image: nextcloud:35-apache  # same tag as main container
+    container_name: notify_push
+    labels:
+      homelab.update-class: "A"
+    restart: unless-stopped
+    command: /var/www/html/custom_apps/notify_push/bin/aarch64/notify_push /var/www/html/config/config.php
+    environment:
+      NEXTCLOUD_URL: "http://nextcloud:80"
+    volumes:
+      - /mnt/codex/nextcloud/data:/var/www/html:ro
+    networks:
+      - internal
+      - caddy_proxy
+    depends_on:
+      - nextcloud
+      - nextcloud-db
+      - redis
+    healthcheck:
+      # notify_push test endpoints need a token (/test/cookie -> 400)
+      # or POST (/test/version -> 405), so -f always fails.
+      # Healthy as long as the server answers HTTP at all; 000 = no response.
+      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://127.0.0.1:7867/test/version | grep -qv '^000$'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+# -- Networks ------------------------------------------------------------------------
+
+networks:
+  internal:
+    driver: bridge
+  caddy_proxy:
+    external: true

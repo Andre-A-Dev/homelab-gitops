@@ -1,0 +1,533 @@
+groups:
+
+# -- Meta: dead man's switch --------------------------------------------------
+# Always-firing alert. Alertmanager forwards it to Healthchecks.io every
+# minute; if the pings stop, Healthchecks.io alerts externally.
+# Never silence or inhibit this alert.
+- name: meta
+  rules:
+  - alert: Watchdog
+    expr: vector(1)
+    labels:
+      severity: none
+    annotations:
+      summary: "Dead man's switch - always firing by design"
+      description: "Verifies the alerting pipeline end-to-end. If this alert is NOT firing, alerting is broken."
+
+# -- System Alerts -----------------------------------------------------------
+# Servers: mnemosyne, boreas, hephaestus, zephyros — always-on, fully alerted.
+# Workstations: AstraeusNX, Proteus, Astraeus — labelled
+# ephemeral="true" in prometheus.yml and excluded from availability, CPU and
+# memory alerting. Disk space alerts still apply: a filling disk is a real
+# problem regardless of how often the machine is powered on.
+- name: system
+  rules:
+
+  - alert: DiskSpaceWarning
+    expr: |
+      (1 - (node_filesystem_avail_bytes{fstype!="tmpfs",mountpoint="/"}
+          / node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/"})) * 100 > 80
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.instance }}: Disk usage above 80%"
+      description: "Root partition is {{ printf \"%.1f\" $value }}% full."
+
+  - alert: DiskSpaceCritical
+    expr: |
+      (1 - (node_filesystem_avail_bytes{fstype!="tmpfs",mountpoint="/"}
+          / node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/"})) * 100 > 90
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "{{ $labels.instance }}: Disk usage CRITICAL (> 90%)"
+      description: "Root partition is {{ printf \"%.1f\" $value }}% full - action required!"
+
+  # Mnemosyne data partitions — Nextcloud, backups, Vaultwarden
+  - alert: DataDiskWarning
+    expr: |
+      (1 - (node_filesystem_avail_bytes{instance="mnemosyne",fstype!="tmpfs",mountpoint=~"/mnt/(codex|vault)"}
+          / node_filesystem_size_bytes{instance="mnemosyne",fstype!="tmpfs",mountpoint=~"/mnt/(codex|vault)"})) * 100 > 75
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "mnemosyne: Data partition {{ $labels.mountpoint }} above 75%"
+      description: "{{ $labels.mountpoint }} is {{ printf \"%.1f\" $value }}% full."
+
+  - alert: DataDiskCritical
+    expr: |
+      (1 - (node_filesystem_avail_bytes{instance="mnemosyne",fstype!="tmpfs",mountpoint=~"/mnt/(codex|vault)"}
+          / node_filesystem_size_bytes{instance="mnemosyne",fstype!="tmpfs",mountpoint=~"/mnt/(codex|vault)"})) * 100 > 90
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "mnemosyne: Data partition {{ $labels.mountpoint }} CRITICAL (> 90%)"
+      description: "{{ $labels.mountpoint }} is {{ printf \"%.1f\" $value }}% full - action required!"
+
+  # Workstations excluded for the same reason as HighCpuLoad.
+  - alert: HighMemoryUsage
+    expr: |
+      (1 - (node_memory_MemAvailable_bytes{ephemeral!="true"}
+          / node_memory_MemTotal_bytes{ephemeral!="true"})) * 100 > 90
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.instance }}: Memory usage above 90%"
+      description: "RAM utilisation at {{ printf \"%.1f\" $value }}%."
+
+  # Workstations excluded: sustained full load is the normal state while
+  # gaming, compiling or rendering, so this would fire during every
+  # session without telling you anything actionable.
+  - alert: HighCpuLoad
+    expr: |
+      100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle",ephemeral!="true"}[5m])) * 100) > 80
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.instance }}: CPU load persistently high"
+      description: "CPU utilisation at {{ printf \"%.1f\" $value }}% for 15 minutes."
+
+  # Host availability only. Without the job filter this matches every
+  # scrape target, so a dead application exporter would raise "NodeDown"
+  # for a host that is perfectly healthy.
+  # Workstations carry ephemeral="true" and are excluded — they are
+  # powered off or booted into another OS on a regular basis.
+  # Also the inhibit source for ExporterDown: a dead host takes all its
+  # exporters down at once - report the host, not each exporter.
+  # Routed with repeat_interval 7d: one notification down, one on recovery.
+  # External view of the same event: Healthchecks heartbeat per host.
+  - alert: NodeDown
+    expr: up{job=~"node-exporter|windows", ephemeral!="true"} == 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "{{ $labels.instance }} is unreachable"
+      description: "node exporter has not answered for 5 minutes."
+
+  # Any other scrape target. Added 2026-10-14: midea-exporter showed up=0
+  # for weeks and the wakapi scrape had never worked (unexpanded
+  # ${WAKAPI_METRICS_API_KEY} in the URL) - neither raised anything.
+  # Seasonal or inactive exporters belong out of prometheus.yml, not into
+  # an exception here. smartctl has its own rule (SmartctlExporterDown).
+  - alert: ExporterDown
+    expr: up{job!~"node-exporter|windows|smartctl", ephemeral!="true"} == 0
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.instance }}: exporter {{ $labels.job }} down"
+      description: "Scrape target has not answered for 10 minutes - its metrics and alerts are blind."
+
+  # nofail mounts: a missing data disk does not stop boot - containers start
+  # and write into the empty mount point on the root filesystem while every
+  # other alert stays green. Guarded by node-exporter being up, so an
+  # exporter outage is reported as such and not as a missing disk.
+  # absent() copies the equality matchers into its result, so each alert
+  # carries the mountpoint label of the disk that is actually missing.
+  - alert: DataMountMissing
+    expr: |
+      (
+        absent(node_filesystem_size_bytes{instance="mnemosyne",mountpoint="/mnt/codex"})
+        or absent(node_filesystem_size_bytes{instance="mnemosyne",mountpoint="/mnt/vault"})
+        or absent(node_filesystem_size_bytes{instance="mnemosyne",mountpoint="/mnt/backup"})
+      )
+      and on() up{job="node-exporter",instance="mnemosyne"} == 1
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "mnemosyne: {{ $labels.mountpoint }} not mounted"
+      description: "{{ $labels.mountpoint }} is missing. Services may be writing to the root filesystem - stop them before remounting."
+
+# -- System updates ----------------------------------------------------------
+# system-update runs by hand in the monthly update window (wiki:
+# Update-Strategy), never on a timer. These rules stand in for the timer: they
+# report a missed window, a failed run and a reboot that was never done.
+# Every value comes from system_update.prom, which is only rewritten when the
+# script runs - so it describes the LAST RUN, not the current state.
+- name: system-update
+  rules:
+
+  # Monthly window plus two weeks of slack.
+  - alert: SystemUpdateOverdue
+    expr: time() - system_update_last_run_timestamp_seconds > 45 * 86400
+    for: 1h
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.instance }}: system-update last ran {{ $value | humanizeDuration }} ago"
+      description: "Expected once a month in the update window. Order: daidalos, hephaestus, boreas, zephyros, mnemosyne."
+
+  - alert: SystemUpdateFailed
+    expr: system_update_exit_code != 0
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.instance }}: last system-update exited with code {{ $value }}"
+      description: "Check /var/log/system-update.log on {{ $labels.instance }}."
+
+  # Clears only with the next run, even if the units were fixed in between.
+  - alert: SystemUpdateFailedUnits
+    expr: system_update_failed_units_total > 0
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.instance }}: {{ $value }} failed systemd unit(s) after system-update"
+      description: "Run `systemctl --failed` on {{ $labels.instance }}. The count is from the last run and only resets with the next one."
+
+  # Push reminder for the update window: first Sunday of the month. PromQL
+  # time functions run in UTC - hour 6 is 07:00 CET / 08:00 CEST. Fires for one
+  # hour; its route sends one push without a resolved message.
+  - alert: UpdateWindowToday
+    expr: day_of_week() == 0 and day_of_month() <= 7 and hour() == 6
+    labels:
+      severity: info
+    annotations:
+      summary: "Update window today (first Sunday of the month)"
+      description: "verify-backup, then system-update: daidalos, hephaestus, boreas, zephyros, mnemosyne; then containers on mnemosyne. Not between 02:00 and 04:30. See wiki Update-Strategy."
+
+  # reboot_required stays 1 after the reboot until the script runs again, so
+  # it only counts while the host has not booted since that run.
+  - alert: RebootPending
+    expr: |
+      system_update_reboot_required == 1
+      and on(instance) system_update_last_run_timestamp_seconds > on(instance) node_boot_time_seconds
+      and on(instance) time() - system_update_last_run_timestamp_seconds > 3 * 86400
+    for: 1h
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.instance }}: reboot pending for more than 3 days"
+      description: "system-update reported a kernel or core library update and the host has not rebooted since. Reboot outside the backup window (02:00-04:30)."
+
+# -- Service Uptime ----------------------------------------------------------
+- name: uptime
+  rules:
+
+  - alert: ServiceDown
+    expr: probe_success{job=~"blackbox.*"} == 0
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Service unreachable: {{ $labels.instance }}"
+      description: "{{ $labels.instance }} has not responded to HTTP for 2 minutes."
+
+  - alert: ServiceSlowResponse
+    expr: probe_duration_seconds{job=~"blackbox.*"} > 2
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Slow response time: {{ $labels.instance }}"
+      description: "{{ $labels.instance }} is taking over 2 seconds to respond."
+
+# -- Pi-hole -----------------------------------------------------------------
+- name: pihole
+  rules:
+
+  # Exporter outages (job pihole) are covered by ExporterDown in group
+  # system, inhibited by NodeDown when the whole host is gone.
+
+  # up only proves the exporter answered, not that it delivered anything.
+  # Twice in September 2026 it answered with nothing but its own Python
+  # process metrics while the scrape stayed green:
+  #   boreas   — API session expired, HTTP 401, restart fixes it
+  #   zephyros — Caddy took port 80, FTL moved to 8081, exporter kept
+  #              pointing at the old port after a change of our own
+  # Neither was visible to any rule here. This one watches the payload.
+  - alert: PiholeExporterNoData
+    expr: |
+      absent(pihole_query_count{instance="boreas"})
+      or absent(pihole_query_count{instance="zephyros"})
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Pi-hole exporter delivers no query data"
+      description: "Scrape succeeds but no payload arrives. Check `journalctl -u pihole6-exporter`. Past causes: expired session (401, restart helps) and a port that moved out from under it."
+
+  - alert: PiholeHighBlockRate
+    expr: |
+      sum by(instance) (pihole_query_by_status{query_status=~"GRAVITY|GRAVITY_CNAME|REGEX|REGEX_CNAME|DENYLIST|DENYLIST_CNAME|EXTERNAL_BLOCKED_IP|EXTERNAL_BLOCKED_NULL|EXTERNAL_BLOCKED_NXRA"})
+      / sum by(instance) (pihole_query_by_status) * 100 > 50
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.instance }}: Unusually high block rate"
+      description: "Pi-hole is blocking {{ printf \"%.1f\" $value }}% of all queries - possible DNS issue."
+
+# -- Disk Health -------------------------------------------------------------
+# smartctl_exporter runs on mnemosyne and daidalos. Device counts differ per
+# host, so nothing here aggregates globally — a bare count() would compare
+# unrelated machines against each other and never clear.
+# Verified label set (smartctl_exporter 0.14):
+#   smartctl_device_attribute{attribute_name, attribute_value_type, device}
+#   smartctl_device_temperature{device, temperature_type}
+#   smartctl_devices  (no device label — one series per instance)
+- name: disk-health
+  rules:
+
+  # The drive's own overall verdict. Nothing else in this group outranks it.
+  - alert: DiskSmartHealthFailed
+    expr: smartctl_device_smart_status == 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "{{ $labels.instance }}: SMART health FAILED on {{ $labels.device }}"
+      description: "The drive reports itself as failing. Back up now, then replace."
+
+  # Reallocated sectors are the earliest reliable failure signal.
+  # Any value above zero on a previously clean drive means degradation
+  # has started — this is never noise.
+  - alert: DiskReallocatedSectors
+    expr: |
+      smartctl_device_attribute{attribute_name="Reallocated_Sector_Ct",attribute_value_type="raw"} > 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "{{ $labels.instance }}: reallocated sectors on {{ $labels.device }}"
+      description: "{{ $value }} reallocated sector(s). Degradation has begun — plan replacement."
+
+  # Pending sectors: unreadable, not yet remapped. Often precedes
+  # reallocation. Critical because data may already be at risk.
+  - alert: DiskPendingSectors
+    expr: |
+      smartctl_device_attribute{attribute_name="Current_Pending_Sector",attribute_value_type="raw"} > 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "{{ $labels.instance }}: pending sectors on {{ $labels.device }}"
+      description: "{{ $value }} sector(s) unreadable and awaiting remap."
+
+  - alert: DiskOfflineUncorrectable
+    expr: |
+      smartctl_device_attribute{attribute_name="Offline_Uncorrectable",attribute_value_type="raw"} > 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "{{ $labels.instance }}: uncorrectable sectors on {{ $labels.device }}"
+      description: "{{ $value }} sector(s) could not be corrected."
+
+  # SATA link errors point at the cable or connector, not the media.
+  # delta() over 24h so a historic count from a past cable fault does not
+  # alert forever — only new errors do. Attribute name differs per vendor
+  # (CRC_Error_Count on Intel, UDMA_CRC_Error_Count on most others).
+  - alert: DiskCrcErrors
+    expr: |
+      delta(smartctl_device_attribute{attribute_name=~"(UDMA_)?CRC_Error_Count",attribute_value_type="raw"}[24h]) > 0
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.instance }}: new SATA CRC errors on {{ $labels.device }}"
+      description: "Check cable and connector before suspecting the drive."
+
+  # Spinning disks only. Identified by rotation rate instead of device name,
+  # so swapping or adding a disk never requires editing this rule.
+  - alert: DiskTemperatureHighHDD
+    expr: |
+      smartctl_device_temperature{temperature_type="current"} > 55
+      and on(instance, device) smartctl_device_rotation_rate > 0
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.instance }}: {{ $labels.device }} at {{ $value }} C"
+      description: "Spinning disk above its usual ceiling. Check rack airflow."
+
+  # Flash tolerates more heat than platters. Matches drives that do NOT
+  # report a spinning rate — SSDs either report 0 or omit the metric
+  # entirely, depending on firmware, so "unless" covers both cases.
+  - alert: DiskTemperatureHighSSD
+    expr: |
+      smartctl_device_temperature{temperature_type="current"} > 65
+      unless on(instance, device) (smartctl_device_rotation_rate > 0)
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.instance }}: {{ $labels.device }} at {{ $value }} C"
+
+  # Self-reporting failure mode: if the exporter dies, the metrics do not
+  # freeze at "healthy" — this fires instead.
+  - alert: SmartctlExporterDown
+    expr: up{job="smartctl"} == 0
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.instance }}: smartctl exporter unreachable"
+      description: "Disk health is no longer being monitored on this host."
+
+  # smartctl exit codes are a bitmask. Bits 6 and 7 only mean "the device
+  # or self-test log has entries" — historic and harmless on a used drive
+  # (sda reports 64 from its previous life). Bits 0-3 are the real
+  # failures: command failed, open failed, checksum error, SMART FAILING.
+  - alert: DiskSmartctlCommandFailed
+    expr: |
+      smartctl_device_smartctl_exit_status > 0
+      and (smartctl_device_smartctl_exit_status % 16) > 0
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.instance }}: smartctl reports code {{ $value }} for {{ $labels.device }}"
+      description: "Low bits set — command, access or health failure, not just log entries."
+
+  # Coverage guard. Compares each host against its own 7-day maximum
+  # instead of a hardcoded number, so it survives adding a disk and still
+  # catches a disk silently dropping out of the scan.
+  - alert: SmartctlCoverageDropped
+    expr: smartctl_devices < max_over_time(smartctl_devices[7d])
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.instance }}: SMART coverage dropped to {{ $value }} device(s)"
+      description: "A disk disappeared from the scan. Check permissions, cabling, power."
+
+  # Added 2026-10-18 after the two NVMe-in-USB enclosures on mnemosyne went
+  # unmonitored for days: the auto-scan found them, but used "-d sat", and
+  # every read failed. The scan count stayed constant, so the rule above had
+  # nothing to compare. This one compares devices known to the exporter with
+  # devices that actually return a health verdict - independent of how the
+  # exporter reports the failure. The second branch covers the case where no
+  # device on a host delivers a verdict at all (count() would return nothing).
+  # Mnemosyne lists its devices explicitly since then (no scan), so this rule
+  # is the coverage guard there; SmartctlCoverageDropped only matters on
+  # hosts that still scan.
+  - alert: SmartctlDeviceNoData
+    expr: |
+      count by(instance) (smartctl_device_smart_status) < on(instance) smartctl_devices
+      or (
+        smartctl_devices > 0
+        unless on(instance) count by(instance) (smartctl_device_smart_status)
+      )
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.instance }}: not every disk delivers SMART data"
+      description: "The exporter knows more devices than report a health verdict. Check `journalctl -u smartctl-exporter` for the failing device and its -d type."
+
+  # ATA/SCSI error log (e.g. the WD Red). NVMe drives are covered by
+  # NvmeErrorLogGrowing - "unless" keeps them from alerting twice.
+  # Growth within 24h only, so historic entries (sda: exit bit 6 from its
+  # previous life) stay quiet. max-min instead of delta()/increase(): those
+  # extrapolate and turn a single new entry into 1.01.
+  - alert: DiskErrorLogGrowing
+    expr: |
+      (max_over_time(smartctl_device_error_log_count[24h]) - min_over_time(smartctl_device_error_log_count[24h])) > 0
+      unless on(instance, device) smartctl_device_num_err_log_entries
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.instance }}: new SMART error log entries on {{ $labels.device }}"
+      description: "Error log grew by {{ $value }} in 24h. Inspect with `smartctl -l error` using the device's -d type."
+
+  # Power cycles beyond host reboots: the drive lost power or its USB link
+  # reset while the host kept running. Relevant for USB enclosures carrying
+  # live data (Game Drive: /mnt/codex, /mnt/vault). Host reboots are
+  # subtracted, so maintenance days with several reboots stay quiet.
+  # max-min instead of increase(): extrapolation pushed 1 cycle above 1,
+  # which beat 1 reboot and fired on every ordinary restart (promtool test).
+  - alert: DiskUnexpectedPowerCycles
+    expr: |
+      (max_over_time(smartctl_device_power_cycle_count[24h]) - min_over_time(smartctl_device_power_cycle_count[24h]))
+        > on(instance) group_left()
+      changes(node_boot_time_seconds{job="node-exporter"}[24h])
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.instance }}: {{ $labels.device }} power-cycled without a host reboot"
+      description: "More drive power cycles than host reboots in 24h. Check `journalctl -k | grep -iE 'usb .*reset|uas'`, cabling and hub power."
+
+  # NVMe drives expose no ATA attributes - the Reallocated/Pending/Uncorrectable
+  # rules above never match them. Verified label set (smartctl_exporter 0.14, Netac NV3000):
+  #   smartctl_device_critical_warning, _media_errors, _num_err_log_entries,
+  #   _available_spare, _available_spare_threshold, _percentage_used, _bytes_written
+  - alert: NvmeCriticalWarning
+    # Bitmask: spare below threshold, temperature, reliability degraded,
+    # read-only mode, volatile backup failed. Any bit set is serious.
+    expr: smartctl_device_critical_warning > 0
+    labels:
+      severity: critical
+    annotations:
+      summary: "{{ $labels.instance }}: NVMe {{ $labels.device }} raises critical warning {{ $value }}"
+
+  - alert: NvmeMediaErrors
+    # Unrecovered data integrity errors - the NVMe equivalent of Offline_Uncorrectable
+    expr: smartctl_device_media_errors > 0
+    labels:
+      severity: critical
+    annotations:
+      summary: "{{ $labels.instance }}: NVMe {{ $labels.device }} reports {{ $value }} media errors"
+
+  - alert: NvmeErrorLogGrowing
+    # Error log entries are not always data loss, but on this drive the count
+    # stayed at 0 through burn-in and constant smartctl polling - any growth is new
+    expr: increase(smartctl_device_num_err_log_entries[24h]) > 0
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.instance }}: NVMe {{ $labels.device }} error log grew by {{ $value }} in 24h"
+
+  - alert: NvmeSpareDegraded
+    # Spare starts at 100 and stays there on a healthy drive for years.
+    # Losing 20 % of reserve blocks signals real degradation long before
+    # the vendor threshold (1 %) trips the critical warning bit.
+    expr: smartctl_device_available_spare < 80
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.instance }}: NVMe {{ $labels.device }} spare at {{ $value }} %"
+
+  - alert: NvmeWearHigh
+    expr: smartctl_device_percentage_used >= 80
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.instance }}: NVMe {{ $labels.device }} rated endurance {{ $value }} % used"
+
+# -- Rack Display ------------------------------------------------------------
+- name: rack-display
+  rules:
+  # Fires when the client has stopped writing its heartbeat. The collector
+  # may still be running, but the panel is dark or frozen.
+  - alert: RackDisplayClientDown
+    expr: time() - rack_display_heartbeat_timestamp_seconds > 180
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Rack display client is not writing its heartbeat"
+      description: "The panel may be dark or frozen. Check `systemctl status rack-display-client`."
+
+  # Fires when the client runs but has had no data from the collector.
+  # Separate from the above so the two causes are distinguishable without
+  # walking to the cellar.
+  - alert: RackDisplayStale
+    expr: rack_display_state_stale == 1
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Rack display has had no collector data for 15 minutes"
+      description: "Check the rack-display-collector container."

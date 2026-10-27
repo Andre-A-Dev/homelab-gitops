@@ -1,0 +1,164 @@
+# Zephyros – Caddy Reverse Proxy
+# - pihole.home, pihole-zephyros.home -> local Pi-hole web UI (host port 8081)
+# - pihole-boreas.home -> Boreas Pi-hole via Mnemosyne's Caddy
+# - fritz-zephyros.home -> local FritzBox UI
+# - all other .home domains -> Mnemosyne's Caddy via Tailscale (100.x.x.x)
+#
+# Port 80 belongs to Caddy (Pi-hole moved to 8081), so the automatic
+# HTTP -> HTTPS redirect is active for every site.
+# After relocation: replace 100.x.x.x with Mnemosyne's local IP (one place).
+
+# -- Snippet: proxy to Mnemosyne ------------------------------------------
+# Usage: import mnemosyne <hostname>
+# Sets Host header and TLS SNI so Mnemosyne's Caddy picks the right site/cert.
+
+(mnemosyne) {
+    tls internal
+    reverse_proxy https://100.x.x.x {
+        header_up Host {args[0]}
+        transport http {
+            # Mnemosyne uses its own internal CA; tunnel is encrypted by Tailscale
+            tls_insecure_skip_verify
+            tls_server_name {args[0]}
+            versions 1.1
+        }
+    }
+}
+
+# -- Pihole ---------------------------------------------------------------
+
+pihole.home, pihole-zephyros.home {
+    tls internal
+    redir / /admin/ 301
+    reverse_proxy http://host.docker.internal:8081
+}
+
+# Boreas (home network) Pi-hole, routed through Mnemosyne's Caddy
+pihole-boreas.home {
+    import mnemosyne pihole-boreas.home
+}
+
+# -- FritzBox -------------------------------------------------------------
+# Local FritzBox UI. FRITZ!OS rejects unknown Host headers (DNS rebind
+# protection, 400), so send its IP instead.
+
+fritz-zephyros.home {
+    tls internal
+    reverse_proxy http://192.168.1.x {
+        header_up Host {upstream_hostport}
+    }
+}
+
+# -- Git ------------------------------------------------------------------
+
+git.home {
+    import mnemosyne git.home
+}
+
+# -- Vault ----------------------------------------------------------------
+vault.home {
+    import mnemosyne vault.home
+}
+
+# -- Homepage -------------------------------------------------------------
+
+# Disabled: homepage stack runs under the "inactive" profile on Mnemosyne.
+# Uncomment together with the block in Mnemosyne's Caddyfile.
+# homepage.home {
+#     import mnemosyne homepage.home
+# }
+
+# -- Monitoring -----------------------------------------------------------
+
+grafana.home {
+    import mnemosyne grafana.home
+}
+
+prometheus.home {
+    import mnemosyne prometheus.home
+}
+
+alertmanager.home {
+    import mnemosyne alertmanager.home
+}
+
+alloy.home {
+    import mnemosyne alloy.home
+}
+
+# -- Syncthing ------------------------------------------------------------
+
+syncthing.home {
+    import mnemosyne syncthing.home
+}
+
+# -- Calibre / kosync -----------------------------------------------------
+
+calibre.home {
+    import mnemosyne calibre.home
+}
+
+kosync.home {
+    import mnemosyne kosync.home
+}
+
+# -- Viessmann ------------------------------------------------------------
+
+# Disabled: viessmann-api on Hephaestus is switched off on purpose.
+# Uncomment together with the block in Mnemosyne's Caddyfile.
+# viessmann.home {
+#     import mnemosyne viessmann.home
+# }
+
+# -- Ghost ----------------------------------------------------------------
+
+ghostwrite.home {
+    import mnemosyne ghostwrite.home
+}
+
+ghostproxy.home {
+    import mnemosyne ghostproxy.home
+}
+
+# -- Immich ---------------------------------------------------------------
+
+immich.home {
+    import mnemosyne immich.home
+}
+
+# -- Carousel -------------------------------------------------------------
+
+carousel.home {
+    import mnemosyne carousel.home
+}
+
+# -- Jobiris --------------------------------------------------------------
+
+jobiris.home {
+    import mnemosyne jobiris.home
+}
+
+# -- Wakapi ---------------------------------------------------------------
+
+wakapi.home {
+    import mnemosyne wakapi.home
+}
+
+# -- Aether Weather -------------------------------------------------------
+
+weather.home {
+    import mnemosyne weather.home
+}
+
+# -- Rack display ---------------------------------------------------------
+
+rack.home {
+    import mnemosyne rack.home
+}
+
+# -- Galatea --------------------------------------------------------------
+# Basic auth is enforced by Mnemosyne's Caddy; the header passes through.
+
+galatea.home {
+    import mnemosyne galatea.home
+}

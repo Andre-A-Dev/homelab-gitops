@@ -1,0 +1,21 @@
+services:
+
+# -- Homepage -------------------------------------------------------------------
+# Disabled 2026-09: homepage not in use anymore.
+  homepage:
+    profiles: ["inactive"]
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    labels:
+      homelab.update-class: "B"
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./config:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - caddy_proxy
+
+networks:
+  caddy_proxy:
+    external: true

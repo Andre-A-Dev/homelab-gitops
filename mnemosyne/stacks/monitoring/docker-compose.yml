@@ -1,0 +1,437 @@
+---
+
+# -- Services -------------------------------------------------------------------
+
+services:
+
+  # -- Prometheus ---------------------------------------------------------------
+
+  prometheus:
+    image: prom/prometheus:v3
+    container_name: prometheus
+    labels:
+      homelab.update-class: "B"
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # Resolves to host IP on Linux
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./prometheus/pump-alerts.yml:/etc/prometheus/pump-alerts.yml:ro
+      - ./prometheus/appliance-alerts.yml:/etc/prometheus/appliance-alerts.yml:ro
+      - ./prometheus/backup-alerts.yml:/etc/prometheus/backup-alerts.yml
+      - /mnt/codex/prometheus:/prometheus
+      # Scrape credentials (gitignored via **/secrets/). Directory mount, so a
+      # replaced file is visible without recreating the container.
+      - ./secrets:/etc/prometheus/secrets:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+      - "--web.enable-lifecycle"
+      - '--web.enable-admin-api'
+    networks:
+      - monitoring
+      - caddy_proxy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s  # Prometheus needs a moment to load TSDB on startup
+
+  # -- Alertmanager -------------------------------------------------------------
+
+  alertmanager:
+    image: prom/alertmanager:v0
+    container_name: alertmanager
+    labels:
+      homelab.update-class: "B"
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager/alertmanager.yml.tmpl:/etc/alertmanager/alertmanager.yml.tmpl:ro
+      - /mnt/codex/alertmanager:/alertmanager
+    environment:
+      - HC_MNEMOSYNE=${HC_MNEMOSYNE:?HC_MNEMOSYNE missing in .env}
+      - NTFY_PUMP_CRITICAL=${NTFY_PUMP_CRITICAL}
+      - NTFY_PUMP_WARNING=${NTFY_PUMP_WARNING}
+      - NTFY_MNEMOSYNE_CRITICAL=${NTFY_MNEMOSYNE_CRITICAL}
+      - NTFY_MNEMOSYNE_WARNING=${NTFY_MNEMOSYNE_WARNING}
+      - NTFY_APPLIANCE=${NTFY_APPLIANCE:?NTFY_APPLIANCE missing in .env}
+    entrypoint:
+      - sh
+      - -c
+      - |
+        sed \
+          -e "s|HC_MNEMOSYNE_UUID|${HC_MNEMOSYNE}|g" \
+          -e "s|NTFY_PUMP_CRITICAL_TOPIC|${NTFY_PUMP_CRITICAL}|g" \
+          -e "s|NTFY_PUMP_WARNING_TOPIC|${NTFY_PUMP_WARNING}|g" \
+          -e "s|NTFY_MNEMOSYNE_CRITICAL_TOPIC|${NTFY_MNEMOSYNE_CRITICAL}|g" \
+          -e "s|NTFY_MNEMOSYNE_WARNING_TOPIC|${NTFY_MNEMOSYNE_WARNING}|g" \
+          -e "s|NTFY_APPLIANCE_TOPIC|${NTFY_APPLIANCE}|g" \
+          /etc/alertmanager/alertmanager.yml.tmpl > /tmp/alertmanager.yml
+        exec /bin/alertmanager \
+          --config.file=/tmp/alertmanager.yml \
+          --storage.path=/alertmanager \
+          --web.external-url=http://alertmanager:9093
+    networks:
+      - monitoring
+      - caddy_proxy
+
+  # -- Nodeexporter --------------------------------------------------------------
+  # For Backup + Tailscale
+  node-exporter:
+    image: prom/node-exporter:v1
+    container_name: node-exporter
+    labels:
+      homelab.update-class: "B"
+    hostname: Mnemosyne
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+      - /var/lib/node_exporter/textfile_collector:/textfile_collector:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.textfile.directory=/textfile_collector"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    networks:
+      - monitoring
+
+  # -- Grafana -------------------------------------------------------------------
+
+  grafana:
+    image: grafana/grafana:13.2
+    container_name: grafana
+    labels:
+      homelab.update-class: "A"
+      # Diun: new tags from the pinned one upward; move the lower bound with the tag.
+      diun.watch_repo: "true"
+      diun.include_tags: '^(13\.[2-9]|1[4-9]\.[0-9]+)$$'
+    restart: unless-stopped
+    depends_on:
+      prometheus:
+        condition: service_healthy  # no point starting Grafana before Prometheus is ready
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=${GF_SERVER_ROOT_URL}
+      - GF_SERVER_DOMAIN=${GF_SERVER_DOMAIN}
+      - GF_PANELS_DISABLE_SANITIZE_HTML=true
+    volumes:
+      - /mnt/codex/grafana:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - monitoring
+      - caddy_proxy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s  # Grafana plugin loading takes longer than Prometheus
+
+  # -- cAdvisor  ----------------------------------------------------------------
+
+  cadvisor:
+    # gcr.io stopped receiving releases after v0.55; upstream publishes to ghcr.io.
+    image: ghcr.io/google/cadvisor:0.60
+    container_name: cadvisor
+    labels:
+      homelab.update-class: "B"
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  # -- Nextcloud  -------------------------------------------------------------------
+
+  nextcloud-exporter:
+    image: xperimental/nextcloud-exporter:latest
+    container_name: nextcloud-exporter
+    labels:
+      homelab.update-class: "B"
+    environment:
+      - NEXTCLOUD_SERVER=${NEXTCLOUD_SERVER}
+      - NEXTCLOUD_USERNAME=${NEXTCLOUD_USERNAME}
+      - NEXTCLOUD_PASSWORD=${NEXTCLOUD_PASSWORD}
+      - NEXTCLOUD_TLS_SKIP_VERIFY=true
+      - NEXTCLOUD_TIMEOUT=30s
+    networks:
+      - monitoring
+      - caddy_proxy
+    restart: unless-stopped
+
+  # -- Netatmo -------------------------------------------------------------------
+
+  netatmo-exporter:
+    # Pinned: the entrypoint below depends on the binary path and token file format.
+    image: ghcr.io/xperimental/netatmo-exporter:2.1.2
+    container_name: netatmo-exporter
+    labels:
+      homelab.update-class: "B"
+    # Upstream discards the whole token file if the access token (3h TTL)
+    # expired while the exporter was down, although the refresh token is still
+    # valid. Zeroing the expiry makes it refresh immediately instead.
+    # Rewritten in place: sed -i needs a writable dir, only the file is 666.
+    entrypoint:
+      - sh
+      - -c
+      - |
+        f="$$NETATMO_EXPORTER_TOKEN_FILE"
+        [ -f "$$f" ] && t=$$(sed 's/"expiry":"[^"]*"/"expiry":"0001-01-01T00:00:00Z"/' "$$f") && printf '%s' "$$t" > "$$f"
+        exec /bin/netatmo-exporter
+    environment:
+      - NETATMO_CLIENT_ID=${NETATMO_CLIENT_ID}
+      - NETATMO_CLIENT_SECRET=${NETATMO_CLIENT_SECRET}
+      - NETATMO_REFRESH_INTERVAL=8m
+    volumes:
+      - /mnt/codex/netatmo-exporter:/var/lib/netatmo-exporter
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  # -- Tado -----------------------------------------------------------------------
+
+  tado-exporter:
+    image: adventuresintech/tado-prometheus-exporter
+    container_name: tado-exporter
+    labels:
+      homelab.update-class: "B"
+    environment:
+      - TADO_TOKEN_PASSPHRASE=${TADO_TOKEN_PASSPHRASE}
+    volumes:
+      - /mnt/codex/tado-exporter:/home/exporter/.tado-exporter
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  # -- Fritz!Box -------------------------------------------------------------------
+
+
+  fritz-exporter:
+    image: pdreker/fritz_exporter:latest
+    container_name: fritz-exporter
+    labels:
+      homelab.update-class: "B"
+    ports:
+      - "9787:9787"
+    environment:
+      - FRITZ_HOSTNAME=${FRITZ_HOSTNAME}
+      - FRITZ_USERNAME=${FRITZ_USERNAME}
+      - FRITZ_PASSWORD=${FRITZ_PASSWORD}
+      - FRITZ_LISTEN_ADDRESS=${FRITZ_LISTEN_ADDRESS}
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  # -- Hue ------------------------------------------------------------------------
+
+  #hue-exporter:
+  #  image: mitchellrj/hue_exporter:latest
+  #  container_name: hue-exporter
+  #  volumes:
+  #    - ./hue_exporter/config.yml:/etc/hue_exporter/config.yml:ro
+  #  restart: unless-stopped
+  #  networks:
+  #    - monitoring
+
+
+  # -- Uptime-Checks (http) -------------------------------------------------------
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0
+    container_name: blackbox-exporter
+    labels:
+      homelab.update-class: "B"
+    restart: unless-stopped
+    ports:
+      - "9115:9115"
+    volumes:
+      - ./blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+    networks:
+      - monitoring
+
+  # -- Meross smart plugs ---------------------------------------------------------
+
+
+  # Disabled 2026-09: the Meross devices are no longer in use. Kept here so the
+  # exporter build and its env wiring are not lost.
+  # To re-enable: drop the profiles line below and re-enable the "meross" job
+  # in prometheus.yml.
+  meross-exporter:
+    profiles: ["inactive"]
+    build: ./meross_exporter
+    container_name: meross-exporter
+    labels:
+      homelab.update-class: "C"
+      diun.enable: "false"   # local build, not in any registry
+    environment:
+      - MEROSS_EMAIL_1=${MEROSS_EMAIL_1}
+      - MEROSS_PASSWORD_1=${MEROSS_PASSWORD_1}
+      - MEROSS_ALIAS_1=${MEROSS_ALIAS_1}
+      - MEROSS_EMAIL_2=${MEROSS_EMAIL_2}
+      - MEROSS_PASSWORD_2=${MEROSS_PASSWORD_2}
+      - MEROSS_ALIAS_2=${MEROSS_ALIAS_2}
+      - MEROSS_DEVICE_NAMES=${MEROSS_DEVICE_NAMES}
+      - MEROSS_API_URL=${MEROSS_API_URL:-https://iotx-eu.meross.com}
+      - POLL_INTERVAL=${POLL_INTERVAL:-15}
+      - EXPORTER_PORT=${EXPORTER_PORT:-9114}
+      - RECONNECT_INTERVAL=${RECONNECT_INTERVAL:-60}
+    ports:
+      - "9114:9114"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9114/metrics | grep 'meross_device_online.*account=\"Home\"' | grep -qv '} 0'"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - monitoring
+
+  # -- Shelly Plugs ------------------------------------------------------------
+  shelly-exporter:
+    build: ./shelly_exporter
+    container_name: shelly-exporter
+    labels:
+      homelab.update-class: "C"
+      diun.enable: "false"   # local build, not in any registry
+    environment:
+      # Power plugs — format: "name:host:gen"  (gen=1 or gen=2)
+      - SHELLY_DEVICES=${SHELLY_DEVICES:-}
+      # H&T Gen3 — format: "name;host,..."
+      - SHELLY_HT_DEVICES=${SHELLY_HT_DEVICES:-}
+      # BLU H&T via gateway KVS — format: "name;gateway_host;mac,..."
+      - SHELLY_BLU_DEVICES=${SHELLY_BLU_DEVICES:-}
+      - POLL_INTERVAL=${POLL_INTERVAL_SHELLY:-15}
+      - EXPORTER_PORT=9117
+    ports:
+      - "9117:9117"
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  # -- Midea Exporter ----------------------------------------------------------
+  midea-exporter:
+    # Portasplit is dismantled in autumn/winter - remove this profile when it is back.
+    profiles: ["seasonal"]
+    build: ./midea_exporter
+    container_name: midea-exporter
+    labels:
+      homelab.update-class: "C"
+      diun.enable: "false"   # local build, not in any registry
+    environment:
+      - MIDEA_IP=192.168.1.x
+      - MIDEA_REGION=DE
+      - MIDEA_DEVICE_NAME=portasplit
+      - MIDEA_CACHE=/data/device_creds.json
+      - EXPORTER_PORT=9116
+    volumes:
+      - /mnt/codex/midea-exporter:/data
+    ports:
+      - "9116:9116"
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+
+  # -- Log store: Loki (monolithic, filesystem) --------------------------------
+  loki:
+    image: grafana/loki:3.7
+    container_name: loki
+    labels:
+      homelab.update-class: "B"
+    restart: unless-stopped
+    command: -config.file=/etc/loki/loki-config.yaml
+    volumes:
+      - ./loki/loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - /mnt/codex/loki:/loki
+    networks:
+      - monitoring
+    healthcheck:
+      # Native self-check via the loki binary. Since v3.6.0 the image is
+      # distroless (no shell, no wget/curl), so `-health` is the only option.
+      # It runs before config parsing and GETs http://localhost:3100/ready.
+      test: ["CMD", "/usr/bin/loki", "-health"]
+      start_period: 40s   # WAL replay / TSDB init is slower on the Pi 5 (arm64)
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    # Loki stays internal: Grafana + Alloy reach it over `monitoring`.
+    # No port mapping, no Caddy entry, never expose it.
+
+  # -- Log collector: Alloy (Docker logs + journal) ---------------------------
+  alloy:
+    # No floating tags upstream - bump the exact version deliberately.
+    image: grafana/alloy:v1.21.2
+    container_name: alloy
+    labels:
+      homelab.update-class: "B"
+    restart: unless-stopped
+    user: root                     # needs to read the Docker socket + the journal
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/log/journal:/var/log/journal:ro
+      - /etc/machine-id:/etc/machine-id:ro
+      - /mnt/codex/alloy:/var/lib/alloy/data   # Weg B: bind mount on the data disk, consistent with every other service
+    depends_on:
+      loki:
+        condition: service_started   # was: service_healthy — start-order only, kein Blockieren mehr
+    networks:
+      - monitoring
+      - caddy_proxy                # only for the debug UI at alloy.home
+
+  # -- Prusa ------------------------------------------------------------------
+  prusa-exporter:
+    build: ./prusa_exporter
+    container_name: prusa-exporter
+    labels:
+      homelab.update-class: "C"
+      diun.enable: "false"   # local build, not in any registry
+    restart: unless-stopped
+    environment:
+      PRUSA_HOST: ${PRUSA_HOST}
+      # Unset vars interpolate to empty and are ignored by the exporter,
+      # so it's safe to leave one of these blank in .env.
+      PRUSA_API_KEY: ${PRUSA_API_KEY:-}
+      PRUSA_PASSWORD: ${PRUSA_PASSWORD:-}
+      PRINTER_NAME: pygmalion
+      EXPORTER_PORT: "9118"
+    # No published port needed if Prometheus scrapes it on the internal network.
+    # Uncomment only for host-level debugging (curl localhost:9118/metrics):
+    # ports:
+    #   - "9118:9118"
+    networks:
+      - monitoring
+
+# -- Networks -----------------------------------------------------------------------
+
+networks:
+  monitoring:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+  caddy_proxy:
+    external: true

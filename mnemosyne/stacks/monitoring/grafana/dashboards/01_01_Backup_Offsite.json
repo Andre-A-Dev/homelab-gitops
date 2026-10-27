@@ -1,0 +1,582 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Backup pipeline health: local archives, offsite transfer, restic maintenance, textfile freshness, mount coverage. Built 2026-08-21 after nine silent failures showed that the overview dashboard's eleven panels were not enough.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": true,
+      "title": "← Overview",
+      "type": "link",
+      "url": "/d/homelab-overview"
+    }
+  ],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "🗂️ Local Backup",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "options": { "0": { "color": "green", "text": "OK" } }, "type": "value" },
+            { "options": { "from": 1, "to": 99, "result": { "color": "red", "text": "FAILED" } }, "type": "range" }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "id": 1,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Last Exit Code",
+      "type": "stat",
+      "targets": [ { "expr": "backup_last_exit_code", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 86400 }, { "color": "red", "value": 108000 } ] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "id": 2,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Backup Age",
+      "type": "stat",
+      "targets": [ { "expr": "time() - backup_last_success_timestamp", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 2400 }, { "color": "orange", "value": 3600 } ] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "id": 3,
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Duration",
+      "type": "stat",
+      "targets": [ { "expr": "backup_duration_seconds", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 3 } ] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "id": 4,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Uncovered Mounts",
+      "type": "stat",
+      "targets": [ { "expr": "backup_uncovered_mounts", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] } } },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "id": 5,
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Skipped Services",
+      "type": "stat",
+      "targets": [ { "expr": "backup_skipped_total", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 86400 }, { "color": "red", "value": 108000 } ] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "id": 6,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Verify Age",
+      "type": "stat",
+      "targets": [ { "expr": "time() - backup_verify_last_run_timestamp", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "fillOpacity": 20, "stacking": { "mode": "normal" } },
+          "unit": "decbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "id": 7,
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull"] }, "tooltip": { "mode": "multi" } },
+      "title": "Archive Sizes by Service",
+      "type": "timeseries",
+      "targets": [ { "expr": "backup_archive_size_bytes", "legendFormat": "{{service}}", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "fillOpacity": 10 },
+          "unit": "s"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "id": 8,
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull"] }, "tooltip": { "mode": "multi" } },
+      "title": "Step Duration by Service",
+      "type": "timeseries",
+      "targets": [ { "expr": "backup_step_duration_seconds", "legendFormat": "{{service}}", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "options": { "0": { "color": "green", "text": "OK" }, "1": { "color": "red", "text": "FAIL" }, "2": { "color": "yellow", "text": "SKIP" } }, "type": "value" }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] }
+        }
+      },
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 13 },
+      "id": 9,
+      "options": { "colorMode": "background_solid", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "orientation": "horizontal" },
+      "title": "Service Status",
+      "type": "stat",
+      "targets": [ { "expr": "backup_step_status", "legendFormat": "{{service}}", "refId": "A" } ]
+    },
+
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 20 },
+      "id": 200,
+      "title": "☁️ Offsite — restic",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "options": { "0": { "color": "green", "text": "OK" }, "1": { "color": "orange", "text": "CONFIG" }, "2": { "color": "red", "text": "BACKUP FAIL" }, "3": { "color": "yellow", "text": "FORGET FAIL" } }, "type": "value" }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 3, "x": 0, "y": 21 },
+      "id": 10,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Exit Code",
+      "type": "stat",
+      "targets": [ { "expr": "restic_offsite_exit_code", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [ { "options": { "0": { "color": "red", "text": "FAILED" }, "1": { "color": "green", "text": "OK" } }, "type": "value" } ],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 3, "x": 3, "y": 21 },
+      "id": 11,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Forget",
+      "type": "stat",
+      "targets": [ { "expr": "restic_offsite_forget_ok", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 86400 }, { "color": "red", "value": 259200 } ] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 3, "x": 6, "y": 21 },
+      "id": 12,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Last Success",
+      "type": "stat",
+      "targets": [ { "expr": "time() - restic_offsite_last_success_timestamp", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "blue", "value": null } ] } } },
+      "gridPos": { "h": 4, "w": 3, "x": 9, "y": 21 },
+      "id": 13,
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Snapshots",
+      "type": "stat",
+      "targets": [ { "expr": "restic_offsite_snapshot_count", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": { "defaults": { "unit": "s", "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 3600 }, { "color": "orange", "value": 21600 } ] } } },
+      "gridPos": { "h": 4, "w": 3, "x": 12, "y": 21 },
+      "id": 14,
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Duration",
+      "type": "stat",
+      "targets": [ { "expr": "restic_offsite_duration_seconds", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": { "defaults": { "unit": "decbytes", "thresholds": { "mode": "absolute", "steps": [ { "color": "blue", "value": null } ] } } },
+      "gridPos": { "h": 4, "w": 3, "x": 15, "y": 21 },
+      "id": 15,
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Bytes Added",
+      "type": "stat",
+      "targets": [ { "expr": "restic_offsite_bytes_added", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "blue", "value": null } ] } } },
+      "gridPos": { "h": 4, "w": 3, "x": 18, "y": 21 },
+      "id": 16,
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Files New",
+      "type": "stat",
+      "targets": [ { "expr": "restic_offsite_files_new", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "blue", "value": null } ] } } },
+      "gridPos": { "h": 4, "w": 3, "x": 21, "y": 21 },
+      "id": 17,
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Files Changed",
+      "type": "stat",
+      "targets": [ { "expr": "restic_offsite_files_changed", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 15 }, "unit": "decbytes" } },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 25 },
+      "id": 18,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
+      "title": "Bytes Added Over Time",
+      "type": "timeseries",
+      "targets": [ { "expr": "restic_offsite_bytes_added", "legendFormat": "uploaded (post-dedup)", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 15 }, "unit": "s" } },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 25 },
+      "id": 19,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
+      "title": "Transfer Duration Over Time",
+      "type": "timeseries",
+      "targets": [ { "expr": "restic_offsite_duration_seconds", "legendFormat": "duration", "refId": "A" } ]
+    },
+
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 33 },
+      "id": 300,
+      "title": "🔧 Maintenance — prune & check",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [ { "options": { "0": { "color": "red", "text": "FAILED" }, "1": { "color": "green", "text": "OK" } }, "type": "value" } ],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 34 },
+      "id": 20,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Prune",
+      "type": "stat",
+      "targets": [ { "expr": "restic_maintenance_prune_ok", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [ { "options": { "0": { "color": "red", "text": "FAILED" }, "1": { "color": "green", "text": "OK" } }, "type": "value" } ],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 34 },
+      "id": 21,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Check (2% data)",
+      "type": "stat",
+      "targets": [ { "expr": "restic_maintenance_check_ok", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 691200 }, { "color": "red", "value": 864000 } ] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 34 },
+      "id": 22,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Last Run",
+      "type": "stat",
+      "targets": [ { "expr": "time() - restic_maintenance_last_run_timestamp", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": { "defaults": { "unit": "s", "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 1800 }, { "color": "orange", "value": 3600 } ] } } },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 34 },
+      "id": 23,
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Duration",
+      "type": "stat",
+      "targets": [ { "expr": "restic_maintenance_duration_seconds", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "options": { "0": { "color": "green", "text": "OK" } }, "type": "value" },
+            { "options": { "from": 1, "to": 99, "result": { "color": "red", "text": "FAILED" } }, "type": "range" }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 34 },
+      "id": 24,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Exit Code",
+      "type": "stat",
+      "targets": [ { "expr": "restic_maintenance_exit_code", "refId": "A" } ]
+    },
+
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 39 },
+      "id": 400,
+      "title": "🛡️ Unit-Level Truth (systemd)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "description": "Written by systemd via ExecStopPost, not by the script. A script that cannot start cannot report that it has not started — this observer can.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [ { "options": { "0": { "color": "red", "text": "FAILED" }, "1": { "color": "green", "text": "OK" } }, "type": "value" } ],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 40 },
+      "id": 30,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Offsite Unit",
+      "type": "stat",
+      "targets": [ { "expr": "restic_offsite_unit_success", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] },
+          "mappings": [ { "options": { "0": { "color": "green", "text": "0" }, "-1": { "color": "orange", "text": "never spawned" } }, "type": "value" } ]
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 40 },
+      "id": 31,
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Offsite Exit Status",
+      "type": "stat",
+      "targets": [ { "expr": "restic_offsite_unit_exit_status", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 86400 }, { "color": "red", "value": 259200 } ] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 40 },
+      "id": 32,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Offsite Unit Age",
+      "type": "stat",
+      "targets": [ { "expr": "time() - restic_offsite_unit_last_finish_timestamp", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "description": "Written by systemd via ExecStopPost, not by the script.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [ { "options": { "0": { "color": "red", "text": "FAILED" }, "1": { "color": "green", "text": "OK" } }, "type": "value" } ],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 40 },
+      "id": 33,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Maintenance Unit",
+      "type": "stat",
+      "targets": [ { "expr": "restic_maintenance_unit_success", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 691200 }, { "color": "red", "value": 864000 } ] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 40 },
+      "id": 34,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Maintenance Unit Age",
+      "type": "stat",
+      "targets": [ { "expr": "time() - restic_maintenance_unit_last_finish_timestamp", "refId": "A" } ]
+    },
+
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 45 },
+      "id": 500,
+      "title": "📡 Textfile Freshness",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 46 },
+      "id": 40,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Scrape Errors",
+      "type": "stat",
+      "targets": [ { "expr": "node_textfile_scrape_error", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "displayMode": "color-background-solid" },
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 86400 }, { "color": "red", "value": 691200 } ] }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "File" },
+            "properties": [ { "id": "custom.width", "value": 280 } ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Age" },
+            "properties": [ { "id": "unit", "value": "s" } ]
+          }
+        ]
+      },
+      "gridPos": { "h": 10, "w": 20, "x": 4, "y": 46 },
+      "id": 41,
+      "options": { "showHeader": true, "sortBy": [ { "desc": true, "displayName": "Age" } ] },
+      "title": "Textfile Producer Freshness",
+      "type": "table",
+      "targets": [
+        {
+          "expr": "time() - node_textfile_mtime_seconds",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true, "hostname": true, "instance": true, "job": true, "__name__": true }, "renameByName": { "file": "File", "Value": "Age" } } }
+      ]
+    },
+
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 57 },
+      "id": 600,
+      "title": "💿 Disk Space",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decgbytes",
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "orange", "value": 60 }, { "color": "yellow", "value": 100 }, { "color": "green", "value": 200 } ] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 58 },
+      "id": 50,
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Backup SSD Free",
+      "type": "stat",
+      "targets": [ { "expr": "backup_disk_free_gb", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 70 }, { "color": "orange", "value": 80 }, { "color": "red", "value": 85 } ] },
+          "max": 100, "min": 0
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 58 },
+      "id": 51,
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Backup SSD Used %",
+      "type": "stat",
+      "targets": [ { "expr": "backup_disk_usage_percent", "refId": "A" } ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 15 }, "unit": "decgbytes" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 58 },
+      "id": 52,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
+      "title": "Backup Disk Free Over Time",
+      "type": "timeseries",
+      "targets": [ { "expr": "backup_disk_free_gb", "legendFormat": "free", "refId": "A" } ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["backup", "offsite", "restic", "monitoring"],
+  "templating": { "list": [] },
+  "time": { "from": "now-7d", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Backup & Offsite",
+  "uid": "backup-offsite",
+  "version": 1
+}

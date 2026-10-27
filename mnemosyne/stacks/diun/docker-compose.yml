@@ -1,0 +1,23 @@
+services:
+  diun:
+    image: crazymax/diun:latest
+    container_name: diun
+    labels:
+      homelab.update-class: "B"
+    volumes:
+      - diun-data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=Europe/Berlin
+      - DIUN_WATCH_WORKERS=20
+      - DIUN_WATCH_SCHEDULE=0 8 * * 1        # Montags 08:00 Uhr
+      - DIUN_PROVIDERS_DOCKER=true
+      - DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT=true
+      - DIUN_NOTIF_NTFY_ENDPOINT=https://ntfy.sh
+      # Anyone who knows the topic can read the notifications - keep it in .env.
+      - DIUN_NOTIF_NTFY_TOPIC=${DIUN_NTFY_TOPIC:?DIUN_NTFY_TOPIC missing in .env}
+    restart: unless-stopped
+
+volumes:
+  diun-data:
+

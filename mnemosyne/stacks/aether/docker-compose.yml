@@ -1,0 +1,27 @@
+services:
+  aether:
+    build: .
+    image: aether-app
+    container_name: aether
+    labels:
+      homelab.update-class: "C"
+      diun.enable: "false"   # local build, not in any registry
+    environment:
+      # Reached over the monitoring network (see networks below).
+      - PROMETHEUS_URL=http://prometheus:9090
+      - AETHER_PORT=8050
+    volumes:
+      # Bind-mounted so editing sensors/UI needs only `docker compose restart aether`.
+      - ./sensors.yaml:/app/sensors.yaml:ro
+      - ./templates:/app/templates:ro
+    networks:
+      - caddy_proxy    # so Caddy can reach aether:8050
+      - monitoring     # so aether can reach prometheus:9090
+    restart: unless-stopped
+
+networks:
+  caddy_proxy:
+    external: true
+  monitoring:
+    external: true
+    name: monitoring

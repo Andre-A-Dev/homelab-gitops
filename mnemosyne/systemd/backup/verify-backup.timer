@@ -1,0 +1,17 @@
+# =============================================================================
+# verify-backup.timer  ->  /etc/systemd/system/verify-backup.timer
+# =============================================================================
+# 04:00 - well after the 02:00 local backup (~40 min). Same slot as the old
+# Gitea Actions schedule.
+# =============================================================================
+
+[Unit]
+Description=Daily quick backup verification at 04:00
+
+[Timer]
+OnCalendar=*-*-* 04:00:00
+# Catch up after downtime instead of skipping a night silently.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

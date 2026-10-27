@@ -1,0 +1,12 @@
+[Unit]
+Description=Daily drift check (report only)
+
+[Timer]
+# After the nightly backup window; adjust if backups move.
+OnCalendar=*-*-* 06:30
+RandomizedDelaySec=10m
+# Catch up on the next boot if Mnemosyne was off at 06:30.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

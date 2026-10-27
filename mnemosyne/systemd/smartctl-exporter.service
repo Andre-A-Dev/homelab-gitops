@@ -1,0 +1,46 @@
+[Unit]
+Description=Prometheus smartctl exporter (disk S.M.A.R.T. metrics)
+Documentation=https://github.com/prometheus-community/smartctl_exporter
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+# Devices are listed explicitly instead of auto-scanned: the scan picked
+# "-d sat" for every USB disk, which fails silently on NVMe-in-USB enclosures
+# (smartctl misreads the empty reply as "SLEEP mode"). Both NVMe enclosures
+# use an ASMedia bridge -> "sntasmedia". With explicit devices the exporter
+# does not rescan, so a newly attached disk must be added here.
+# by-id paths keep the mapping stable if sdX enumeration order changes.
+# The NVMe root disk sits on the Pi 5's single PCIe controller, so nvme0 is
+# stable and needs no by-id path. Keep it listed: dropping auto-scan would
+# otherwise silently drop the system disk from monitoring.
+# The WD My Passport (usb-WD_My_Passport_264F_...) is deliberately NOT listed:
+# its ASMedia bridge parks the NVMe between reads, so every SMART poll counts
+# as a power cycle (+129/h at a 120 s interval) while power-on hours stand
+# still — verified 2026-10-19 on a hub port and directly on the Pi. The drive
+# currently holds nothing (replaced as backup target by the WD 4 TB), so
+# monitoring would only wear it out. Re-add only once it has a purpose, and
+# expect the power-cycle alert to fire again if you do.
+# Arguments are quoted because of the ';' device-type separator.
+ExecStart=/usr/local/bin/smartctl_exporter \
+  --smartctl.path=/usr/sbin/smartctl \
+  --smartctl.interval=120s \
+  "--smartctl.device=/dev/disk/by-id/ata-WDC_WD40EFRX-68WT0N0_WD-WCC4E7PL3NXY;sat" \
+  "--smartctl.device=/dev/disk/by-id/usb-WD_Game_Drive_323131303231343030313431-0:0;sntasmedia" \
+  "--smartctl.device=/dev/nvme0;nvme" \
+  --web.listen-address=172.20.0.1:9633
+Restart=on-failure
+RestartSec=10s
+
+# Hardening — root is required for raw device access, so restrict everything else
+NoNewPrivileges=true
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictNamespaces=true
+RestrictRealtime=true
+
+[Install]
+WantedBy=multi-user.target

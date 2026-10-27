@@ -1,0 +1,53 @@
+# =============================================================================
+# compose-profiles.yml - Compose profiles in this repo
+# =============================================================================
+# Services WITHOUT a profile always run. A service behind a profile only runs
+# when that profile is switched on.
+#
+# Two sections, deliberately separate:
+#
+#   profiles  VOCABULARY - what a profile name means. Repo-wide and identical
+#             on every host, like a .gitignore rule. Every profile used in any
+#             docker-compose.yml in this repo must be listed here; CI
+#             (check_configs.py) rejects unknown names, so a typo like
+#             "inactiv" fails the push instead of creating a new meaning.
+#
+#             purpose: switched-off  service is deliberately down
+#                      on-demand     runs only when explicitly called
+#                                    (`docker compose run`, --profile by hand)
+#
+#   hosts     STATE - which profiles are switched ON per host. Not listed =
+#             off. Stage 1 (2026-10-15): every list must stay empty. Deploy
+#             and drift check do not switch profiles yet; CI rejects entries
+#             until they do, so this file never claims a state the system
+#             does not apply.
+#
+# YAML pitfall: never name a profile on/off/yes/no/true/false/y/n - PyYAML
+# reads those as booleans. CI rejects them.
+#
+# Read by: .gitea/scripts/check_configs.py, mnemosyne/scripts/drift_check.py
+# =============================================================================
+
+profiles:
+
+  inactive:
+    purpose: switched-off
+    # No return date: homepage, solar, discord-inactivity, meross-exporter
+
+  seasonal:
+    purpose: switched-off
+    # Comes back periodically: midea-exporter (Portasplit, spring/summer)
+
+  cli:
+    purpose: on-demand
+    # Jobs started via `docker compose run` by systemd timers: jobiris-monitor
+
+  debug:
+    purpose: on-demand
+    # Debugging tools - start with --profile debug, remove when done
+
+hosts:
+  mnemosyne: []
+  zephyros: []
+  boreas: []
+  hephaestus: []

@@ -1,0 +1,23 @@
+---
+services:
+
+  # Disabled 2026-10: the container was never started on Boreas.
+  caddy:
+    profiles: ["inactive"]
+    image: caddy:2
+    container_name: caddy
+    labels:
+      homelab.update-class: "B"
+    restart: unless-stopped
+    ports:
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./data:/data
+      - ./config:/config
+    networks:
+      - caddy
+
+networks:
+  caddy:
+    driver: bridge

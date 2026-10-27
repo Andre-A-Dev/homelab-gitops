@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <title>JobIris Board</title>
+  <style>
+    /* ------------------------------------------------------------------ */
+    /* Tokens – light mode                                                  */
+    /* ------------------------------------------------------------------ */
+    :root {
+      --bg:           #f7f7f9;
+      --bg-card:      #ffffff;
+      --fg:           #1f1f23;
+      --muted:        #6b6b76;
+      --border:       #e0e0e6;
+      --accent:       #5b4b8a;
+      --accent-dim:   #efe9fb;
+      --new-bg:       #f0eaff;
+      --shadow:       0 1px 3px rgba(0,0,0,0.08);
+
+      --metric-total-bg:   #f0eaff; --metric-total-fg:   #5b4b8a;
+      --metric-today-bg:   #e6f4ea; --metric-today-fg:   #2a7a4f;
+      --metric-int-bg:     #e8f3fc; --metric-int-fg:     #1d6fae;
+      --metric-prog-bg:    #fff8e1; --metric-prog-fg:    #b07800;
+      --metric-sal-bg:     #fce8f3; --metric-sal-fg:     #8b1a5a;
+      --metric-ho-bg:      #e8faf0; --metric-ho-fg:      #1a7a50;
+      --reminder-bg:       #fff3cd; --reminder-fg:       #856404;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Tokens – dark mode                                                   */
+    /* ------------------------------------------------------------------ */
+    [data-theme="dark"] {
+      --bg:           #16161e;
+      --bg-card:      #1e1e2a;
+      --fg:           #d8d8e8;
+      --muted:        #888898;
+      --border:       #2e2e3e;
+      --accent:       #9d85d4;
+      --accent-dim:   #2a2040;
+      --new-bg:       #23183a;
+      --shadow:       0 1px 3px rgba(0,0,0,0.4);
+
+      --metric-total-bg:   #2a2040; --metric-total-fg:   #c4aff0;
+      --metric-today-bg:   #1a2e20; --metric-today-fg:   #6ecf94;
+      --metric-int-bg:     #162030; --metric-int-fg:     #7ab8e8;
+      --metric-prog-bg:    #2a2010; --metric-prog-fg:    #f0c060;
+      --metric-sal-bg:     #2a1020; --metric-sal-fg:     #e898c8;
+      --metric-ho-bg:      #102a18; --metric-ho-fg:      #60d898;
+      --reminder-bg:       #2a2008; --reminder-fg:       #f0c040;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg); color: var(--fg);
+      margin: 0; padding: 1rem;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    a { color: var(--accent); }
+
+    /* Header */
+    .header {
+      display: flex; align-items: baseline;
+      justify-content: space-between; flex-wrap: wrap;
+      gap: 0.5rem; margin-bottom: 0.5rem;
+    }
+    h1 { font-size: 1.4rem; margin: 0; }
+
+    .theme-toggle {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 0.25rem 0.7rem;
+      font-size: 0.8rem; cursor: pointer; color: var(--muted);
+      transition: background 0.2s, border-color 0.2s; white-space: nowrap;
+    }
+    .theme-toggle:hover { color: var(--fg); border-color: var(--accent); }
+
+    /* Meta */
+    .meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.4rem; }
+    .meta a { color: var(--accent); text-decoration: none; }
+    .meta a:hover { text-decoration: underline; }
+
+    /* Last run */
+    .last-run { font-size: 0.82rem; color: var(--muted); margin-bottom: 0.8rem; }
+    .last-run strong { color: var(--fg); }
+    .run-new { color: var(--metric-today-fg); font-weight: 600; }
+    .run-err { color: #c0392b; font-weight: 600; }
+
+    /* Metrics bar */
+    .metrics { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+
+    .metric {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 0.5rem 0.9rem; border-radius: 8px;
+      text-decoration: none; min-width: 70px; cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .metric:hover  { opacity: 0.85; transform: translateY(-1px); }
+    .metric.active { outline: 2px solid var(--accent); }
+    .metric-value  { font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
+    .metric-label  { font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+                     letter-spacing: 0.04em; margin-top: 0.15rem; }
+
+    .m-total { background: var(--metric-total-bg); color: var(--metric-total-fg); }
+    .m-today { background: var(--metric-today-bg); color: var(--metric-today-fg); }
+    .m-int   { background: var(--metric-int-bg);   color: var(--metric-int-fg);   }
+    .m-prog  { background: var(--metric-prog-bg);  color: var(--metric-prog-fg);  }
+    .m-sal   { background: var(--metric-sal-bg);   color: var(--metric-sal-fg);   }
+    .m-ho    { background: var(--metric-ho-bg);    color: var(--metric-ho-fg);    }
+
+    /* Reminder banner */
+    .reminder-banner {
+      display: flex; gap: 0.8rem; flex-wrap: wrap;
+      margin-bottom: 0.8rem;
+    }
+    .reminder-pill {
+      background: var(--reminder-bg); color: var(--reminder-fg);
+      border-radius: 6px; padding: 0.3rem 0.7rem;
+      font-size: 0.82rem; font-weight: 600;
+    }
+
+    /* Run controls */
+    .run-controls {
+      display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+      margin-bottom: 1rem; padding: 0.6rem 0.8rem;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 6px; box-shadow: var(--shadow);
+    }
+    .run-controls label { font-size: 0.85rem; color: var(--muted);
+                          display: flex; align-items: center; gap: 0.3rem; }
+
+    .btn { padding: 0.35rem 0.8rem; border-radius: 4px; border: none;
+           cursor: pointer; font-size: 0.85rem; font-weight: 600;
+           transition: opacity 0.15s; }
+    .btn:hover     { opacity: 0.85; }
+    .btn-daily     { background: var(--accent); color: #fff; }
+    .btn-weekly    { background: #3d7ab5;       color: #fff; }
+
+    /* Table */
+    table {
+      width: 100%; border-collapse: collapse;
+      background: var(--bg-card); box-shadow: var(--shadow); font-size: 0.88rem;
+    }
+    th, td { padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--border);
+             text-align: left; vertical-align: top; }
+    th { background: var(--bg-card); }
+    th a { color: var(--fg); text-decoration: none; }
+    th a:hover { color: var(--accent); }
+    th a.sort-active { color: var(--accent); font-weight: 700; }
+
+    tr.new-row       { background: var(--new-bg); }
+    tr:hover td      { background: var(--accent-dim); }
+    tr.flag-ignore   { opacity: 0.65; }
+    tr.has-reminder td { border-left: 3px solid var(--reminder-fg); }
+
+    td.title a  { color: var(--accent); text-decoration: none; font-weight: 600; }
+    td.title a:hover { text-decoration: underline; }
+
+    .osm-link   { color: var(--fg); text-decoration: none; }
+    .osm-link:hover { color: var(--accent); }
+
+    /* ------------------------------------------------------------------ */
+    /* Views (saved filter sets as tabs)                                    */
+    /* ------------------------------------------------------------------ */
+    .views {
+      display: flex; align-items: flex-end; gap: 2px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0.8rem; overflow-x: auto;
+    }
+    .view-wrap { display: flex; align-items: center; }
+    .view-tab {
+      display: flex; align-items: center; gap: 0.45rem;
+      padding: 0.6rem 0.8rem; margin-bottom: -1px;
+      border-bottom: 2px solid transparent;
+      color: var(--muted); text-decoration: none; font-size: 0.88rem; white-space: nowrap;
+    }
+    .view-tab:hover { color: var(--fg); }
+    .view-tab.active { color: var(--fg); font-weight: 600; border-bottom-color: var(--accent); }
+    .view-count {
+      font-size: 0.72rem; padding: 0 0.45rem; border-radius: 999px;
+      background: var(--bg-card); color: var(--muted); font-weight: 600;
+    }
+    .view-tab.active .view-count { background: var(--accent-dim); color: var(--accent); }
+    .view-del {
+      border: none; background: transparent; color: var(--muted); cursor: pointer;
+      padding: 0 0.3rem; font-size: 1rem; opacity: 0; transition: opacity 0.15s;
+    }
+    .view-wrap:hover .view-del, .view-del:focus { opacity: 1; }
+    .view-del:hover { color: #c0392b; }
+    .view-save {
+      margin-left: 0.4rem; padding: 0.6rem 0.6rem; border: none; background: transparent;
+      color: var(--muted); font-size: 0.85rem; cursor: pointer; white-space: nowrap;
+    }
+    .view-save:hover:not(:disabled) { color: var(--accent); }
+    .view-save:disabled { opacity: 0.4; cursor: default; }
+
+    /* ------------------------------------------------------------------ */
+    /* Filter toolbar: search, chips, add filter, sort                      */
+    /* ------------------------------------------------------------------ */
+    .toolbar {
+      position: relative; display: flex; align-items: center;
+      gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.9rem;
+    }
+    .search {
+      display: flex; align-items: center; gap: 0.45rem;
+      height: 2.3rem; padding: 0 0.7rem; width: 19rem; box-sizing: border-box;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      margin: 0;
+    }
+    .search:focus-within { border-color: var(--accent); }
+    .search svg { flex-shrink: 0; color: var(--muted); }
+    .search input {
+      flex: 1; min-width: 0; border: none; outline: none; background: transparent;
+      color: var(--fg); font-size: 0.88rem; font-family: inherit;
+    }
+    .chip {
+      display: inline-flex; align-items: center; height: 2.1rem;
+      border-radius: 999px; background: var(--accent-dim);
+      border: 1px solid transparent; color: var(--fg); font-size: 0.8rem;
+    }
+    .chip.open, .chip:hover { border-color: var(--accent); }
+    .chip-body {
+      display: flex; align-items: center; gap: 0.3rem; height: 100%;
+      padding: 0 0.15rem 0 0.8rem; border: none; background: transparent;
+      color: inherit; cursor: pointer; font-size: inherit; font-family: inherit;
+    }
+    .chip-label { color: var(--muted); }
+    .chip-value {
+      font-weight: 600; max-width: 16rem;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .chip-x {
+      display: flex; align-items: center; justify-content: center;
+      width: 1.9rem; height: 100%; color: var(--muted); text-decoration: none;
+    }
+    .chip-x:hover { color: #c0392b; }
+    .add-filter {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      height: 2.1rem; padding: 0 0.85rem;
+      background: transparent; border: 1px dashed var(--muted); border-radius: 999px;
+      color: var(--fg); font-size: 0.8rem; cursor: pointer; font-family: inherit;
+    }
+    .add-filter:hover { border-color: var(--accent); color: var(--accent); }
+    .flt-clear { font-size: 0.8rem; color: var(--muted); padding: 0 0.3rem; }
+    .flt-clear:hover { color: #c0392b; }
+    .toolbar-right { margin-left: auto; display: flex; align-items: center; gap: 0.6rem; }
+    .result-count { font-size: 0.82rem; color: var(--muted); }
+    .sort-btn {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      height: 2.1rem; padding: 0 0.75rem;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      color: var(--fg); font-size: 0.8rem; text-decoration: none;
+    }
+    .sort-btn:hover { border-color: var(--accent); }
+
+    /* ------------------------------------------------------------------ */
+    /* Filter popover (editors for each field)                              */
+    /* ------------------------------------------------------------------ */
+    .flt-pop {
+      position: absolute; z-index: 200; width: 17rem; box-sizing: border-box;
+      padding: 0.5rem; background: var(--bg-card);
+      border: 1px solid var(--border); border-radius: 12px;
+      box-shadow: 0 14px 40px rgba(0,0,0,0.35);
+    }
+    .flt-pop.wide { width: auto; }
+    .pop-title, .pop-sub {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--muted); padding: 0.35rem 0.5rem 0.4rem;
+    }
+    .pop-sub { padding-top: 0.6rem; }
+    .pop-item {
+      display: flex; align-items: center; gap: 0.55rem; width: 100%;
+      padding: 0.5rem; border: none; border-radius: 8px; background: transparent;
+      color: var(--fg); font-size: 0.85rem; text-align: left; cursor: pointer; font-family: inherit;
+    }
+    .pop-item:hover { background: var(--accent-dim); }
+    .pop-item.on { background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+    .radio {
+      width: 0.8rem; height: 0.8rem; border-radius: 50%; flex-shrink: 0;
+      border: 1.5px solid var(--muted); box-sizing: border-box;
+    }
+    .pop-item.on .radio { border: 4px solid var(--accent); }
+    .pop-input {
+      width: 100%; box-sizing: border-box; height: 2.2rem; padding: 0 0.6rem;
+      background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+      color: var(--fg); font-size: 0.88rem; font-family: inherit;
+    }
+    .pop-input:focus { outline: none; border-color: var(--accent); }
+    .pop-hint { font-size: 0.75rem; color: var(--muted); padding: 0.35rem 0.1rem; }
+    .pop-foot {
+      display: flex; align-items: center; gap: 0.5rem;
+      border-top: 1px solid var(--border); margin-top: 0.5rem; padding-top: 0.5rem;
+    }
+    .pop-foot-right { margin-left: auto; display: flex; gap: 0.4rem; }
+    .pop-btn {
+      height: 2rem; padding: 0 0.8rem; border-radius: 8px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--fg); font-size: 0.8rem; cursor: pointer; font-family: inherit;
+    }
+    .pop-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+    .pill-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem; padding: 0 0.2rem 0.2rem; }
+    .pill {
+      height: 2rem; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--fg); font-size: 0.78rem; cursor: pointer; font-family: inherit;
+    }
+    .pill.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+    .pop-row { display: flex; gap: 0.9rem; padding: 0 0.5rem 0.3rem; }
+    .pop-link {
+      background: none; border: none; color: var(--accent); cursor: pointer;
+      font-size: 0.8rem; padding: 0.2rem 0; text-decoration: underline; font-family: inherit;
+    }
+    .pop-check {
+      display: flex; gap: 0.55rem; align-items: center;
+      padding: 0.42rem 0.5rem; font-size: 0.85rem; cursor: pointer; border-radius: 8px;
+    }
+    .pop-check:hover { background: var(--accent-dim); }
+    .pop-check input { accent-color: var(--accent); width: 1rem; height: 1rem; }
+
+    /* Date range calendar */
+    .cal-wrap { display: flex; }
+    .cal-side {
+      width: 10rem; padding-right: 0.5rem; border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .seg { display: flex; padding: 3px; background: var(--bg); border-radius: 8px; margin-bottom: 0.4rem; }
+    .seg button {
+      flex: 1; padding: 0.35rem 0.2rem; border: none; border-radius: 6px;
+      background: transparent; color: var(--muted); font-size: 0.72rem; cursor: pointer; font-family: inherit;
+    }
+    .seg button.on { background: var(--bg-card); color: var(--fg); font-weight: 600; box-shadow: var(--shadow); }
+    .cal-main { position: relative; padding-left: 0.8rem; }
+    .cal-nav {
+      position: absolute; top: 0; left: 0.8rem; right: 0;
+      display: flex; justify-content: space-between; pointer-events: none;
+    }
+    .cal-nav button {
+      pointer-events: auto; width: 1.9rem; height: 1.9rem; border: none; border-radius: 6px;
+      background: transparent; color: var(--fg); cursor: pointer; font-size: 1.1rem;
+    }
+    .cal-nav button:hover { background: var(--accent-dim); }
+    .cal-months { display: grid; grid-template-columns: repeat(2, 15.5rem); gap: 1.2rem; }
+    .cal-title { text-align: center; font-weight: 600; font-size: 0.88rem; height: 1.9rem; line-height: 1.9rem; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); row-gap: 2px; }
+    .cal-grid .wd { text-align: center; font-size: 0.7rem; color: var(--muted); padding: 0.2rem 0; }
+    .cal-grid .d {
+      height: 2.05rem; border: none; background: transparent; color: var(--fg);
+      font-size: 0.8rem; cursor: pointer; border-radius: 6px; font-family: inherit;
+    }
+    .cal-grid .d:hover:not(:disabled) { background: var(--accent-dim); }
+    .cal-grid .d.today { box-shadow: inset 0 0 0 1px var(--muted); }
+    .cal-grid .d.in { background: var(--accent-dim); border-radius: 0; }
+    .cal-grid .d.edge { background: var(--accent); color: #fff; font-weight: 700; }
+    .cal-grid .d:disabled { color: var(--border); cursor: default; }
+    [data-theme="dark"] .cal-grid .d.edge,
+    [data-theme="dark"] .pill.on,
+    [data-theme="dark"] .pop-btn.primary { color: #16161e; }
+
+    @media (max-width: 700px) {
+      .search { width: 100%; }
+      .toolbar-right { margin-left: 0; width: 100%; justify-content: space-between; }
+      /* Popover becomes a bottom sheet on phones */
+      .flt-pop {
+        position: fixed; left: 0 !important; right: 0; top: auto !important; bottom: 0;
+        width: auto; max-height: 85vh; overflow-y: auto;
+        border-radius: 16px 16px 0 0;
+        padding: 0.8rem 0.8rem calc(0.8rem + env(safe-area-inset-bottom));
+      }
+      .cal-wrap { flex-direction: column; }
+      .cal-side {
+        width: auto; padding: 0 0 0.5rem; border-right: none; border-bottom: 1px solid var(--border);
+        flex-direction: row; flex-wrap: wrap;
+      }
+      .cal-side .seg { width: 100%; }
+      .cal-side .pop-item { width: auto; }
+      .cal-main { padding: 0.5rem 0 0; }
+      .cal-nav { left: 0; top: 0.5rem; }
+      .cal-months { grid-template-columns: 1fr; }
+      .cal-month + .cal-month { display: none; }
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Bulk action bar                                                      */
+    /* ------------------------------------------------------------------ */
+    .bulk-bar {
+      position: sticky;
+      bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      margin-top: 0.5rem;
+      padding: 0.6rem 1rem;
+      background: var(--bg-card);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      z-index: 100;
+    }
+    .bulk-count { font-weight: 600; color: var(--accent); font-size: 0.9rem; }
+
+    /* ------------------------------------------------------------------ */
+    /* Expandable detail row                                                */
+    /* ------------------------------------------------------------------ */
+    .detail-toggle {
+      margin-top: 0.25rem;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.72rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .detail-toggle:hover { color: var(--accent); border-color: var(--accent); }
+    .detail-toggle.open  { color: var(--accent); border-color: var(--accent); }
+
+    .detail-row td { padding: 0; border-bottom: 2px solid var(--accent-dim); }
+
+    .detail-cell { padding: 0 !important; }
+
+    .detail-inner {
+      padding: 0.8rem 1rem;
+      background: var(--bg);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 900px) {
+      .detail-inner { grid-template-columns: 1fr; }
+    }
+
+    .ai-detail-block { display: flex; flex-direction: column; gap: 0.4rem; }
+    .ai-summary-full {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* Notes */
+    .notes-block { margin-top: 0.5rem; }
+    .notes-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 0.25rem;
+    }
+    .notes-input {
+      width: 100%;
+      padding: 0.4rem 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg-card);
+      color: var(--fg);
+      font-family: inherit;
+      font-size: 0.82rem;
+      resize: vertical;
+    }
+    .notes-input:focus { outline: none; border-color: var(--accent); }
+    .notes-actions { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.3rem; }
+    .btn-small {
+      padding: 0.2rem 0.6rem;
+      font-size: 0.78rem;
+      border-radius: 4px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+    }
+    .btn-small:hover { opacity: 0.85; }
+    .notes-saved { font-size: 0.78rem; color: #2a7a4f; font-weight: 600; }
+
+    .ignore-badge {
+      display: inline-block; font-size: 0.7rem;
+      background: #c0392b22; color: #c0392b;
+      border-radius: 3px; padding: 0 4px; margin-left: 4px;
+      vertical-align: middle; cursor: help;
+    }
+    [data-theme="dark"] .ignore-badge { background: #ff6b6b22; color: #ff6b6b; }
+
+    .reminder-inline {
+      display: block; font-size: 0.75rem; margin-top: 3px;
+      color: var(--reminder-fg); font-weight: 600;
+    }
+
+    select.status {
+      padding: 0.2rem; border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--bg-card); color: var(--fg); font-size: 0.85rem;
+    }
+    .status-Neu                { color: #5b4b8a; font-weight: 600; }
+    .status-Interessant        { color: #1d6fae; font-weight: 600; }
+    .status-Beworben           { color: #2a7a4f; font-weight: 600; }
+    .status-Feedback-ausstehend{ color: #b07800; font-weight: 600; }
+    .status-Absage-erhalten    { color: var(--muted); }
+    .status-Nicht-relevant     { color: var(--muted); }
+    .status-Archiviert         { color: var(--muted); font-style: italic; }
+
+    /* AI rating collapsible */
+    .ai-badge {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      font-size: 0.8rem; font-weight: 700; border-radius: 5px;
+      padding: 0.15rem 0.45rem; white-space: nowrap; cursor: pointer;
+    }
+    .ai-score-high { background: #e6f4ea; color: #2a7a4f; }
+    .ai-score-mid  { background: #fff8e1; color: #b07800; }
+    .ai-score-low  { background: #fde8e8; color: #b02020; }
+    [data-theme="dark"] .ai-score-high { background: #1a2e20; color: #6ecf94; }
+    [data-theme="dark"] .ai-score-mid  { background: #2a2010; color: #f0c060; }
+    [data-theme="dark"] .ai-score-low  { background: #2a1010; color: #f08080; }
+
+    details.ai-details { display: inline-block; }
+    details.ai-details summary {
+      list-style: none; cursor: pointer;
+    }
+    details.ai-details summary::-webkit-details-marker { display: none; }
+    details.ai-details .ai-summary-text {
+      margin-top: 0.4rem; font-size: 0.8rem; line-height: 1.5;
+      color: var(--fg); max-width: 280px; word-break: break-word;
+      border-left: 2px solid var(--border); padding-left: 0.5rem;
+    }
+
+    .btn-rate {
+      background: none; border: 1px solid var(--border);
+      border-radius: 4px; padding: 0.15rem 0.5rem;
+      font-size: 0.78rem; color: var(--muted); cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-rate:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    .btn-rate:disabled { opacity: 0.5; cursor: default; }
+    .rating-pending { font-size: 0.78rem; color: var(--muted); font-style: italic; }
+    @media (max-width: 700px) {
+      table, thead, tbody, th, td, tr { display: block; }
+      thead tr { display: none; }
+      tr { margin-bottom: 0.8rem; border: 1px solid var(--border);
+           border-radius: 6px; padding: 0.4rem; background: var(--bg-card); }
+      td { border: none; padding: 0.2rem 0.4rem; }
+      td::before { content: attr(data-label) ": "; font-weight: 600; color: var(--muted); }
+      .metrics { gap: 0.4rem; }
+      .metric  { min-width: 60px; padding: 0.4rem 0.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <h1>🔍 JobIris Board</h1>
+    <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+      <a href="/charts" style="color:var(--muted);text-decoration:none;font-size:0.88rem;
+         padding:0.25rem 0.6rem;border-radius:4px;border:1px solid var(--border);">
+        📊 Charts
+      </a>
+      <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()">🌙 Dark</button>
+    </div>
+  </div>
+
+  <!-- Meta -->
+  <div class="meta">
+    {{ rows|length }} {{ 'Eintrag' if rows|length == 1 else 'Einträge' }}
+    {% if active_filters %}
+      · <strong>{{ active_filters }} Filter aktiv</strong>
+      &mdash; <a href="?sort={{ sort_key }}&dir={{ direction }}">zurücksetzen</a>
+    {% elif status_filter %}
+      – gefiltert: <strong>{{ status_filter }}</strong>
+      &mdash; <a href="?sort={{ sort_key }}&dir={{ direction }}">Filter aufheben</a>
+    {% elif not show_all %}
+      ({{ hidden_statuses|join(', ') }} ausgeblendet &mdash;
+      <a href="?sort={{ sort_key }}&dir={{ direction }}&all=1">alle anzeigen</a>)
+    {% else %}
+      &mdash; <a href="?sort={{ sort_key }}&dir={{ direction }}">Ausgeblendete verbergen</a>
+    {% endif %}
+  </div>
+
+  <!-- Last run -->
+  {% if last_run %}
+  <div class="last-run">
+    {% set ts = last_run.timestamp[:16] | replace('T', ' ') %}
+    {% if last_run.dry_run %}
+      🕐 Letzter Lauf: <strong>{{ ts }}</strong> · <em>dry run</em> · {{ last_run.total_checked }} geprüft
+    {% elif last_run.total_new > 0 %}
+      🕐 Letzter Lauf: <strong>{{ ts }}</strong>
+      · <span class="run-new">{{ last_run.total_new }} neu</span>
+      · {{ last_run.total_checked }} geprüft
+      {% if last_run.total_errors > 0 %}· <span class="run-err">{{ last_run.total_errors }} Fehler</span>{% endif %}
+    {% else %}
+      🕐 Letzter Lauf: <strong>{{ ts }}</strong> · keine neuen Treffer · {{ last_run.total_checked }} geprüft
+      {% if last_run.total_errors > 0 %}· <span class="run-err">{{ last_run.total_errors }} Fehler</span>{% endif %}
+    {% endif %}
+    {% if last_run.total_archived %}· {{ last_run.total_archived }} archiviert{% endif %}
+    &nbsp;({{ last_run.schedule }})
+  </div>
+  {% endif %}
+
+  <!-- Metrics bar -->
+  <div class="metrics">
+    <a class="metric m-total {% if not status_filter and not show_all %}active{% endif %}"
+       href="?sort={{ sort_key }}&dir={{ direction }}" title="Alle aktiven Einträge">
+      <span class="metric-value">{{ metrics.total }}</span>
+      <span class="metric-label">Gesamt</span>
+    </a>
+    <a class="metric m-today" href="?sort=date&dir=desc" title="Heute neu gefunden">
+      <span class="metric-value">{{ metrics.today }}</span>
+      <span class="metric-label">Heute</span>
+    </a>
+    <a class="metric m-int {% if status_filter == 'Interessant' %}active{% endif %}"
+       href="?sort={{ sort_key }}&dir={{ direction }}&status_filter=Interessant"
+       title="Als Interessant markiert">
+      <span class="metric-value">{{ metrics.interessant }}</span>
+      <span class="metric-label">Interessant</span>
+    </a>
+    <a class="metric m-prog {% if status_filter in ('Beworben', 'Feedback ausstehend') %}active{% endif %}"
+       href="?sort={{ sort_key }}&dir={{ direction }}&status_filter=Beworben"
+       title="Beworben + Feedback ausstehend">
+      <span class="metric-value">{{ metrics.in_progress }}</span>
+      <span class="metric-label">In Progress</span>
+    </a>
+    <a class="metric m-sal" href="?sort=salary&dir=desc" title="Mit Gehaltsangabe – sortieren">
+      <span class="metric-value">{{ metrics.with_salary }}</span>
+      <span class="metric-label">Mit Gehalt</span>
+    </a>
+    <a class="metric m-ho" href="?sort={{ sort_key }}&dir={{ direction }}" title="Mit Home-Office-Angabe">
+      <span class="metric-value">{{ metrics.with_homeoffice }}</span>
+      <span class="metric-label">Home-Office</span>
+    </a>
+  </div>
+
+  <!-- Reminder banners -->
+  {% if metrics.reminder_interessant > 0 or metrics.reminder_followup > 0 %}
+  <div class="reminder-banner">
+    {% if metrics.reminder_interessant > 0 %}
+    <span class="reminder-pill">
+      ⏰ {{ metrics.reminder_interessant }} Stelle{{ '' if metrics.reminder_interessant == 1 else 'n' }}
+      seit &gt;{{ reminder_interessant_days }}d interessant – bewerben?
+    </span>
+    {% endif %}
+    {% if metrics.reminder_followup > 0 %}
+    <span class="reminder-pill">
+      ⏰ {{ metrics.reminder_followup }} Bewerbung{{ '' if metrics.reminder_followup == 1 else 'en' }}
+      &gt;{{ reminder_followup_days }}d ohne Rückmeldung – nachfassen?
+    </span>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Run controls -->
+  <div class="run-controls">
+    <form method="post" action="{{ url_for('start_run') }}" style="display:contents">
+      <button class="btn btn-daily"  name="schedule" value="daily">▶ Run daily</button>
+      <button class="btn btn-weekly" name="schedule" value="weekly">▶ Run weekly</button>
+      <label><input type="checkbox" name="dry_run" value="1"> Dry run</label>
+    </form>
+  </div>
+
+  <!-- Views: saved filter sets as tabs -->
+  <nav class="views" aria-label="Ansichten">
+    {% for v in views %}
+    <span class="view-wrap">
+      <a class="view-tab {{ 'active' if v.active }}" href="{{ v.href }}">
+        {{ v.label }} <span class="view-count">{{ v.count }}</span>
+      </a>
+      {% if v.custom %}
+      <button type="button" class="view-del" data-view-id="{{ v.db_id }}"
+              aria-label="Ansicht {{ v.label }} löschen" title="Ansicht löschen">×</button>
+      {% endif %}
+    </span>
+    {% endfor %}
+    <button type="button" class="view-save" id="view-save"
+            {{ 'disabled' if not chips }} title="Aktuelle Filter als Ansicht speichern">+ Ansicht speichern</button>
+  </nav>
+
+  <!-- Toolbar: search, filter chips, add filter, sort -->
+  <div class="toolbar" id="toolbar">
+    <form class="search" id="search-form" role="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path>
+      </svg>
+      <input type="search" name="f_q" value="{{ f.get('f_q', '') }}" aria-label="Suche"
+             placeholder="Titel, Firma, Ort · Komma = oder · -Begriff = ohne">
+    </form>
+
+    {% for c in chips %}
+    <span class="chip">
+      <button type="button" class="chip-body" data-edit="{{ c.field }}">
+        <span class="chip-label">{{ c.label }}:</span>
+        <span class="chip-value">{{ c.value }}</span>
+      </button>
+      <a class="chip-x" href="{{ c.href }}" aria-label="Filter {{ c.label }} entfernen">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" aria-hidden="true">
+          <path d="M6 6l12 12M18 6 6 18"></path>
+        </svg>
+      </a>
+    </span>
+    {% endfor %}
+
+    <button type="button" class="add-filter" id="add-filter">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
+        <path d="M12 5v14M5 12h14"></path>
+      </svg>
+      Filter
+    </button>
+    {% if chips %}
+    <a class="flt-clear" href="?sort={{ sort_key }}&dir={{ direction }}">Alle entfernen</a>
+    {% endif %}
+
+    <div class="toolbar-right">
+      <span class="result-count">{{ rows|length }} {{ 'Stelle' if rows|length == 1 else 'Stellen' }}</span>
+      <a class="sort-btn" href="{{ qs(dir='asc' if direction == 'desc' else 'desc') }}" title="Sortierrichtung umkehren">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"></path>
+        </svg>
+        {{ sort_label }} {{ '↓' if direction == 'desc' else '↑' }}
+      </a>
+    </div>
+
+    <div class="flt-pop" id="flt-pop" hidden></div>
+  </div>
+  <datalist id="dl-companies">{% for c in facets.companies %}<option value="{{ c }}">{% endfor %}</datalist>
+  <datalist id="dl-locations">{% for o in facets.locations %}<option value="{{ o }}">{% endfor %}</datalist>
+  <script id="filter-state" type="application/json">{{ filter_state|tojson }}</script>
+
+  <!-- Job table -->
+  <table>
+    <thead>
+      <tr>
+        <th style="width:2rem">
+          <input type="checkbox" id="select-all" title="Alle auswählen">
+        </th>
+        {% for key, label in [
+            ('date',      'Gefunden'),
+            ('published', 'Veröffentlicht'),
+            ('title',     'Titel'),
+            ('company',   'Arbeitgeber'),
+            ('location',  'Ort'),
+            ('distance',  'Entfernung'),
+            ('salary',    'Gehalt'),
+        ] %}
+        <th>
+          <a href="{{ qs(sort=key, dir=toggle_dir(key)) }}"
+             class="{{ 'sort-active' if sort_key == key else '' }}">
+            {{ label }}{{ ' ↑' if sort_key == key and direction == 'asc' else (' ↓' if sort_key == key else '') }}
+          </a>
+        </th>
+        {% endfor %}
+        <th>Home-Office</th>
+        {% for key, label in [('tag', 'Tag'), ('status', 'Status')] %}
+        <th>
+          <a href="{{ qs(sort=key, dir=toggle_dir(key)) }}"
+             class="{{ 'sort-active' if sort_key == key else '' }}">
+            {{ label }}{{ ' ↑' if sort_key == key and direction == 'asc' else (' ↓' if sort_key == key else '') }}
+          </a>
+        </th>
+        {% endfor %}
+        <th title="AI rating – click ✦ to generate">AI Rating</th>
+      </tr>
+
+    </thead>
+    <tbody>
+      {% for row, reminder in rows_with_reminders %}
+      {%- set row_id = loop.index -%}
+      <tr class="{{ 'new-row' if row['first_seen'][:10] == latest_date else '' }} {{ 'flag-ignore' if row['ignore_match'] else '' }} {{ 'has-reminder' if reminder else '' }}">
+        <td>
+          <input type="checkbox" class="row-select" value="{{ row['refnr'] }}">
+        </td>
+        <td data-label="Gefunden">{{ row['first_seen'][:10] }}</td>
+        <td data-label="Veröffentlicht">{{ row['published_at'] or '' }}</td>
+        <td data-label="Titel" class="title">
+          <a href="{{ row['url'] }}" target="_blank" rel="noopener">{{ row['titel'] }}</a>
+          {% if row['ignore_match'] %}
+            <span class="ignore-badge" title="Soft ignore: {{ row['ignore_match'] }}">⚠ {{ row['ignore_match'] }}</span>
+          {% endif %}
+          {% if reminder %}
+            <span class="reminder-inline">{{ reminder }}</span>
+          {% endif %}
+          <br>
+          <button class="detail-toggle btn-small"
+                  data-target="detail-{{ row_id }}"
+                  onclick="toggleDetail(this)">▸ Notizen &amp; Details</button>
+        </td>
+        <td data-label="Arbeitgeber">{{ row['arbeitgeber'] }}</td>
+        <td data-label="Ort">
+          {% if row['lat'] and row['lon'] %}
+            <a href="https://www.openstreetmap.org/?mlat={{ row['lat'] }}&mlon={{ row['lon'] }}&zoom=13"
+               target="_blank" rel="noopener" class="osm-link" title="Auf OpenStreetMap anzeigen">
+              {{ row['ort'] }} 🗺
+            </a>
+          {% elif row['ort'] %}
+            <a href="https://www.openstreetmap.org/search?query={{ row['ort'] | urlencode }}"
+               target="_blank" rel="noopener" class="osm-link" title="Auf OpenStreetMap suchen">
+              {{ row['ort'] }} 🗺
+            </a>
+          {% else %}—{% endif %}
+        </td>
+        <td data-label="Entfernung">{{ row['distance_home'] or '' }}</td>
+        <td data-label="Gehalt">{{ row['salary'] or '' }}</td>
+        <td data-label="Home-Office">{{ row['home_office'] or '' }}</td>
+        <td data-label="Tag">{{ row['tag'] or '' }}</td>
+        <td data-label="Status">
+          <form method="post" action="{{ url_for('update_status', refnr=row['refnr']) }}">
+            <input type="hidden" name="sort" value="{{ sort_key }}">
+            <input type="hidden" name="dir"  value="{{ direction }}">
+            <input type="hidden" name="all"  value="{{ '1' if show_all else '0' }}">
+            <input type="hidden" name="next" value="{{ request.full_path }}">
+            <select name="status"
+                    class="status status-{{ row['status'] | replace(' ', '-') }}"
+                    onchange="this.form.submit()">
+              {% for option in status_options %}
+              <option value="{{ option }}" {{ 'selected' if option == row['status'] else '' }}>
+                {{ option }}
+              </option>
+              {% endfor %}
+            </select>
+          </form>
+        </td>
+        <td data-label="AI Rating" class="ai-cell" data-refnr="{{ row['refnr'] }}">
+          {% if row['ai_score'] %}
+            <span class="ai-badge {% if row['ai_score'] >= 7 %}ai-score-high{% elif row['ai_score'] >= 4 %}ai-score-mid{% else %}ai-score-low{% endif %}">
+              ✦ {{ row['ai_score'] }}/10
+            </span>
+            <br>
+            <button class="btn-rate" style="margin-top:0.3rem"
+                    onclick="triggerRating('{{ row['refnr'] }}', this)">↺ Re-rate</button>
+          {% else %}
+            <button class="btn-rate" onclick="triggerRating('{{ row['refnr'] }}', this)">✦ Rate</button>
+          {% endif %}
+        </td>
+      </tr>
+
+      {# ---- Expandable detail row – full table width ---- #}
+      <tr id="detail-{{ row_id }}" class="detail-row" style="display:none">
+        <td colspan="12" class="detail-cell">
+          <div class="detail-inner">
+
+            {# Notes – top #}
+            <div class="notes-block">
+              <label class="notes-label">Notizen</label>
+              <textarea class="notes-input"
+                        data-refnr="{{ row['refnr'] }}"
+                        placeholder="Eigene Notizen zur Stelle…"
+                        rows="3">{{ row['notes'] or '' }}</textarea>
+              <div class="notes-actions">
+                <button class="notes-save btn-small" data-refnr="{{ row['refnr'] }}">Speichern</button>
+                <span class="notes-saved" style="display:none">✓ Gespeichert</span>
+              </div>
+            </div>
+
+            {# AI summary – bottom, only when rated #}
+            {% if row['ai_score'] and row['ai_summary'] %}
+            <div class="ai-detail-block">
+              <span class="notes-label">KI-Bewertung</span>
+              <span class="ai-badge {% if row['ai_score'] >= 7 %}ai-score-high{% elif row['ai_score'] >= 4 %}ai-score-mid{% else %}ai-score-low{% endif %}">
+                ✦ {{ row['ai_score'] }}/10
+              </span>
+              <p class="ai-summary-full">{{ row['ai_summary'] }}</p>
+            </div>
+            {% endif %}
+
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Bulk action bar – appears when rows are selected -->
+  <div id="bulk-bar" class="bulk-bar" style="display:none">
+    <span id="bulk-count" class="bulk-count">0 ausgewählt</span>
+    <select id="bulk-status" class="status">
+      {% for option in status_options %}
+      <option value="{{ option }}">{{ option }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn btn-daily" onclick="applyBulkStatus()">Anwenden</button>
+    <button class="btn" style="background:var(--bg-card);color:var(--fg);border:1px solid var(--border)"
+            onclick="clearSelection()">Abbrechen</button>
+    <span id="bulk-saved" style="display:none;color:var(--metric-today-fg);font-weight:600">✓ Gespeichert</span>
+  </div>
+
+  <script>
+    const html = document.documentElement;
+    const btn  = document.getElementById('theme-btn');
+    function applyTheme(t) {
+      html.setAttribute('data-theme', t);
+      btn.textContent = t === 'dark' ? '☀️ Light' : '🌙 Dark';
+      localStorage.setItem('jobiris-theme', t);
+    }
+    function toggleTheme() {
+      applyTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+    }
+    (function(){
+      const s = localStorage.getItem('jobiris-theme');
+      if (s) applyTheme(s);
+      else if (window.matchMedia('(prefers-color-scheme: dark)').matches) applyTheme('dark');
+    })();
+
+    // ------------------------------------------------------------------ //
+    // AI rating – fire-and-poll, no page reload required
+    // ------------------------------------------------------------------ //
+    function scoreClass(s) {
+      if (s >= 7) return 'ai-score-high';
+      if (s >= 4) return 'ai-score-mid';
+      return 'ai-score-low';
+    }
+
+    function renderRating(cell, score, summary) {
+      const refnr = cell.dataset.refnr;
+
+      // Update the compact badge in the main row
+      cell.innerHTML = `
+        <span class="ai-badge ${scoreClass(score)}">✦ ${score}/10</span>
+        <br>
+        <button class="btn-rate" style="margin-top:0.3rem"
+                onclick="triggerRating('${refnr}', this)">↺ Re-rate</button>`;
+
+      // Update (or create) the ai-detail-block in the corresponding detail row
+      // Find the detail row: it follows the job row and contains a notes-input
+      // with the same refnr.
+      const notesInput = document.querySelector(`.notes-input[data-refnr="${refnr}"]`);
+      if (notesInput && summary) {
+        const detailInner = notesInput.closest('.detail-inner');
+        if (detailInner) {
+          // Remove existing ai-detail-block if any, then append updated one
+          detailInner.querySelector('.ai-detail-block')?.remove();
+          const block = document.createElement('div');
+          block.className = 'ai-detail-block';
+          block.innerHTML = `
+            <span class="notes-label">KI-Bewertung</span>
+            <span class="ai-badge ${scoreClass(score)}">✦ ${score}/10</span>
+            <p class="ai-summary-full">${summary}</p>`;
+          detailInner.appendChild(block);
+        }
+      }
+    }
+
+    function pollRating(refnr, cell, intervalId) {
+      fetch(`/rate/${refnr}/status`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.status === 'done') {
+            clearInterval(intervalId);
+            renderRating(cell, data.score, data.summary);
+          } else if (data.status === 'error') {
+            clearInterval(intervalId);
+            cell.innerHTML = `<span class="rating-pending" title="${data.summary || ''}">⚠ error</span>`;
+          }
+          // 'pending' → keep polling
+        })
+        .catch(() => clearInterval(intervalId));
+    }
+
+    function triggerRating(refnr, el) {
+      const cell = el.closest('td');
+      cell.innerHTML = '<span class="rating-pending">⏳ rating…</span>';
+
+      fetch(`/rate/${refnr}`, { method: 'POST' })
+        .then(r => {
+          if (!r.ok) throw new Error(r.status);
+          const id = setInterval(() => pollRating(refnr, cell, id), 2000);
+        })
+        .catch(err => {
+          cell.innerHTML = `<span class="rating-pending">⚠ ${err}</span>`;
+        });
+    }
+    // ------------------------------------------------------------------ //
+    // Filter chips, popover editors, date range calendar, views            //
+    // ------------------------------------------------------------------ //
+    (function () {
+      const FS      = JSON.parse(document.getElementById('filter-state').textContent);
+      const pop     = document.getElementById('flt-pop');
+      const toolbar = document.getElementById('toolbar');
+      const MONTHS  = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli',
+                       'August', 'September', 'Oktober', 'November', 'Dezember'];
+
+      const esc = (v) => String(v ?? '').replace(/[&<>"']/g,
+        (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      const pad     = (n) => String(n).padStart(2, '0');
+      const iso     = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      const parse   = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+      const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+      const fmt     = (s) => (s ? `${s.slice(8, 10)}.${s.slice(5, 7)}.` : '');
+
+      // Navigate to the current URL with changed params; legacy params are dropped
+      function apply(changes) {
+        const url = new URL(location.href);
+        ['all', 'status_filter'].forEach((k) => url.searchParams.delete(k));
+        for (const [k, v] of Object.entries(changes)) {
+          if (v === null || v === undefined || v === '') url.searchParams.delete(k);
+          else url.searchParams.set(k, v);
+        }
+        location.href = url.pathname + url.search;
+      }
+
+      const FIELDS = {
+        found:    { label: 'Gefunden',       type: 'date' },
+        pub:      { label: 'Veröffentlicht', type: 'date' },
+        title:    { label: 'Titel',          type: 'text', key: 'f_title' },
+        company:  { label: 'Arbeitgeber',    type: 'text', key: 'f_company',  list: 'dl-companies' },
+        location: { label: 'Ort',            type: 'text', key: 'f_location', list: 'dl-locations' },
+        dist:     { label: 'Entfernung',     type: 'dist' },
+        salary:   { label: 'Gehalt',         type: 'presence', key: 'f_salary' },
+        ho:       { label: 'Home-Office',    type: 'presence', key: 'f_ho' },
+        tag:      { label: 'Tag',            type: 'tag' },
+        status:   { label: 'Status',         type: 'status' },
+        ai:       { label: 'AI Rating',      type: 'ai' },
+      };
+
+      // ---- Popover positioning / closing ----
+      let anchorEl = null;
+      function openPop(anchor, html, wide) {
+        anchorEl = anchor;
+        pop.innerHTML = html;
+        pop.classList.toggle('wide', !!wide);
+        pop.hidden = false;
+        const tb = toolbar.getBoundingClientRect();
+        const a  = anchor.getBoundingClientRect();
+        const left = Math.max(0, Math.min(a.left - tb.left, tb.width - pop.offsetWidth));
+        pop.style.left = left + 'px';
+        pop.style.top  = (a.bottom - tb.top + 6) + 'px';
+        document.querySelectorAll('.chip.open').forEach((c) => c.classList.remove('open'));
+        anchor.closest('.chip')?.classList.add('open');
+      }
+      function closePop() {
+        pop.hidden = true;
+        pop.innerHTML = '';
+        anchorEl = null;
+        document.querySelectorAll('.chip.open').forEach((c) => c.classList.remove('open'));
+      }
+      // composedPath() still contains the popover even when a click re-rendered it
+      document.addEventListener('click', (e) => {
+        if (pop.hidden) return;
+        const path = e.composedPath();
+        if (path.includes(pop) || (anchorEl && path.includes(anchorEl))) return;
+        closePop();
+      });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !pop.hidden) closePop(); });
+
+      const footer = (left = '') =>
+        `<div class="pop-foot">${left}<span class="pop-foot-right">
+           <button type="button" class="pop-btn" data-act="cancel">Abbrechen</button>
+           <button type="button" class="pop-btn primary" data-act="apply">Übernehmen</button>
+         </span></div>`;
+      function bindFooter(go) {
+        pop.querySelector('[data-act="cancel"]').onclick = closePop;
+        pop.querySelector('[data-act="apply"]').onclick = go;
+      }
+
+      // ---- Field chooser ("+ Filter") ----
+      function fieldMenu(anchor) {
+        openPop(anchor, '<div class="pop-title">Filter hinzufügen</div>' +
+          Object.entries(FIELDS).map(([k, f]) =>
+            `<button type="button" class="pop-item" data-field="${k}">${f.label}</button>`).join(''));
+        pop.querySelectorAll('[data-field]').forEach((b) => {
+          b.onclick = () => editField(b.dataset.field, anchor);
+        });
+      }
+
+      function editField(k, anchor) {
+        const f = FIELDS[k];
+        if (f.type === 'date')     return editDate(k, anchor);
+        if (f.type === 'text')     return editText(f, anchor);
+        if (f.type === 'dist')     return editDist(anchor);
+        if (f.type === 'status')   return editStatus(anchor);
+        if (f.type === 'presence') return editChoice(anchor, f.label, f.key,
+          [['with', 'mit Angabe'], ['without', 'ohne Angabe'], ['', 'alle']]);
+        if (f.type === 'tag')      return editChoice(anchor, 'Tag', 'f_tag',
+          FS.tags.map((t) => [t, t]).concat([['', 'alle']]));
+        if (f.type === 'ai')       return editChoice(anchor, 'AI Rating', 'f_ai',
+          [['8', '≥ 8'], ['6', '≥ 6'], ['4', '≥ 4'], ['none', 'unbewertet'], ['', 'alle']]);
+      }
+
+      // ---- Text (title / company / location) ----
+      function editText(f, anchor) {
+        const cur = FS.params[f.key] || '';
+        openPop(anchor, `<div class="pop-title">${f.label}</div>
+          <input class="pop-input" type="search" value="${esc(cur)}" placeholder="Begriff…"
+                 ${f.list ? `list="${f.list}"` : ''}>
+          <div class="pop-hint">Komma = oder · -Begriff = ausschließen</div>` + footer());
+        const inp = pop.querySelector('.pop-input');
+        inp.focus(); inp.select();
+        const go = () => apply({ [f.key]: inp.value.trim() });
+        inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+        bindFooter(go);
+      }
+
+      // ---- Single choice (salary, home office, tag, AI) - applies on click ----
+      function editChoice(anchor, title, key, options) {
+        const cur = FS.params[key] || '';
+        openPop(anchor, `<div class="pop-title">${esc(title)}</div>` + options.map(([v, l]) =>
+          `<button type="button" class="pop-item ${cur === v ? 'on' : ''}" data-v="${esc(v)}">
+             <span class="radio"></span>${esc(l)}</button>`).join(''));
+        pop.querySelectorAll('[data-v]').forEach((b) => { b.onclick = () => apply({ [key]: b.dataset.v }); });
+      }
+
+      // ---- Distance: presets + free range ----
+      function editDist(anchor) {
+        const cur = FS.params.f_dist || '';
+        const pills = [['25', '≤ 25 km'], ['50', '≤ 50 km'], ['75', '≤ 75 km'], ['100', '≤ 100 km'], ['>100', '> 100 km'], ['', 'alle']];
+        openPop(anchor, `<div class="pop-title">Entfernung ab Wohnort</div>
+          <div class="pill-grid">${pills.map(([v, l]) =>
+            `<button type="button" class="pill ${cur === v ? 'on' : ''}" data-v="${esc(v)}">${l}</button>`).join('')}</div>
+          <div class="pop-sub">Eigener Bereich</div>
+          <input class="pop-input" value="${esc(cur)}" placeholder="z. B. 20-80, >100 oder 60">` + footer());
+        pop.querySelectorAll('.pill').forEach((b) => { b.onclick = () => apply({ f_dist: b.dataset.v }); });
+        const inp = pop.querySelector('.pop-input');
+        const go = () => apply({ f_dist: inp.value.trim() });
+        inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+        bindFooter(go);
+      }
+
+      // ---- Status: multi select ----
+      function editStatus(anchor) {
+        const active = FS.statuses.filter((s) => !FS.hidden.includes(s));
+        const cur = FS.params.f_status || '';
+        const sel = new Set(cur === '__all__' ? FS.statuses : cur ? cur.split(',') : active);
+        openPop(anchor, `<div class="pop-title">Status</div>
+          <div class="pop-row">
+            <button type="button" class="pop-link" data-preset="active">nur aktive</button>
+            <button type="button" class="pop-link" data-preset="all">alle</button>
+          </div>` +
+          FS.statuses.map((s) => `<label class="pop-check">
+            <input type="checkbox" value="${esc(s)}" ${sel.has(s) ? 'checked' : ''}> ${esc(s)}</label>`).join('') +
+          footer());
+        pop.querySelector('[data-preset="active"]').onclick = () => apply({ f_status: null });
+        pop.querySelector('[data-preset="all"]').onclick    = () => apply({ f_status: '__all__' });
+        bindFooter(() => {
+          const picked = [...pop.querySelectorAll('input:checked')].map((i) => i.value);
+          const isDefault = picked.length === active.length && active.every((s) => picked.includes(s));
+          const isAll = picked.length === FS.statuses.length || picked.length === 0;
+          apply({ f_status: isDefault ? null : isAll ? '__all__' : picked.join(',') });
+        });
+      }
+
+      // ---- Date range: presets + two-month calendar ----
+      function editDate(which, anchor) {
+        const keysOf = (f) => (f === 'found' ? ['f_found_from', 'f_found_to'] : ['f_pub_from', 'f_pub_to']);
+        const st = { orig: which, field: which, from: null, to: null, picking: 'start', view: null };
+
+        function load() {
+          const [a, b] = keysOf(st.field);
+          st.from = FS.params[a] || null;
+          st.to   = FS.params[b] || (st.from ? FS.today : null);
+          st.picking = 'start';
+          const ref = parse(st.to || FS.today);
+          st.view = new Date(ref.getFullYear(), ref.getMonth() - 1, 1);   // left month
+        }
+
+        function presets() {
+          const t = parse(FS.today);
+          return [
+            ['Heute',             FS.today,                                             FS.today],
+            ['Letzte 7 Tage',     iso(addDays(t, -6)),                                  FS.today],
+            ['Letzte 30 Tage',    iso(addDays(t, -29)),                                 FS.today],
+            ['Dieser Monat',      iso(new Date(t.getFullYear(), t.getMonth(), 1)),      FS.today],
+            ['Letzter Monat',     iso(new Date(t.getFullYear(), t.getMonth() - 1, 1)),
+                                  iso(new Date(t.getFullYear(), t.getMonth(), 0))],
+            ['Gesamter Zeitraum', null, null],
+          ];
+        }
+
+        function month(first) {
+          const y = first.getFullYear(), m = first.getMonth();
+          const days = new Date(y, m + 1, 0).getDate();
+          const offset = (new Date(y, m, 1).getDay() + 6) % 7;   // Monday first
+          let cells = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((d) => `<span class="wd">${d}</span>`).join('');
+          for (let i = 0; i < offset; i++) cells += '<span></span>';
+          for (let d = 1; d <= days; d++) {
+            const s = iso(new Date(y, m, d));
+            const cls = ['d'];
+            if (s === st.from || s === st.to) cls.push('edge');
+            else if (st.from && st.to && s > st.from && s < st.to) cls.push('in');
+            if (s === FS.today) cls.push('today');
+            cells += `<button type="button" class="${cls.join(' ')}" data-day="${s}"
+                        ${s > FS.today ? 'disabled' : ''}>${d}</button>`;
+          }
+          return `<div class="cal-month"><div class="cal-title">${MONTHS[m]} ${y}</div>
+                  <div class="cal-grid">${cells}</div></div>`;
+        }
+
+        function hint() {
+          if (st.picking === 'end') return 'Enddatum wählen';
+          if (!st.from) return 'Start- und Enddatum wählen';
+          const n = Math.round((parse(st.to || st.from) - parse(st.from)) / 86400000) + 1;
+          return `${fmt(st.from)} – ${fmt(st.to || st.from)} · ${n} ${n === 1 ? 'Tag' : 'Tage'}`;
+        }
+
+        function commit(from, to) {
+          const [a, b] = keysOf(st.field);
+          const changes = { [a]: from, [b]: to };
+          if (st.field !== st.orig) keysOf(st.orig).forEach((k) => { changes[k] = null; });
+          apply(changes);
+        }
+
+        function render() {
+          const ps = presets();
+          const right = new Date(st.view.getFullYear(), st.view.getMonth() + 1, 1);
+          openPop(anchor, `<div class="cal-wrap">
+            <div class="cal-side">
+              <div class="seg">
+                <button type="button" data-seg="found" class="${st.field === 'found' ? 'on' : ''}">Gefunden</button>
+                <button type="button" data-seg="pub" class="${st.field === 'pub' ? 'on' : ''}">Veröffentlicht</button>
+              </div>
+              ${ps.map(([l, a, b], i) => `<button type="button" class="pop-item ${a === st.from && b === st.to ? 'on' : ''}"
+                   data-preset="${i}">${l}</button>`).join('')}
+            </div>
+            <div class="cal-main">
+              <div class="cal-nav">
+                <button type="button" data-nav="-1" aria-label="Vorheriger Monat">‹</button>
+                <button type="button" data-nav="1" aria-label="Nächster Monat">›</button>
+              </div>
+              <div class="cal-months">${month(st.view)}${month(right)}</div>
+              ${footer(`<span class="pop-hint">${hint()}</span>`)}
+            </div>
+          </div>`, true);
+
+          pop.querySelectorAll('[data-seg]').forEach((b) => {
+            b.onclick = () => { st.field = b.dataset.seg; load(); render(); };
+          });
+          pop.querySelectorAll('[data-preset]').forEach((b) => {
+            b.onclick = () => { const [, a, c] = ps[+b.dataset.preset]; commit(a, c); };  // presets apply at once
+          });
+          pop.querySelectorAll('[data-nav]').forEach((b) => {
+            b.onclick = () => {
+              st.view = new Date(st.view.getFullYear(), st.view.getMonth() + (+b.dataset.nav), 1);
+              render();
+            };
+          });
+          pop.querySelectorAll('[data-day]').forEach((b) => {
+            b.onclick = () => {
+              const s = b.dataset.day;
+              if (st.picking === 'start') { st.from = s; st.to = null; st.picking = 'end'; }
+              else if (s < st.from)       { st.to = st.from; st.from = s; st.picking = 'start'; }
+              else                        { st.to = s; st.picking = 'start'; }
+              render();
+            };
+          });
+          bindFooter(() => commit(st.from, st.to || st.from));
+        }
+
+        load();
+        render();
+      }
+
+      // ---- Wiring ----
+      const addBtn = document.getElementById('add-filter');
+      addBtn.addEventListener('click', () => {
+        if (!pop.hidden && anchorEl === addBtn) closePop(); else fieldMenu(addBtn);
+      });
+      document.querySelectorAll('.chip-body').forEach((b) => {
+        b.addEventListener('click', () => {
+          if (!pop.hidden && anchorEl === b) closePop(); else editField(b.dataset.edit, b);
+        });
+      });
+      document.getElementById('search-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        apply({ f_q: e.target.elements.f_q.value.trim() });
+      });
+
+      // ---- Saved views ----
+      document.getElementById('view-save')?.addEventListener('click', async () => {
+        const name = prompt('Name der Ansicht:');
+        if (!name || !name.trim()) return;
+        const r = await fetch('/views', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name.trim(), query: location.search }),
+        });
+        if (r.ok) location.reload(); else alert('Speichern fehlgeschlagen – mindestens ein Filter muss aktiv sein.');
+      });
+      document.querySelectorAll('.view-del').forEach((b) => {
+        b.addEventListener('click', async () => {
+          if (!confirm('Ansicht löschen?')) return;
+          await fetch(`/views/${b.dataset.viewId}/delete`, { method: 'POST' });
+          location.href = location.pathname;
+        });
+      });
+    })();
+
+    // ------------------------------------------------------------------ //
+    // Bulk selection                                                        //
+    // ------------------------------------------------------------------ //
+    const bulkBar    = document.getElementById('bulk-bar');
+    const bulkCount  = document.getElementById('bulk-count');
+    const bulkSaved  = document.getElementById('bulk-saved');
+    const selectAll  = document.getElementById('select-all');
+
+    function updateBulkBar() {
+      const checked = document.querySelectorAll('.row-select:checked');
+      if (checked.length > 0) {
+        bulkBar.style.display = 'flex';
+        bulkCount.textContent = `${checked.length} ausgewählt`;
+      } else {
+        bulkBar.style.display = 'none';
+      }
+    }
+
+    function clearSelection() {
+      document.querySelectorAll('.row-select').forEach(cb => cb.checked = false);
+      if (selectAll) selectAll.checked = false;
+      updateBulkBar();
+    }
+
+    function applyBulkStatus() {
+      const checked  = [...document.querySelectorAll('.row-select:checked')];
+      const refnrs   = checked.map(cb => cb.value);
+      const status   = document.getElementById('bulk-status').value;
+      if (!refnrs.length) return;
+
+      fetch('/bulk-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refnrs, status }),
+      }).then(r => r.json()).then(data => {
+        if (data.ok) {
+          // Update dropdowns in the affected rows
+          checked.forEach(cb => {
+            const row = cb.closest('tr');
+            const sel = row?.querySelector('select.status');
+            if (sel) {
+              sel.value = status;
+              sel.className = `status status-${status.replace(/ /g, '-')}`;
+            }
+          });
+          bulkSaved.style.display = 'inline';
+          setTimeout(() => {
+            bulkSaved.style.display = 'none';
+            clearSelection();
+            // Reload to reflect hidden rows etc.
+            location.reload();
+          }, 1000);
+        }
+      });
+    }
+
+    document.addEventListener('change', e => {
+      if (e.target.id === 'select-all') {
+        document.querySelectorAll('.row-select').forEach(cb => cb.checked = e.target.checked);
+      }
+      if (e.target.classList.contains('row-select') || e.target.id === 'select-all') {
+        updateBulkBar();
+      }
+    });
+
+    // ------------------------------------------------------------------ //
+    // Expandable detail row toggle                                         //
+    // ------------------------------------------------------------------ //
+    function toggleDetail(btn) {
+      const targetId = btn.dataset.target;
+      const row = document.getElementById(targetId);
+      const open = row.style.display !== 'none';
+      row.style.display = open ? 'none' : 'table-row';
+      btn.textContent = open ? '▸ Notizen & Details' : '▾ Notizen & Details';
+      btn.classList.toggle('open', !open);
+    }
+
+    // ------------------------------------------------------------------ //
+    // Notes: save on button click or Ctrl+Enter in textarea               //
+    // ------------------------------------------------------------------ //
+    function saveNotes(refnr) {
+      const textarea = document.querySelector(`.notes-input[data-refnr="${refnr}"]`);
+      const savedEl  = textarea?.closest('.notes-block')?.querySelector('.notes-saved');
+      if (!textarea) return;
+      fetch(`/notes/${refnr}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: textarea.value }),
+      }).then(r => {
+        if (r.ok && savedEl) {
+          savedEl.style.display = 'inline';
+          setTimeout(() => { savedEl.style.display = 'none'; }, 2000);
+        }
+      });
+    }
+
+    document.addEventListener('click', e => {
+      if (e.target.classList.contains('notes-save')) {
+        saveNotes(e.target.dataset.refnr);
+      }
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.target.classList.contains('notes-input') && e.key === 'Enter' && e.ctrlKey) {
+        e.preventDefault();
+        saveNotes(e.target.dataset.refnr);
+      }
+    });
+  </script>
+</body>
+</html>

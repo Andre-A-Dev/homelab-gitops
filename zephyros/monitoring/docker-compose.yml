@@ -1,0 +1,84 @@
+services:
+
+# -- Nodeexporter --------------------------------------------------------------
+
+  node-exporter:
+    image: prom/node-exporter:v1
+    container_name: node-exporter
+    labels:
+      homelab.update-class: "B"
+    hostname: Zephyros
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+      - /var/lib/node_exporter/textfile_collector:/textfile_collector:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.rootfs=/rootfs"
+      - "--path.sysfs=/host/sys"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+      - "--collector.textfile.directory=/textfile_collector"
+    networks:
+      - monitoring
+
+  # -- Fritz!Box -------------------------------------------------------------------
+
+  fritz-exporter:
+    image: pdreker/fritz_exporter:latest
+    container_name: fritz-exporter
+    labels:
+      homelab.update-class: "B"
+    ports:
+      - "9787:9787"
+    environment:
+      # :? makes `docker compose up` fail loudly instead of starting the
+      # exporter with an empty hostname (crash loop on 2026-10-14).
+      - FRITZ_HOSTNAME=${FRITZ_HOSTNAME:?FRITZ_HOSTNAME missing in .env}
+      - FRITZ_USERNAME=${FRITZ_USERNAME:?FRITZ_USERNAME missing in .env}
+      - FRITZ_PASSWORD=${FRITZ_PASSWORD:?FRITZ_PASSWORD missing in .env}
+      - FRITZ_LISTEN_ADDRESS=${FRITZ_LISTEN_ADDRESS}
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  # DECT + system metrics via Lua/TR-064 (sberk42 fork)
+  # Used specifically to track gateway_dect_active for DECT dropout diagnosis.
+  # Scraped by Prometheus on Mnemosyne as job "fritzbox-lua".
+  fritz-exporter-lua:
+    image: ghcr.io/sberk42/fritzbox_exporter/fritzbox_exporter:latest
+    container_name: fritz-exporter-lua
+    labels:
+      homelab.update-class: "B"
+    restart: unless-stopped
+    ports:
+      - "9042:9042"
+    environment:
+      - USERNAME=${FRITZ_USERNAME:?FRITZ_USERNAME missing in .env}
+      - PASSWORD=${FRITZ_PASSWORD:?FRITZ_PASSWORD missing in .env}
+      - LISTEN_ADDRESS=0.0.0.0:9042
+      # fritz.box has both a local ULA and a public AAAA record pointing at
+      # avm.de; the container followed the public one and every request ran
+      # into a 10 s timeout until the exporter stopped answering entirely
+      # (2026-10-15 to 10-19, unnoticed). Fixed IPv4 avoids DNS altogether.
+      - GATEWAY_URL=http://192.168.1.x:49000
+      - GATEWAY_LUAURL=http://192.168.1.x
+    networks:
+      - monitoring
+    healthcheck:
+      # Must match LISTEN_ADDRESS. It probed 9787 (fritz-exporter's port), so
+      # the container was permanently "unhealthy" while scrapes succeeded.
+      test: ["CMD", "wget", "-qO-", "-T", "5", "http://localhost:9042/metrics"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 60s   # reads device capabilities first, ~20 s until ready
+
+
+
+networks:
+  monitoring:
+    driver: bridge

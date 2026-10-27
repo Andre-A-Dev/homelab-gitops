@@ -1,0 +1,17 @@
+services:
+  # Disabled 2026-09: the Fusionsolar devices are no longer in use.
+  fusionsolar-exporter:
+    profiles: ["inactive"]
+    build: .
+    container_name: fusionsolar-exporter
+    labels:
+      homelab.update-class: "C"
+      diun.enable: "false"   # local build, not in any registry
+    environment:
+      - SOLAR_USERNAME=${SOLAR_USERNAME}
+      - SOLAR_PASSWORD=${SOLAR_PASSWORD}
+      - SOLAR_BASE_URL=${SOLAR_BASE_URL}
+    ports:
+      - "9401:9401"
+    restart: unless-stopped
+

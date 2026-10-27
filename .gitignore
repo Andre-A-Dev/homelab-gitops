@@ -1,0 +1,73 @@
+# Secrets – never commit these
+**/.env
+caddy.env
+**/secrets/
+**/*.key
+**/*.pem
+**/app.ini
+shared/webhook/hooks.json
+
+# Mail credentials
+**/msmtprc
+
+# Nextcloud data
+**/html/data/
+
+# Runtime junk
+**/__pycache__/
+**/*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store
+node_modules/
+*.log
+
+# Editor swap / backup files
+*.swp
+*~
+*.bak
+*.orig
+
+# Generated reports — rebuilt by scripts/audit_repo.py and scripts/sync_public.py --report
+scripts/audit_report.html
+scripts/sync-report.html
+
+# JetBrains IDEs (PyCharm, IntelliJ, etc.)
+.idea/
+*.iml
+desktop.ini
+*.code-workspace
+.directory
+/.venv/
+
+# OpenRGB — never commit plugin binaries, only settings.
+# Lesson from 2026-08-14: manually downloaded .so files caused the crash.
+astraeus_nx/dotfiles/openrgb/**/*.so
+
+# OpenRGB writes ~70+ log files, pure noise, never useful to version
+astraeus_nx/dotfiles/openrgb/logs/
+
+astraeus_nx/dotfiles/coolercontrol/*.cache
+astraeus_nx/dotfiles/openrgb/plugins-settings/SchedulerSettings.json
+astraeus_nx/dotfiles/kde/kglobalshortcutsrc
+
+config.yaml
+*.db
+*.db-wal
+*.db-shm
+
+# --- Claude Code ---------------------------------------------------------
+# Private, machine-specific context (vault path, internal hosts)
+CLAUDE.local.md
+
+# Whitelist .claude/: ignore everything, re-include only shared files
+.claude/*
+!.claude/rules/
+!.claude/settings.json
+# settings.local.json stays ignored via .claude/*
+# Caddy runtime state — certificates, private keys, internal PKI, locks.
+# Never belongs in the repo; currently only unreadable because root owns it 0700.
+**/caddy/data/
+**/caddy/config/
+scripts/tree.txt

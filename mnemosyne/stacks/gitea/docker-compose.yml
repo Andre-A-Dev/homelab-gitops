@@ -1,0 +1,58 @@
+# -- Services -----------------------------------------------------------------------
+
+services:
+
+  # -- Gitea -------------------------------------------------------------------
+
+  gitea:
+    image: gitea/gitea:28
+    container_name: gitea
+    labels:
+      homelab.update-class: "A"
+      # Diun: new tags from the pinned one upward; move the lower bound with the tag.
+      diun.watch_repo: "true"
+      diun.include_tags: '^(2[89]|[3-9][0-9])$$'
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - GITEA__database__DB_TYPE=sqlite3
+      - GITEA__database__PATH=/data/gitea/gitea.db
+      - GITEA__server__DOMAIN=git.home
+      - GITEA__server__ROOT_URL=https://git.home
+      - GITEA__server__SSH_DOMAIN=192.168.1.10
+      - GITEA__server__SSH_LISTEN_PORT=2222
+      - GITEA__server__SSH_PORT=2222
+      - GITEA__server__START_SSH_SERVER=true
+      - GITEA__service__DISABLE_REGISTRATION=true
+      - GITEA__service__REQUIRE_SIGNIN_VIEW=true
+      # Egress allow list for webhooks and other outgoing requests ([webhook] key
+      # is deprecated since v28). lax: public targets always pass, private ones
+      # only if listed here - same behaviour as the old webhook-only setting.
+      - GITEA__security__ALLOWED_HOST_LIST=host.docker.internal,172.17.0.1,192.168.1.11,192.168.1.13,192.168.1.x,100.y.y.y
+      - GITEA__security__EGRESS_MODE=lax
+      - GITEA__metrics__ENABLED=true
+    volumes:
+      - /mnt/codex/gitea/data:/data
+    ports:
+      - "127.0.0.1:3000:3000"  # API access for webhook handler (localhost only)
+      - "0.0.0.0:2222:2222"    # Git SSH access from LAN clients
+    networks:
+      - caddy_proxy
+      - monitoring
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s  # Gitea loads SQLite DB and SSH server on startup
+
+# -- Networks ------------------------------------------------------------------------
+
+networks:
+  caddy_proxy:
+    external: true
+  monitoring:
+    external: true

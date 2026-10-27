@@ -1,0 +1,238 @@
+# -- Vault ----------------------------------------------------------------
+
+vault.home {
+  tls internal
+
+  reverse_proxy vaultwarden:80 {
+    header_up X-Real-IP {remote_host}
+  }
+}
+
+# -- Nextcloud ------------------------------------------------------------
+
+cloud.yourdomain.dedyn.io {
+  header Strict-Transport-Security "max-age=15552000; includeSubDomains"
+
+  # Handle well-known DAV redirects directly in Caddy (before Apache sees them)
+  handle /.well-known/carddav {
+    redir https://cloud.yourdomain.dedyn.io/remote.php/dav 301
+  }
+  handle /.well-known/caldav {
+    redir https://cloud.yourdomain.dedyn.io/remote.php/dav 301
+  }
+
+  # Forward push endpoint to notify_push service
+  handle /push/* {
+    reverse_proxy notify_push:7867
+  }
+
+  # All other requests go to Nextcloud
+  handle {
+    reverse_proxy nextcloud:80 {
+      header_up X-Real-IP {remote_host}
+      header_up X-Forwarded-Proto {scheme}
+      header_up Host {host}
+    }
+  }
+}
+
+# -- Git ------------------------------------------------------------------
+
+git.home {
+  tls internal
+  reverse_proxy gitea:3000
+}
+
+# -- Syncthing ------------------------------------------------------------
+
+syncthing.home {
+  tls internal
+  reverse_proxy https://192.168.1.10:8384 {
+    transport http {
+      tls_insecure_skip_verify
+    }
+  }
+}
+
+# -- Calibre --------------------------------------------------------------
+
+calibre.home {
+  tls internal
+  reverse_proxy calibre-web:8083
+}
+
+# -- kosync--- ------------------------------------------------------------
+
+kosync.home {
+  tls internal
+  reverse_proxy kosync:3000
+}
+
+# -- Grafana --------------------------------------------------------------
+
+
+grafana.home {
+  tls internal
+  reverse_proxy grafana:3000
+}
+
+# -- Prometheus ------------------------------------------------------------
+
+prometheus.home {
+  tls internal
+  reverse_proxy prometheus:9090
+}
+
+# -- Alertmanager ----------------------------------------------------------
+
+alertmanager.home {
+  tls internal
+  reverse_proxy alertmanager:9093
+}
+
+# -- Viessmann -------------------------------------------------------------
+
+
+# Disabled: viessmann-api on Hephaestus is switched off on purpose
+# (RUNBOOK: "Enable / disable Viessmann Control API"). Uncomment when enabled.
+# viessmann.home {
+#     tls internal
+#
+#     reverse_proxy http://192.168.1.13:8081 {
+#         header_up Authorization "Bearer {env.VIESSMANN_API_TOKEN}"
+#     }
+# }
+
+# -- Pi-hole ---------------------------------------------------------------
+# pihole.home is site-local: each network's DNS points it at its own Pi-hole.
+# Home network: Boreas. The suffixed names reach a specific instance from
+# either site (Zephyros proxies pihole-boreas.home here).
+
+pihole.home, pihole-boreas.home {
+    tls internal
+    redir / /admin/ 301
+    reverse_proxy http://192.168.1.11:80
+}
+
+# Plain HTTP over Tailscale; the tunnel is encrypted
+pihole-zephyros.home {
+    tls internal
+    redir / /admin/ 301
+    reverse_proxy http://100.y.y.y:8081
+}
+
+# -- FritzBox (Zephyros) ---------------------------------------------------
+# Both LANs use the same subnet, so the remote box is not routable from here.
+# Hand the request to Zephyros' Caddy, which proxies it to the box.
+
+fritz-zephyros.home {
+    tls internal
+    reverse_proxy https://100.y.y.y {
+        header_up Host fritz-zephyros.home
+        transport http {
+            tls_insecure_skip_verify
+            tls_server_name fritz-zephyros.home
+            versions 1.1
+        }
+    }
+}
+
+# -- Ghost -----------------------------------------------------------------
+
+blog.yourdomain.dedyn.io {
+  reverse_proxy ghost:2368
+}
+
+ghostproxy.home {
+  tls internal
+  reverse_proxy ghostproxy:5000
+}
+
+ghostwrite.home {
+  tls internal
+  reverse_proxy ghostwrite:5000
+}
+
+# -- Homepage --------------------------------------------------------------
+
+# Disabled: homepage stack runs under the "inactive" profile. Uncomment when enabled.
+# homepage.home {
+#   tls internal
+#   reverse_proxy homepage:3000
+# }
+
+# -- Immich ---------------------------------------------------------------
+
+immich.home {
+  tls internal
+  reverse_proxy immich-server:2283
+}
+
+# Tailscale access — HTTP only, no TLS (Tailscale encrypts the tunnel itself)
+http://100.x.x.x:2283 {
+  reverse_proxy immich-server:2283
+}
+
+# -- Jobiris --------------------------------------------------------------
+
+jobiris.home {
+  tls internal
+  reverse_proxy jobiris-board:8042 {
+    flush_interval -1
+    transport http {
+      versions 1.1
+    }
+  }
+}
+
+# -- Wakapi ---------------------------------------------------------------
+
+wakapi.home {
+    tls internal
+    reverse_proxy wakapi:3000
+}
+
+# -- Aether Weather ---------------------------------------------------------------
+
+weather.home {
+  tls internal
+  reverse_proxy aether:8050
+}
+
+# -- Alloy ------------------------------------------------------------------------
+
+alloy.home {
+    tls internal
+    reverse_proxy alloy:12345
+}
+
+# -- Carousel ---------------------------------------------------------------------
+
+carousel.home {
+    tls internal
+    reverse_proxy carousel:5000
+}
+
+# -- Rack display ---------------------------------------------------------------------
+
+rack.home {
+    tls internal
+    reverse_proxy 172.24.0.1:9120 {
+      lb_try_duration 8s
+    }
+}
+
+# -- Galatea ----------------------------------------------------------------------
+
+galatea.home {
+    tls internal
+
+    basic_auth {
+        {$GALATEA_BASIC_USER} {$GALATEA_BASIC_HASH}
+    }
+
+    reverse_proxy galatea:8000 {
+        header_up -Authorization
+        header_up X-Galatea-Token {env.GALATEA_API_TOKEN}
+    }
+}

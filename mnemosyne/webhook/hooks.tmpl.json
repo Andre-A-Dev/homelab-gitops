@@ -1,0 +1,34 @@
+[
+  {
+    "id": "mnemosyne-deploy",
+    "execute-command": "/home/andre/homelab-infra/mnemosyne/scripts/deploy-handler.sh",
+    "trigger-rule-mismatch-http-response-code": 403,
+    "command-working-directory": "/home/andre/homelab-infra",
+    "include-command-output-in-response": true,
+    "include-command-output-in-response-on-error": true,
+    "pass-arguments-to-command": [
+      { "source": "payload", "name": "sha" }
+    ],
+    "trigger-rule": {
+      "match": {
+        "type": "payload-hmac-sha256",
+        "secret": "{{ getenv "DEPLOY_HOOK_SECRET" | js }}",
+        "parameter": { "source": "header", "name": "X-Deploy-Signature" }
+      }
+    }
+  },
+  {
+    "id": "pump-alerts-deploy",
+    "execute-command": "/home/andre/homelab-infra/mnemosyne/scripts/pump-alerts-deploy.sh",
+    "trigger-rule-mismatch-http-response-code": 403,
+    "command-working-directory": "/home/andre",
+    "response-message": "pump-alerts deploy triggered",
+    "trigger-rule": {
+      "match": {
+        "type": "payload-hmac-sha256",
+        "secret": "{{ getenv "PUMP_ALERTS_HOOK_SECRET" | js }}",
+        "parameter": { "source": "header", "name": "X-Gitea-Signature" }
+      }
+    }
+  }
+]

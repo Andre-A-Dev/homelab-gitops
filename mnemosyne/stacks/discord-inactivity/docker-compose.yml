@@ -1,0 +1,23 @@
+services:
+  discord-inactivity:
+    profiles: ["inactive"]
+    build: .
+    container_name: discord-inactivity
+    labels:
+      homelab.update-class: "C"
+      diun.enable: "false"   # local build, not in any registry
+    restart: unless-stopped
+    env_file:
+      # Optional while the stack is inactive (no .env yet). Set back to
+      # required - or drop `required: false` - when activating.
+      - path: .env
+        required: false
+    volumes:
+      - /mnt/codex/discord-inactivity:/data
+      - ./config.yaml:/app/config.yaml:ro
+    networks:
+      - monitoring
+
+networks:
+  monitoring:
+    external: true

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Galatea</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.svg') }}">
+  <meta name="theme-color" content="#1f6f78" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#152023" media="(prefers-color-scheme: dark)">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="top">
+    <h1>Pygmalion</h1>
+    <p class="freshness" id="freshness">Connecting…</p>
+  </header>
+
+  <main>
+    <section class="machine" aria-labelledby="machine-h">
+      <h2 id="machine-h" class="visually-hidden">Printer</h2>
+      <p class="state" id="state">—</p>
+      <dl class="readings">
+        <div><dt>Nozzle</dt><dd><span id="nozzle">—</span><small id="nozzle-target"></small></dd></div>
+        <div><dt>Bed</dt><dd><span id="bed">—</span><small id="bed-target"></small></dd></div>
+      </dl>
+      <div class="job" id="job" hidden>
+        <div class="bar" role="progressbar" aria-labelledby="job-label" aria-valuemin="0" aria-valuemax="100" id="job-bar">
+          <span id="job-fill"></span>
+        </div>
+        <p id="job-label"></p>
+      </div>
+      <div class="actions">
+        <button type="button" id="btn-pause" disabled>Pause print</button>
+        <button type="button" id="btn-resume" disabled>Resume print</button>
+        <button type="button" id="btn-stop" class="danger" disabled>Stop print</button>
+      </div>
+    </section>
+
+    <section class="power" id="power" aria-labelledby="power-h">
+      <h2 id="power-h">Power</h2>
+      <p class="power-state" id="power-state">—</p>
+      <p class="power-draw" id="power-draw"></p>
+      <p class="interlock" id="interlock" hidden></p>
+      <div class="actions">
+        <button type="button" id="btn-power" disabled>—</button>
+        <button type="button" id="btn-force" class="danger" hidden>Turn off anyway</button>
+      </div>
+    </section>
+
+    <section class="enclosure" aria-labelledby="enclosure-h">
+      <h2 id="enclosure-h">Enclosure</h2>
+      <dl class="readings">
+        <div><dt>Air</dt><dd id="air">—</dd></div>
+        <div><dt>Humidity</dt><dd id="humidity">—</dd></div>
+      </dl>
+      <p class="note" id="climate-note"></p>
+    </section>
+
+    <section class="filament" aria-labelledby="filament-h">
+      <h2 id="filament-h">Filament</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th scope="col">Spool</th><th scope="col">Left</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr>
+          </thead>
+          <tbody id="spools"></tbody>
+        </table>
+      </div>
+      <p class="note" id="spools-empty" hidden>No spools yet. Add the one that is loaded right now.</p>
+
+      <details id="add-spool">
+        <summary>Add spool</summary>
+        <form id="spool-form" novalidate>
+          <label>Material <input name="material" required placeholder="PETG"></label>
+          <label>Color <input name="color" required placeholder="Galaxy black"></label>
+          <label>Manufacturer <input name="manufacturer" placeholder="Prusament"></label>
+          <label>Filament weight (g) <input name="total_weight_g" type="number" min="0" step="1" required value="1000"></label>
+          <label>Price (€) <input name="cost_eur" type="number" min="0" step="0.01"></label>
+          <button type="submit">Add spool</button>
+        </form>
+      </details>
+    </section>
+
+    <section class="activity" aria-labelledby="activity-h">
+      <h2 id="activity-h">Activity</h2>
+      <ol id="actions" class="log"></ol>
+    </section>
+  </main>
+
+  <p class="toast" id="toast" role="status" aria-live="polite" hidden></p>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

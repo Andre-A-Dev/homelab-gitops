@@ -1,0 +1,174 @@
+global:
+  resolve_timeout: 5m
+
+# -- Mute time intervals -------------------------------------------------------
+# Backup runs daily at 02:00 CEST and takes ~16 min normally, ~42 min with
+# --force. Nextcloud is in maintenance mode during the DB dump and file archive
+# → ServiceDown alert suppressed for that window.
+time_intervals:
+  - name: backup-window
+    time_intervals:
+      # Daily backup starts at 02:00 CEST. Nextcloud is in maintenance mode
+      # during the DB dump and file archive; a --force run took 42 minutes on
+      # 2026-08-19, so 02:00-03:30 covers the normal case with headroom.
+      # Explicit location avoids the UTC/CEST offset — without it these times
+      # are read as UTC and the window lands two hours late in summer, one in
+      # winter.
+      - times:
+          - start_time: '02:00'
+            end_time: '03:30'
+        location: 'Europe/Berlin'
+
+route:
+  receiver: mnemosyne-warning
+  group_by: ['alertname']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+  routes:
+
+    # -- Dead man's switch -------------------------------------------------------
+    # Must stay the FIRST route: Watchdog must never fall through to ntfy.
+    - matchers:
+        - alertname = "Watchdog"
+      receiver: deadmans-switch
+      group_wait: 0s
+      group_interval: 1m
+      repeat_interval: 1m
+
+    # -- Host / exporter down: notify once ---------------------------------------
+    # One notification on failure, one on recovery (send_resolved). A remote
+    # host (zephyros) often cannot be fixed right away - repeating every hour
+    # adds noise, not information. Healthchecks heartbeats track host outages
+    # externally in parallel.
+    # Effective repeat is ~5 days, not 7: the notification log only keeps
+    # --data.retention (default 120h); after that one reminder is sent.
+    - matchers:
+        - alertname =~ "NodeDown|ExporterDown"
+      receiver: mnemosyne-warning
+      repeat_interval: 7d
+      group_by: ['alertname', 'job', 'instance']
+      routes:
+        # Inherits repeat_interval from the parent route.
+        - matchers:
+            - severity = "critical"
+          receiver: mnemosyne-critical
+
+    # -- Maintenance reminders: once a day -------------------------------------
+    # SystemUpdateOverdue and RebootPending stay active until the next update
+    # window, often for days. The default 4h repeat turns a reminder into noise.
+    - matchers:
+        - alertname =~ "SystemUpdate.*|RebootPending"
+      receiver: mnemosyne-warning
+      repeat_interval: 24h
+      group_by: ['alertname', 'instance']
+
+    # -- Nextcloud backup window ------------------------------------------------
+    # Mute ServiceDown for Nextcloud during the nightly backup window.
+    - matchers:
+        - alertname = "ServiceDown"
+        - instance = "https://cloud.yourdomain.dedyn.io"
+      receiver: mnemosyne-critical
+      mute_time_intervals:
+        - backup-window
+
+    # -- Pump alerts (device=pump label) ----------------------------------------
+    - matchers:
+        - device = "pump"
+      receiver: pump-warning
+      repeat_interval: 4h
+      routes:
+        - matchers:
+            - severity = "critical"
+          receiver: pump-critical
+          repeat_interval: 1h
+
+    # -- Update window reminder: one push, no resolved -------------------------
+    # UpdateWindowToday fires for one hour on the first Sunday. A resolved
+    # message an hour later would only repeat the reminder.
+    - matchers:
+        - alertname = "UpdateWindowToday"
+      receiver: mnemosyne-reminder
+      repeat_interval: 24h
+
+    # -- Household appliances (notify=appliance label) --------------------------
+    # One push per finished cycle to a topic the whole household subscribes to.
+    # The *Finished rules fire for ~20 min and then resolve by themselves, so
+    # neither a resolved message nor a repeat is wanted.
+    - matchers:
+        - notify = "appliance"
+      receiver: appliance
+      group_by: ['alertname', 'device']
+
+    # -- Server critical ---------------------------------------------------------
+    - matchers:
+        - severity = "critical"
+      receiver: mnemosyne-critical
+      repeat_interval: 1h
+
+    # -- Everything else → mnemosyne-warning (default above) -------------------
+
+
+receivers:
+
+  # Dead man's switch - Watchdog heartbeat to Healthchecks.io
+  - name: deadmans-switch
+    webhook_configs:
+      - url: 'https://hc-ping.com/HC_MNEMOSYNE_UUID'
+        send_resolved: false
+
+  - name: pump-critical
+    webhook_configs:
+      - url: 'https://ntfy.sh/NTFY_PUMP_CRITICAL_TOPIC?template=alertmanager'
+        send_resolved: true
+
+  - name: pump-warning
+    webhook_configs:
+      - url: 'https://ntfy.sh/NTFY_PUMP_WARNING_TOPIC?template=alertmanager'
+        send_resolved: true
+
+  # ntfy inline template instead of ?template=alertmanager: the household gets
+  # summary as title and description as body, not the label dump.
+  # t = {{range .alerts}}{{.annotations.summary}}{{end}}
+  # m = {{range .alerts}}{{.annotations.description}}{{end}}
+  - name: appliance
+    webhook_configs:
+      - url: 'https://ntfy.sh/NTFY_APPLIANCE_TOPIC?tpl=1&t=%7B%7Brange%20.alerts%7D%7D%7B%7B.annotations.summary%7D%7D%7B%7Bend%7D%7D&m=%7B%7Brange%20.alerts%7D%7D%7B%7B.annotations.description%7D%7D%7B%7Bend%7D%7D'
+        send_resolved: false
+
+  # Same topic as mnemosyne-warning, without the resolved message.
+  - name: mnemosyne-reminder
+    webhook_configs:
+      - url: 'https://ntfy.sh/NTFY_MNEMOSYNE_WARNING_TOPIC?template=alertmanager'
+        send_resolved: false
+
+  - name: mnemosyne-critical
+    webhook_configs:
+      - url: 'https://ntfy.sh/NTFY_MNEMOSYNE_CRITICAL_TOPIC?template=alertmanager'
+        send_resolved: true
+
+  - name: mnemosyne-warning
+    webhook_configs:
+      - url: 'https://ntfy.sh/NTFY_MNEMOSYNE_WARNING_TOPIC?template=alertmanager'
+        send_resolved: true
+
+# -- Inhibition rules ----------------------------------------------------------
+inhibit_rules:
+
+  # Suppress warning if critical is already firing for the same alert group
+  - source_matchers:
+      - severity = "critical"
+    target_matchers:
+      - severity = "warning"
+    equal: ['alertname']
+
+  # A dead host takes all its exporters down at once - report the host
+  # (NodeDown), not each exporter. Replaces the former PiholeDown rule: the
+  # pihole job is covered by ExporterDown. ServiceDown is deliberately not
+  # included - its instance label is a URL and never matches a hostname.
+  - source_matchers:
+      - alertname = "NodeDown"
+    target_matchers:
+      - alertname =~ "ExporterDown|SmartctlExporterDown"
+    equal: ['instance']

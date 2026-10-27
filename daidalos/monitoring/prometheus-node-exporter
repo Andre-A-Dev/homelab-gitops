@@ -1,0 +1,12 @@
+# Set the command-line arguments to pass to the server.
+# Due to shell escaping, to pass backslashes for regexes, you need to double
+# them (\\d for \d). If running under systemd, you need to double them again
+# (\\\\d to mean \d), and escape newlines too.
+
+# /etc/default/prometheus-node-exporter
+# hwmon + cpu temps are on by default; add what's actually useful on x86
+# k3s creates per-pod mounts and veth pairs; without these filters the
+# series count grows with every pod and the network panels fill with noise.
+ARGS="--collector.cpu.info --collector.systemd \
+--collector.filesystem.mount-points-exclude='^/(dev|proc|sys|run/k3s|var/lib/kubelet|var/lib/rancher)($|/)' \
+--collector.netdev.device-exclude='^(veth.*|cni[0-9]|flannel\..*)$'"

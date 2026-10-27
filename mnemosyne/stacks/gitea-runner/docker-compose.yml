@@ -1,0 +1,31 @@
+services:
+  act-runner:
+    image: gitea/act_runner:0.6
+    container_name: gitea-act-runner
+    labels:
+      homelab.update-class: "B"
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      GITEA_INSTANCE_URL: "https://git.home"
+      GITEA_RUNNER_NAME: "mnemosyne"
+      GITEA_RUNNER_LABELS: "mnemosyne,docker,arm64"
+      DOCKER_HOST: "unix:///var/run/docker.sock"
+      # Trust Caddy's internal CA so the runner can reach git.home
+      SSL_CERT_FILE: "/usr/local/share/ca-certificates/caddy-root.crt"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/codex/gitea/runner:/data
+      # Caddy root CA — needed to verify TLS on git.home
+      - /mnt/codex/gitea/runner/ca.crt:/usr/local/share/ca-certificates/caddy-root.crt:ro
+    networks:
+      - caddy_proxy
+    # Jobs run in host mode (labels *:host), i.e. inside THIS container.
+    # The deploy job calls the webhook listener on the Docker host.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  caddy_proxy:
+    external: true

@@ -1,0 +1,26 @@
+---
+services:
+
+  caddy:
+    image: caddy:2
+    container_name: caddy
+    labels:
+      homelab.update-class: "B"
+    restart: unless-stopped
+    ports:
+      - "80:80"         # HTTP -> HTTPS redirect (Pi-hole moved to 8081)
+      - "443:443"       # HTTPS
+      - "443:443/udp"   # HTTP/3 (QUIC)
+    extra_hosts:
+      # Stable name for the host (Pi-hole web UI) instead of a bridge gateway IP
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./data:/data
+      - ./config:/config
+    networks:
+      - caddy
+
+networks:
+  caddy:
+    driver: bridge

@@ -1,0 +1,89 @@
+# config.yaml - Discord Inactivity Bot
+# Secrets (bot token) live in .env / .env.sops, never here.
+# Copy to config.yaml and fill in the IDs.
+
+guild:
+  id: 000000000000000000
+  member_limit: 35
+  admin_channel_id: 000000000000000000     # actionable: stage 3 embeds with buttons
+  audit_channel_id: 000000000000000000     # append-only record of bot actions
+
+# Thresholds in days since last activity.
+# Gateway downtime windows are subtracted before evaluation.
+thresholds:
+  grace_days: 14        # after joining AND after rejoining
+  stage_1_days: 30      # dashboard only, silent
+  stage_2_days: 60      # heartbeat DM to the user
+  stage_3_days: 90      # admin notification with action buttons
+
+# Per-action switches instead of one global dry_run flag.
+# Stage transitions are always written; only the outbound action is suppressed.
+# Phase 0 runs with all three set to false.
+modes:
+  notify_admins: false
+  send_user_dms: false
+  allow_kick: false
+  max_dms_per_run: 3            # ramp guard, prevents a burst when going live
+  max_admin_reports_per_run: 5
+
+exemptions:
+  roles: ["Admin", "Mod", "Booster", "Pause"]
+  ignore_bots: true
+
+rejoin:
+  reset_clock: true         # discard last_* timestamps, treat rejoin as activity
+  restart_grace: true
+  purge_after_days: 180     # delete leftover rows of users who never came back
+
+snooze:
+  duration_days: 30
+  max_count: 3              # after this the embed only offers Kick or Exempt
+
+voice:
+  session_max_hours: 8      # cap runaway sessions with no leave event
+
+backfill:
+  enabled: true
+  lookback_days: 120        # must exceed stage_3_days, otherwise day-1 false positives
+
+scoring:
+  half_life_days: 30
+  weights:
+    message: 1.0
+    voice_minute: 0.1       # passive listening counts, but only lightly
+    reaction: 0.2
+    rejoin: 3.0             # coming back voluntarily is a strong signal
+    heartbeat: 5.0          # explicit confirmation outweighs passive noise
+
+schedule:
+  scan_at: "09:00"          # daily, local time
+  timezone: "Europe/Berlin" # all timestamps are stored in UTC
+  liveness_interval_seconds: 60
+
+# All user-facing texts live here, not in the code.
+# Placeholders: {user} {days} {limit} {reason}
+# Validated on startup: unknown placeholders or oversized texts abort the start.
+messages:
+  heartbeat_dm: |
+    Hey {user}, kurze Frage aus dem Server: Wir halten die Runde bewusst auf
+    {limit} Leute begrenzt und schauen ab und zu, wer noch dabei ist.
+    Du warst seit {days} Tagen nicht aktiv - wenn du bleiben willst, reicht
+    ein Klick auf den Button. Kein Aufwand, keine Erklaerung noetig.
+
+  kick_dm: |
+    Hey {user}, unser Server ist bewusst auf {limit} Plaetze begrenzt und du
+    warst laenger als {days} Tage inaktiv - deshalb machen wir den Platz frei.
+    Das ist kein Bann und nichts Persoenliches. Wenn du zurueckkommen willst,
+    schreib einfach einem der Admins, dann bekommst du einen neuen Invite.
+    Grund: {reason}
+
+audit:
+  enabled: true
+  purge_messages_after_days: 180   # keep in sync with rejoin.purge_after_days
+
+logging:
+  level: "INFO"
+  to_discord: false         # technical logs go to stdout -> Loki, never to Discord
+
+metrics:
+  bind: "0.0.0.0:9125"

@@ -1,0 +1,56 @@
+# =============================================================================
+# restic-offsite.service  →  /etc/systemd/system/restic-offsite.service
+# =============================================================================
+# Daily offsite backup. Triggered two ways:
+#   1. by backup-services.sh on successful completion (freshness guarantee), via
+#      `systemctl start --no-block restic-offsite.service`
+#   2. by restic-offsite.timer as a daily fallback, in case a backup run was
+#      skipped or the trigger was missed
+# The script's own flock makes a double-fire harmless (second invocation exits).
+# =============================================================================
+
+[Unit]
+Description=restic offsite backup to Hetzner Storage Box
+Documentation=file:///home/andre/homelab-infra/mnemosyne/scripts/restic-offsite.sh
+# Don't even attempt if the local backup mount is missing — nothing to back up.
+RequiresMountsFor=/mnt/backup
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/restic/restic-offsite.env
+ExecStart=/usr/local/bin/restic-offsite.sh
+# Exit 75 = skipped because another restic process holds the repo lock
+# (see restic-offsite.sh). A skip is not a failure: SERVICE_RESULT becomes
+# success, so neither unit metrics nor Healthchecks report it as one.
+SuccessExitStatus=75
+
+# Unit-level outcome, recorded by systemd rather than by the script.
+# ExecStopPost= runs even when ExecStart= never spawned, which is exactly the
+# blind spot that hid a 203/EXEC failure on 2026-08-20: the script could not
+# start, so it could not report that it had not started, and restic_offsite.prom
+# kept serving exit_code 0 from six weeks earlier. Writes its own .prom so the
+# two writers never race.
+ExecStopPost=/usr/local/bin/restic-unit-metrics.sh restic_offsite
+
+# Fault isolation: a failed offsite run must be visible but must not cascade.
+# No auto-restart — a transient network failure is caught by the next daily
+# run, and Restart= on a oneshot backup risks hammering a struggling uplink.
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=6
+
+# Hardening — this service only needs to read /mnt/backup and reach the network.
+ProtectSystem=strict
+ReadWritePaths=/var/lib/node_exporter/textfile_collector /var/run /var/cache/restic
+ReadOnlyPaths=/mnt/backup
+ProtectHome=read-only
+NoNewPrivileges=true
+# restic stages temp pack files in /tmp during backup — ProtectSystem=strict
+# blocks the real /tmp, so give the service its own isolated, writable one
+# rather than opening the shared system /tmp.
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,44 @@
+services:
+  calibre-web:
+    # Pinned to the app version (no floating minor tag upstream); linuxserver
+    # rebuilds of 0.6.27 with base image fixes still arrive on pull.
+    image: lscr.io/linuxserver/calibre-web:0.6.27
+    container_name: calibre-web
+    labels:
+      homelab.update-class: "A"
+      # Diun: new tags from the pinned one upward; move the lower bound with the tag.
+      diun.watch_repo: "true"
+      diun.include_tags: '^[0-4]\.[0-9]+\.[0-9]+$$'
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Berlin
+    volumes:
+      - /mnt/codex/calibre-library:/books
+      - /mnt/codex/calibre-web-config:/config
+#    ports:
+#      - 8083:8083
+    restart: unless-stopped
+    networks:
+      - caddy_proxy
+
+  kosync:
+    image: ghcr.io/nperez0111/koreader-sync:0.2
+    container_name: kosync
+    labels:
+      homelab.update-class: "A"
+      # Diun: new tags from the pinned one upward; move the lower bound with the tag.
+      diun.watch_repo: "true"
+      diun.include_tags: '^[0-9]+\.[0-9]+$$'
+    volumes:
+      - /mnt/codex/kosync/data:/app/data
+#    ports:
+#      - 3000:3000
+    restart: unless-stopped
+    networks:
+      - caddy_proxy
+
+networks:
+  caddy_proxy:
+    external: true
+

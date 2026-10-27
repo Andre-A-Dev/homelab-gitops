@@ -1,0 +1,23 @@
+groups:
+  - name: appliance
+    rules:
+
+      # Washing machine finished — fires once per cycle, routed to the
+      # household ntfy topic (notify=appliance, send_resolved: false).
+      #
+      # Power profile measured on three cycles (2026-10-24..26): during a
+      # cycle the draw never drops below ~3.6 W (pauses sit at ~4 W), and
+      # ~1 min after the end the machine switches itself off to 0.0 W. So
+      # "finished" = "0 W for 2 min after heavy load in the last 30 min".
+      # The 100 W condition keeps program selection without a wash silent.
+      # The alert resolves by itself ~25 min later, when the last load
+      # sample leaves the 30m window.
+      - alert: WashingMachineFinished
+        expr: |
+          max_over_time(shelly_power_watts{device="Waschmaschine"}[2m]) < 1
+          and max_over_time(shelly_power_watts{device="Waschmaschine"}[30m]) > 100
+        labels:
+          notify: appliance
+        annotations:
+          summary: "Washing machine finished"
+          description: "The cycle is complete, the machine has switched itself off."

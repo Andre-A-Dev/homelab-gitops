@@ -1,0 +1,40 @@
+services:
+  jobiris-board:
+    build: .
+    image: jobiris-app:latest
+    container_name: jobiris-board
+    labels:
+      homelab.update-class: "C"
+      diun.enable: "false"   # local build, not in any registry
+    restart: unless-stopped
+    command: python3 board.py
+    env_file:
+      - .env
+    environment:
+      JOBIRIS_COMPOSE_DIR: /app
+    volumes:
+      - /home/andre/homelab-infra/mnemosyne/stacks/jobiris:/app
+      - /mnt/vault/jobiris:/mnt/vault/jobiris
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker:ro
+      - /usr/libexec/docker/cli-plugins:/usr/libexec/docker/cli-plugins:ro
+    networks:
+      - caddy_proxy
+
+  jobiris-monitor:
+    build: .
+    image: jobiris-app:latest
+    container_name: jobiris-monitor
+    labels:
+      homelab.update-class: "C"
+      diun.enable: "false"   # local build, not in any registry
+    profiles: ["cli"]
+    env_file:
+      - .env
+    volumes:
+      - /home/andre/homelab-infra/mnemosyne/stacks/jobiris:/app
+      - /mnt/vault/jobiris:/mnt/vault/jobiris
+
+networks:
+  caddy_proxy:
+    external: true
