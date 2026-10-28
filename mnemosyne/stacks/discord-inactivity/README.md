@@ -1,70 +1,70 @@
 # discord-inactivity
 
-Meldet Admins, wenn ein Mitglied im 35-Plätze-Limit inaktiv geworden ist.
-Speichert ausschliesslich User-IDs, Zeitstempel und Zähler — nie Nachrichteninhalte.
+Notifies admins when a member within the 35-seat limit has become inactive.
+Stores only user IDs, timestamps and counters — never message content.
 
-Konzept und Begründung der Design-Entscheidungen: `General_Discord_Inactivity_Bot.md`.
+Concept and rationale for the design decisions: `General_Discord_Inactivity_Bot.md`.
 
-## Stand
+## Status
 
-Phase 0 lauffähig. Alle späteren Stufen sind implementiert, aber über `modes:`
-abgeschaltet. In der Auslieferungskonfiguration sammelt der Bot nur Daten und
-schickt niemandem etwas.
+In development; the stack runs under the `inactive` profile. Phase 0 is operational. All later stages are implemented but switched off via
+`modes:`. In the shipped configuration the bot only collects data and sends
+nothing to anyone.
 
 ## Discord Developer Portal
 
-Intents aktivieren: **Server Members Intent**. `Message Content` und `Presence`
-werden bewusst **nicht** benötigt.
+Enable intents: **Server Members Intent**. `Message Content` and `Presence` are
+deliberately **not** required.
 
-Bot-Permissions: `View Channels`, `Read Message History`, `Send Messages`,
+Bot permissions: `View Channels`, `Read Message History`, `Send Messages`,
 `Embed Links`, `Kick Members`.
 
-> Die Bot-Rolle muss in der Hierarchie **über** allen Mitgliedern stehen, die
-> sie kicken können soll. Sonst schlägt der Kick erst zur Laufzeit fehl.
-> Einmal mit einem Testaccount verifizieren.
+> The bot role must sit **above** every member it is supposed to be able to
+> kick in the role hierarchy. Otherwise the kick only fails at runtime.
+> Verify once with a test account.
 
 ## Setup
 
 ```bash
-cp config.example.yaml config.yaml     # IDs eintragen
-cp .env.example .env                   # Token eintragen
+cp config.example.yaml config.yaml     # fill in IDs
+cp .env.example .env                   # fill in token
 chmod 600 .env
 docker compose up -d --build
 docker compose logs -f
 ```
 
-Beim ersten Start läuft der Backfill über 120 Tage Channel-History. Danach steht
-`backfill_done` in der `meta`-Tabelle; ein Neustart wiederholt ihn nicht.
+On first start, the backfill runs over 120 days of channel history. Afterwards
+`backfill_done` is set in the `meta` table; a restart does not repeat it.
 
-## Betriebsstufen
+## Operating stages
 
-Die drei Schalter unter `modes:` werden nacheinander umgelegt, nicht gemeinsam:
+The three switches under `modes:` are flipped one after another, not together:
 
-| Schritt | `notify_admins` | `send_user_dms` | `allow_kick` | Dauer |
+| Step | `notify_admins` | `send_user_dms` | `allow_kick` | Duration |
 |---|---|---|---|---|
-| 1 — reines Sammeln | false | false | false | 60 Tage |
-| 2 — Admin-Gegenprüfung | true | false | false | 2–4 Wochen |
-| 3 — User-Heartbeat live | true | true | false | 2–4 Wochen |
-| 4 — Vollbetrieb | true | true | true | dauerhaft |
+| 1 — collection only | false | false | false | 60 days |
+| 2 — admin cross-check | true | false | false | 2–4 weeks |
+| 3 — user heartbeat live | true | true | false | 2–4 weeks |
+| 4 — full operation | true | true | true | permanent |
 
-Stage-Übergänge werden auch im Dry Run geschrieben, `notified_stage` dagegen nur
-nach einer tatsächlich versendeten Nachricht. Beim Scharfschalten arbeitet der
-Scan den Rückstau über `max_dms_per_run` ab, statt an einem Tag alles zu senden.
+Stage transitions are written in dry run too, whereas `notified_stage` is only
+written after a message was actually sent. When going live, the scan works off
+the backlog via `max_dms_per_run` instead of sending everything on one day.
 
 ## Commands
 
-| Command | Wer | Wirkung |
+| Command | Who | Effect |
 |---|---|---|
-| `/inactivity report` | Admin | Liste aufsteigend nach Activity Score |
-| `/inactivity check @user` | Admin | Einzelstatus inkl. Zählern |
-| `/inactivity kick @user [grund]` | Admin | DM an den User, dann Kick |
-| `/inactivity snooze @user` | Admin | vertagt um `snooze.duration_days` |
-| `/inactivity exempt @user` | Admin | dauerhafte Ausnahme |
-| `/inactivity me` | alle | eigene gespeicherte Werte (DSGVO-Auskunft) |
+| `/inactivity report` | Admin | List sorted ascending by activity score |
+| `/inactivity check @user` | Admin | Individual status including counters |
+| `/inactivity kick @user [reason]` | Admin | DM to the user, then kick |
+| `/inactivity snooze @user` | Admin | Postpones by `snooze.duration_days` |
+| `/inactivity exempt @user` | Admin | Permanent exemption |
+| `/inactivity me` | Everyone | Own stored values (GDPR access request) |
 
 ## Monitoring
 
-`/metrics` auf Port 9125, erreichbar im `monitoring`-Netzwerk.
+`/metrics` on port 9125, reachable in the `monitoring` network.
 
 ```yaml
 # prometheus.yml
@@ -73,21 +73,21 @@ Scan den Rückstau über `max_dms_per_run` ab, statt an einem Tag alles zu sende
     - targets: ["discord-inactivity:9125"]
 ```
 
-Relevante Alerts:
+Relevant alerts:
 
-| Alert | Bedingung |
+| Alert | Condition |
 |---|---|
 | `DiscordBotDown` | `discord_gateway_connected == 0 for 15m` |
 | `DiscordScanStale` | `time() - discord_last_scan_timestamp_seconds > 172800` |
 | `DiscordPendingDecisions` | `discord_members_by_stage{stage="3"} > 0 for 14d` |
 | `DiscordBlindSpot` | `discord_unreadable_channels > 0` |
 
-Bot-Health läuft bewusst über ntfy, nicht über Discord: Den Ausfall, den man am
-dringendsten sehen will, kann der Bot selbst nicht mehr melden.
+Bot health deliberately goes through ntfy, not Discord: the outage you most
+urgently want to see is the one the bot can no longer report itself.
 
 ## Backup
 
-SQLite nie im Betrieb per `tar` sichern. In `backup-services.sh`:
+Never back up SQLite with `tar` while it is running. In `backup-services.sh`:
 
 ```bash
 # Consistent snapshot of a live SQLite database
@@ -98,20 +98,21 @@ sqlite3 /mnt/codex/discord-inactivity/activity.db \
 ## Tests
 
 ```bash
-python3 tests/test_smoke.py
+python3 test_smoke.py
 ```
 
-Prüft Config-Validierung (Fehlkonfiguration muss den Start verhindern),
-Decay-Mathematik, Downtime-Abzug, Stage-Reset, Rejoin und Purge — alles ohne
-Discord-Verbindung.
+Covers config validation (a misconfiguration must prevent startup), decay math,
+downtime deduction, stage reset, rejoin and purge — all without a Discord
+connection.
 
-## Betriebshinweise
+## Operating notes
 
-- **`config.yaml` ist ein Datei-Bind-Mount** und damit inode-anfällig. Nach einem
-  Git-Pull `docker compose up -d --force-recreate`, nicht nur `restart`.
-- **Downtime** wird aus der `liveness`-Tabelle abgeleitet, nicht aus einem
-  SIGTERM-Handler. Stromausfall und OOM-Kill laufen durch keinen Handler.
-- **Nicht lesbare Channels** werden beim Start gemeldet und als Metrik geführt.
-  Das ist die wahrscheinlichste Ursache für den ersten Fehlalarm.
-- **Backfill deckt nur Nachrichten ab.** Reaktionen und Voice lassen sich nicht
-  rückwirkend rekonstruieren; wer ausschliesslich reagiert, wirkt anfangs still.
+- **`config.yaml` is a file bind mount** and therefore prone to the inode issue.
+  After a git pull, run `docker compose up -d --force-recreate`, not just
+  `restart`.
+- **Downtime** is derived from the `liveness` table, not from a SIGTERM handler.
+  Power loss and OOM kills never pass through a handler.
+- **Unreadable channels** are reported at startup and tracked as a metric. They
+  are the most likely cause of the first false alarm.
+- **Backfill only covers messages.** Reactions and voice cannot be
+  reconstructed retroactively; someone who only reacts looks silent at first.

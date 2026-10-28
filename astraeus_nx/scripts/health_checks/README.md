@@ -1,33 +1,33 @@
 # Hardware Health Checks – AstraeusNX
 
-Werkzeuge, um Verschleiß an AstraeusNX früh zu erkennen: AIO-Kühlung, GPU, RAM und Laufwerke. Jede Prüfung stellt feste Testbedingungen her, prüft, dass sie wirklich gelten, und vergleicht das Ergebnis mit der eigenen Baseline. Entscheidend ist der Trend über Monate. Absolute Grenzwerte dienen nur als grobes Sicherheitsnetz.
+Tools to detect wear on AstraeusNX early: AIO cooling, GPU, RAM and drives. Each check establishes fixed test conditions, verifies that they actually hold, and compares the result with its own baseline. What matters is the trend over months. Absolute limits only serve as a rough safety net.
 
-## Überblick
+## Overview
 
-| Skript | Prüft | Dauer | Rhythmus |
+| Script | Checks | Duration | Schedule |
 |---|---|---|---|
-| `disk_health.py` | SMART aller Laufwerke: Defektzähler, Restlebensdauer, Verschleißprognose | Sekunden | wöchentlich per systemd-Timer |
-| `aio_health.py` | Pumpe, Kühlmittel-Wärmeabfuhr, CPU-Kühlerkontakt, Gehäuselüfter | ca. 30 min | alle 3–4 Monate |
-| `gpu_health.py` | GPU-Kühlung (Paste/Pads), Lüfterlager, Drosselung, Rechenfehler | ca. 17 min | alle 3–4 Monate |
-| `ram_health.py` | Speicherfehler, EXPO noch aktiv, Bandbreite, Modultemperatur | ca. 31 min | alle 3–4 Monate |
-| `health_all.py` | alle vier nacheinander mit Übersichtsseite | ca. 80 min | Quartalstermin |
-| `health_common.py` | gemeinsame Bausteine, wird nicht direkt gestartet | – | – |
+| `disk_health.py` | SMART of all drives: defect counters, remaining life, wear forecast | seconds | weekly via systemd timer |
+| `aio_health.py` | Pump, coolant heat dissipation, CPU cold plate contact, case fans | approx. 30 min | every 3–4 months |
+| `gpu_health.py` | GPU cooling (paste/pads), fan bearings, throttling, compute errors | approx. 17 min | every 3–4 months |
+| `ram_health.py` | Memory errors, EXPO still active, bandwidth, module temperature | approx. 31 min | every 3–4 months |
+| `health_all.py` | All four in sequence with a summary page | approx. 80 min | quarterly appointment |
+| `health_common.py` | Shared building blocks, not started directly | – | – |
 
-## Voraussetzungen
+## Prerequisites
 
-Alle Skripte brauchen root und holen sich `sudo` bei Bedarf selbst.
+All scripts need root and acquire `sudo` themselves when needed.
 
-| Paket | Quelle | benötigt für |
+| Package | Source | Required for |
 |---|---|---|
-| `python` ≥ 3.10 | extra | alle |
-| `liquidctl` | extra | AIO, GPU (NZXT-Lüfter, Pumpe) |
-| `stress-ng` | extra | AIO (ohne: schwächere Python-Last, nicht vergleichbar) |
+| `python` ≥ 3.10 | extra | all |
+| `liquidctl` | extra | AIO, GPU (NZXT fans, pump) |
+| `stress-ng` | extra | AIO (without it: weaker Python load, not comparable) |
 | `python-nvidia-ml-py` | extra | GPU |
 | `cuda`, `gpu-burn-git` | extra, AUR | GPU |
 | `stressapptest` | AUR | RAM |
-| `dmidecode` | extra | RAM (ohne: keine EXPO-Prüfung) |
-| `smartmontools` | extra | Laufwerke |
-| CoolerControl | – | wird für AIO- und GPU-Test pausiert und danach neu gestartet |
+| `dmidecode` | extra | RAM (without it: no EXPO check) |
+| `smartmontools` | extra | drives |
+| CoolerControl | – | paused for the AIO and GPU tests and restarted afterwards |
 
 ```fish
 sudo pacman -S liquidctl stress-ng python-nvidia-ml-py cuda dmidecode smartmontools
@@ -36,27 +36,27 @@ paru -S gpu-burn-git stressapptest
 
 ## Installation
 
-Alle Dateien liegen gemeinsam in `homelab-infra/astraeus_nx/scripts/health_checks/`. Die Test-Skripte importieren `health_common.py` aus demselben Ordner.
+All files live together in `homelab-infra/astraeus_nx/scripts/health_checks/`. The test scripts import `health_common.py` from the same folder.
 
 ```fish
 chmod +x aio_health.py gpu_health.py ram_health.py disk_health.py health_all.py
 git add --chmod=+x aio_health.py gpu_health.py ram_health.py disk_health.py health_all.py
 ```
 
-### Wöchentlicher Laufwerks-Check
+### Weekly drive check
 
-Die Units liegen unter `homelab-infra/astraeus_nx/systemd/`. Der Pfad in `ExecStart` muss auf diesen Ordner zeigen.
+The units live under `homelab-infra/astraeus_nx/scripts/systemd/`. The path in `ExecStart` must point to this folder.
 
 ```fish
-sudo cp ../../systemd/disk-health.{service,timer} /etc/systemd/system/
+sudo cp ../systemd/disk-health.{service,timer} /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now disk-health.timer
 systemctl list-timers disk-health.timer
 ```
 
-Findet ein Lauf ein FAIL, endet das Skript mit Exit-Code 2, und die Unit erscheint in `systemctl --failed`.
+If a run finds a FAIL, the script exits with code 2 and the unit shows up in `systemctl --failed`.
 
-## Benutzung
+## Usage
 
 ```fish
 sudo ./health_all.py                     # everything, summary page at the end
@@ -68,168 +68,168 @@ sudo ./ram_health.py
 sudo ./disk_health.py
 ```
 
-Während der aktiven Tests den Rechner nicht benutzen. Andere Last verfälscht die Messung, und der RAM-Test belegt rund 44 GB.
+Do not use the computer during the active tests. Other load skews the measurement, and the RAM test occupies about 44 GB.
 
-### Optionen
+### Options
 
-Alle Skripte kennen `--out-dir PATH` (anderer Ergebnisordner) und `--no-open` (Report nicht öffnen).
+All scripts accept `--out-dir PATH` (different results folder) and `--no-open` (do not open the report).
 
-| Skript | Option | Standard | Zweck |
+| Script | Option | Default | Purpose |
 |---|---|---|---|
-| `aio_health.py` | `--fan-duty` | 60 | feste Duty aller NZXT-Lüfter |
-| | `--load-minutes` | 15 | Dauer der CPU-Last |
-| | `--idle-min-minutes` / `--idle-max-minutes` | 2 / 10 | Rahmen für das Einschwingen im Leerlauf |
-| | `--cooldown-minutes` | 5 | Abkühlphase |
-| | `--sweep-settle` / `--sweep-measure` | 15 / 10 s | Pumpen-Sweep pro Stufe |
-| | `--quick` | – | Probelauf mit 5 min Last, nicht mit vollen Läufen vergleichbar |
-| | `--ambient` | – | Raumtemperatur von Hand |
-| | `--prom-url` + `--prom-query` | – | Raumtemperatur aus Prometheus, die Query muss genau eine Serie liefern |
-| `gpu_health.py` | `--gpu-fan-duty` | 75 | feste Duty der GPU-Lüfter |
-| | `--fan-duty` | 60 | feste Duty der NZXT-Gehäuselüfter |
-| | `--load-minutes` | 10 | Dauer von gpu-burn |
-| | `--gpu` | 0 | NVML-Index der GPU |
-| `ram_health.py` | `--minutes` | 30 | Dauer von stressapptest |
-| `disk_health.py` | `--device PATH[:TYPE]` | – | zusätzliches Laufwerk, z. B. `/dev/sdd:sat` für USB-Gehäuse |
-| `health_all.py` | `--skip NAME` | – | `disk`, `aio`, `gpu` oder `ram` auslassen |
+| `aio_health.py` | `--fan-duty` | 60 | fixed duty for all NZXT fans |
+| | `--load-minutes` | 15 | duration of the CPU load |
+| | `--idle-min-minutes` / `--idle-max-minutes` | 2 / 10 | bounds for settling at idle |
+| | `--cooldown-minutes` | 5 | cool-down phase |
+| | `--sweep-settle` / `--sweep-measure` | 15 / 10 s | pump sweep per step |
+| | `--quick` | – | trial run with 5 min load, not comparable with full runs |
+| | `--ambient` | – | room temperature entered by hand |
+| | `--prom-url` + `--prom-query` | – | room temperature from Prometheus; the query must return exactly one series |
+| `gpu_health.py` | `--gpu-fan-duty` | 75 | fixed duty for the GPU fans |
+| | `--fan-duty` | 60 | fixed duty for the NZXT case fans |
+| | `--load-minutes` | 10 | duration of gpu-burn |
+| | `--gpu` | 0 | NVML index of the GPU |
+| `ram_health.py` | `--minutes` | 30 | duration of stressapptest |
+| `disk_health.py` | `--device PATH[:TYPE]` | – | additional drive, e.g. `/dev/sdd:sat` for USB enclosures |
+| `health_all.py` | `--skip NAME` | – | leave out `disk`, `aio`, `gpu` or `ram` |
 
-Beispiel mit Raumtemperatur aus Netatmo:
+Example with room temperature from Netatmo:
 
 ```fish
 sudo ./aio_health.py --prom-url http://mnemosyne.local:9090 \
     --prom-query 'netatmo_sensor_temperature_celsius{module="Office"}'
 ```
 
-`health_all.py` übergibt diese Option nicht. In der Gesamtsitzung fehlt die Raumtemperatur also, das Urteil hängt aber nicht davon ab.
+`health_all.py` does not pass this option on. The room temperature is therefore missing in the full session, but the verdict does not depend on it.
 
-### Unterbrechen
+### Interrupting
 
-Strg+C ist jederzeit sicher. Der laufende Test stellt Lüfter, Pumpe und CoolerControl wieder her und speichert sein Teilergebnis. `health_all.py` wartet darauf, überspringt die restlichen Tests und zeigt die Übersicht, sofern mindestens ein Ergebnis vorliegt.
+Ctrl+C is safe at any time. The running test restores fans, pump and CoolerControl and saves its partial result. `health_all.py` waits for this, skips the remaining tests and shows the summary, provided at least one result exists.
 
-Exit-Codes: 0 = in Ordnung, 2 = mindestens ein FAIL, 130 = unterbrochen.
+Exit codes: 0 = OK, 2 = at least one FAIL, 130 = interrupted.
 
-## Ergebnisse
+## Results
 
-Alle Prüfungen schreiben nach `~/.local/share/hardware-health/`. Die Dateien gehören dem aufrufenden Benutzer, auch wenn das Skript unter sudo oder per Timer läuft.
+All checks write to `~/.local/share/hardware-health/`. The files belong to the calling user, even when the script runs under sudo or from the timer.
 
-| Präfix | Rohdaten | Report | Log |
+| Prefix | Raw data | Report | Log |
 |---|---|---|---|
 | `aio-` | `aio-run-*.json` | `aio-report-*.html` | `aio-stress-*.log` |
 | `gpu-` | `gpu-run-*.json` | `gpu-report-*.html` | `gpu-burn-*.log` |
 | `ram-` | `ram-run-*.json` | `ram-report-*.html` | `ram-stress-*.log` |
-| `disk-` | `disk-run-*.json` | `disk-report-*.html` | – (rohe SMART-Daten stecken in der JSON) |
+| `disk-` | `disk-run-*.json` | `disk-report-*.html` | – (raw SMART data is in the JSON) |
 | `all-` | `all-run-*.json` | `all-report-*.html` | – |
 
-Ein Einzeltest öffnet seinen Report am Ende im Browser. Der Browser startet dabei als dein Benutzer in deiner Desktop-Sitzung, nie als root. `health_all.py` öffnet nur die Übersichtsseite.
+A single test opens its report in the browser at the end. The browser starts as your user in your desktop session, never as root. `health_all.py` only opens the summary page.
 
-### Baseline und Archiv
+### Baseline and archive
 
-Jede Prüfung vergleicht mit dem **ersten** vergleichbaren Lauf im Ordner. Probeläufe, A/B-Tests (z. B. ohne Seitenteil) und verfälschte Läufe deshalb nach `archive/` verschieben, sonst werden sie zur Baseline oder tauchen im Trend auf:
+Each check compares against the **first** comparable run in the folder. Move trial runs, A/B tests (e.g. without the side panel) and skewed runs to `archive/`, otherwise they become the baseline or show up in the trend:
 
 ```fish
 mv ~/.local/share/hardware-health/gpu-*-20261012-170005.* ~/.local/share/hardware-health/archive/
 ```
 
-Läufe gelten nur als vergleichbar, wenn ihre Bedingungen übereinstimmen:
+Runs only count as comparable if their conditions match:
 
-| Prüfung | Vergleichsschlüssel |
+| Check | Comparison key |
 |---|---|
-| AIO | Kraken-Modell, Lüfter-Duty, Lastprogramm, Lastdauer, CPU-Threads, Power-Profil |
-| GPU | GPU-Modell, Leistungslimit, Lüfter-Duty (GPU und Gehäuse), Lastdauer |
-| RAM | Testgröße, Dauer, Modul-Teilenummern |
-| Laufwerke | Modell und Seriennummer pro Laufwerk (nie der `/dev`-Pfad) |
+| AIO | Kraken model, fan duty, load program, load duration, CPU threads, power profile |
+| GPU | GPU model, power limit, fan duty (GPU and case), load duration |
+| RAM | Test size, duration, module part numbers |
+| Drives | Model and serial number per drive (never the `/dev` path) |
 
-Ändert sich eine dieser Größen, zum Beispiel durch den X3D-Turbo-Modus oder ein anderes Power-Profil, beginnt automatisch eine neue Baseline.
+If one of these values changes, for example through the X3D turbo mode or a different power profile, a new baseline starts automatically.
 
-## Was geprüft wird
+## What is checked
 
 ### AIO / CPU (`aio_health.py`)
 
-Ablauf: CoolerControl pausieren, alle NZXT-Lüfter auf feste Duty setzen und zurücklesen, Pumpen-Sweep über 40/60/80/100 %, Leerlauf bis zur stabilen Kühlmitteltemperatur, Volllast mit stress-ng, Abkühlen, danach CoolerControl neu starten.
+Sequence: pause CoolerControl, set all NZXT fans to a fixed duty and read it back, pump sweep over 40/60/80/100 %, idle until the coolant temperature is stable, full load with stress-ng, cool down, then restart CoolerControl.
 
-| Kennzahl | Bedeutung | Grenze |
+| Metric | Meaning | Limit |
 |---|---|---|
-| Pumpe bei 100 % | Lagerverschleiß | ≥ 2.500 rpm (Spezifikation 2.800 ± 300) |
-| Pumpenstabilität | Luft im Kreislauf, Lager | < 2 % Schwankung |
-| Kurze Drehzahleinbrüche | einzelne Ausreißer auf ~67 % | Info, Warnung ab 2 % der Messwerte |
-| Kühlmittelanstieg pro Watt | Wärmeabfuhr des Radiators | Warnung ab 0,09 K/W, Trend Warnung ab +15 %, Fehler ab +30 % |
-| CPU zu Kühlmittel pro Watt | Wärmeleitpaste, Anpressdruck | Info, Trend beobachten |
-| Gleiche Lüfter-Duty | ein Kanal deutlich langsamer | < 70 % des Medians ergibt eine Warnung |
-| Lüfter gesetzt | Schreibbefehl wirklich angekommen | sonst Warnung, Werte nicht vergleichbar |
+| Pump at 100 % | bearing wear | ≥ 2,500 rpm (spec 2,800 ± 300) |
+| Pump stability | air in the loop, bearing | < 2 % fluctuation |
+| Short speed dips | single outliers to ~67 % | info, warning from 2 % of samples |
+| Coolant rise per watt | radiator heat dissipation | warning from 0.09 K/W, trend warning from +15 %, failure from +30 % |
+| CPU to coolant per watt | thermal paste, mounting pressure | info, watch the trend |
+| Same fan duty | one channel noticeably slower | < 70 % of the median gives a warning |
+| Fans set | write command actually arrived | otherwise warning, values not comparable |
 
-Sicherheitsabbruch bei Kühlmittel ≥ 55 °C oder wenn die Pumpe bei 100 % unter 300 rpm fällt. Erzeugt die CPU-Last weniger als 90 % Auslastung, gilt der Test als ungültig.
+Safety abort at coolant ≥ 55 °C or if the pump drops below 300 rpm at 100 %. If the CPU load produces less than 90 % utilization, the test counts as invalid.
 
 ### GPU (`gpu_health.py`)
 
-Ablauf: CoolerControl pausieren, Gehäuse- und GPU-Lüfter auf feste Duty setzen und zurücklesen, Leerlauf, 10 min gpu-burn, Abkühlen, danach GPU-Lüfter auf Automatik und CoolerControl neu starten.
+Sequence: pause CoolerControl, set case and GPU fans to a fixed duty and read it back, idle, 10 min gpu-burn, cool down, then set the GPU fans back to automatic and restart CoolerControl.
 
-| Kennzahl | Bedeutung | Grenze |
+| Metric | Meaning | Limit |
 |---|---|---|
-| Temperaturanstieg pro Watt | Paste und Pads (Ersatz für den fehlenden Hotspot) | Trend Warnung ab +15 %, Fehler ab +30 % |
-| Interner Sensor über Kern (experimentell) | aus T.Limit abgeleiteter Hotspot-Ersatz | Trend Warnung ab +3 K |
-| Lüfterdrehzahl bei fester Duty | Lagerverschleiß | Warnung bei < 85 % der anderen oder −10 % zur Baseline |
-| Drosselung wegen Temperatur | Kühlung hält das Leistungslimit nicht | 0 % der Messwerte |
-| Power-Brake-Ereignisse | Netzteil oder Kabel | 0 % der Messwerte |
-| Rechenfehler (gpu-burn) | GPU- oder VRAM-Stabilität | 0, sonst FAIL |
+| Temperature rise per watt | paste and pads (substitute for the missing hotspot) | trend warning from +15 %, failure from +30 % |
+| Internal sensor above core (experimental) | hotspot substitute derived from T.Limit | trend warning from +3 K |
+| Fan speed at fixed duty | bearing wear | warning at < 85 % of the others or −10 % against the baseline |
+| Throttling due to temperature | cooling does not sustain the power limit | 0 % of samples |
+| Power brake events | power supply or cable | 0 % of samples |
+| Compute errors (gpu-burn) | GPU or VRAM stability | 0, otherwise FAIL |
 
-Die RTX-50-Serie liefert über NVML keine Hotspot-Temperatur. T.Limit folgt aber offenbar einem heißeren internen Sensor, daraus wird der experimentelle Wert berechnet. Sicherheitsabbruch, wenn der Kern 88 °C erreicht. Zieht gpu-burn nach 20 Sekunden weniger als 60 % des Leistungslimits, gilt der Test als ungültig.
+The RTX 50 series does not report a hotspot temperature via NVML. T.Limit, however, apparently follows a hotter internal sensor; the experimental value is calculated from it. Safety abort when the core reaches 88 °C. If gpu-burn draws less than 60 % of the power limit after 20 seconds, the test counts as invalid.
 
 ### RAM (`ram_health.py`)
 
-Ablauf: Modulgeschwindigkeit per dmidecode erfassen, stressapptest über 75 % des eingebauten RAM in 4-GB-Schritten (bei 64 GB also 44 GB), dabei die DDR5-Modultemperaturen aufzeichnen, danach das Kernel-Log nach Hardwarefehlern durchsuchen. CoolerControl bleibt aktiv.
+Sequence: record the module speed via dmidecode, run stressapptest over 75 % of the installed RAM in 4 GB steps (44 GB with 64 GB installed), record the DDR5 module temperatures meanwhile, then search the kernel log for hardware errors. CoolerControl stays active.
 
-| Kennzahl | Bedeutung | Grenze |
+| Metric | Meaning | Limit |
 |---|---|---|
-| Speicherfehler | instabiler Speicher oder Speichercontroller | 0, sonst FAIL |
-| Kernel-Hardwarefehler | Machine-Check- oder EDAC-Meldungen | 0, sonst FAIL |
-| Eingestellte Geschwindigkeit | EXPO nach BIOS-Update verloren? | Warnung bei Änderung zum letzten Lauf |
-| Kopier-Bandbreite | Einstellungen verloren, Leistungseinbruch | Warnung ab −10 % zur Baseline |
-| Modultemperatur | Luftstrom über den Modulen | Warnung ab 85 °C |
+| Memory errors | unstable memory or memory controller | 0, otherwise FAIL |
+| Kernel hardware errors | machine check or EDAC messages | 0, otherwise FAIL |
+| Configured speed | EXPO lost after a BIOS update? | warning on change since the last run |
+| Copy bandwidth | settings lost, performance drop | warning from −10 % against the baseline |
+| Module temperature | airflow over the modules | warning from 85 °C |
 
-memtest86+ bleibt nach BIOS- oder EXPO-Änderungen der gründlichere Test, weil er den kompletten Speicher ohne laufendes Betriebssystem prüft.
+After BIOS or EXPO changes, memtest86+ remains the more thorough test, because it checks the complete memory without a running operating system.
 
-### Laufwerke (`disk_health.py`)
+### Drives (`disk_health.py`)
 
-Passiv, ohne Last und ohne Selbsttests. Laufwerke werden über Modell und Seriennummer erkannt.
+Passive, without load and without self-tests. Drives are identified by model and serial number.
 
-| Kennzahl | Grenze |
+| Metric | Limit |
 |---|---|
-| SMART-Gesamtstatus, NVMe-Warnungen, Reserveblöcke | FAIL bei Problem |
-| Umgelagerte, wartende und nicht korrigierbare Sektoren, NVMe-Medienfehler | jeder Zuwachs ist FAIL |
-| Samsung: Reserveblöcke, Schreib-, Lösch- und Laufzeitfehler, hinzugekommene defekte Flash-Blöcke | Baseline, Zuwachs ergibt eine Warnung |
-| CRC-Fehler der Schnittstelle | Zuwachs ergibt eine Warnung (meist Kabel oder USB-Gehäuse) |
-| Restlebensdauer | Warnung unter 20 %, Fehler unter 5 % |
-| Verschleißprognose | ab 30 Tagen Abstand zwischen zwei Läufen, Warnung unter 1 Jahr |
-| Temperatur | Warnung ab 70 °C (SSD) bzw. 55 °C (HDD) |
-| Unsaubere Abschaltungen | Info mit Anteil an den Einschaltzyklen und Zuwachs |
+| Overall SMART status, NVMe warnings, spare blocks | FAIL on a problem |
+| Reallocated, pending and uncorrectable sectors, NVMe media errors | any increase is a FAIL |
+| Samsung: spare blocks, write, erase and runtime errors, newly added bad flash blocks | baseline, an increase gives a warning |
+| Interface CRC errors | an increase gives a warning (usually cable or USB enclosure) |
+| Remaining life | warning below 20 %, failure below 5 % |
+| Wear forecast | from 30 days between two runs, warning below 1 year |
+| Temperature | warning from 70 °C (SSD) or 55 °C (HDD) |
+| Unsafe shutdowns | info with share of power cycles and increase |
 
-Laufwerke, die beim letzten Mal da waren und jetzt fehlen, werden nur vermerkt, nicht als Fehler gewertet.
+Drives that were present last time and are now missing are only noted, not counted as errors.
 
-## Baselines (Stand 12.10.2026)
+## Baselines (as of 2026-10-12)
 
-| Prüfung | Werte |
+| Check | Values |
 |---|---|
-| AIO | 0,074 K/W Kühlmittel, Pumpe 2.753 rpm, alle Lüfter 60 %, Power-Profil `performance` |
-| GPU | 0,153 K/W, interner Sensor +4 K, Lüfter 2.289 / 2.302 / 2.301 rpm bei 75 % |
-| RAM | 0 Fehler, 69.707 MB/s, Module max. 70,5 °C, 6400 MT/s |
-| Laufwerke | alle ≥ 98 % Restlebensdauer, 870 EVO mit 1 bzw. 5 defekten Flash-Blöcken als Baseline, ca. 20 % unsaubere Abschaltungen |
+| AIO | 0.074 K/W coolant, pump 2,753 rpm, all fans 60 %, power profile `performance` |
+| GPU | 0.153 K/W, internal sensor +4 K, fans 2,289 / 2,302 / 2,301 rpm at 75 % |
+| RAM | 0 errors, 69,707 MB/s, modules max. 70.5 °C, 6400 MT/s |
+| Drives | all ≥ 98 % remaining life, 870 EVO with 1 and 5 bad flash blocks respectively as baseline, approx. 20 % unsafe shutdowns |
 
-## Bekannte Stolperfallen
+## Known pitfalls
 
-- **Lüfter nicht wirklich gesetzt:** Alle Kanäle in einem Schwung per `sync` zu beschreiben ließ einen Kanal auf seinem alten Wert. Die Skripte schreiben deshalb jeden Kanal einzeln und lesen ihn zurück. Bleibt eine Pinning-Warnung trotzdem, ist der Lauf nicht vergleichbar.
-- **Lüfterzuordnung:** Pro NZXT-Controller gibt es nur drei Lüfterkanäle. Mehrere Lüfter hängen an Splittern, nur einer davon meldet seine Drehzahl. Kanäle mit 0 rpm sind unbelegt oder haben keinen Drehzahlausgang.
-- **Turbo-Modus und Power-Profil:** Der X3D-Turbo-Modus halbiert die Kernzahl, `power-saver` drückt die Last. Beides ändert die Messwerte und startet deshalb eine neue Baseline.
-- **USB-Laufwerke:** USB-Gehäuse brauchen oft `--device /dev/sdX:sat`.
-- **Report öffnet sich nicht:** Ohne erkennbare Wayland- oder X-Sitzung wird nur der Pfad ausgegeben. Dann `xdg-open <pfad>` als normaler Benutzer aufrufen.
-- **gpu-burn startet nicht:** Das Log `gpu-burn-*.log` nennt die Ursache. Das Skript bricht nach 20 s als ungültig ab.
+- **Fans not actually set:** Writing all channels in one go via `sync` left one channel at its old value. The scripts therefore write each channel individually and read it back. If a pinning warning remains anyway, the run is not comparable.
+- **Fan mapping:** Each NZXT controller has only three fan channels. Several fans hang on splitters, and only one of them reports its speed. Channels with 0 rpm are unused or have no tach output.
+- **Turbo mode and power profile:** The X3D turbo mode halves the core count, `power-saver` reduces the load. Both change the measurements and therefore start a new baseline.
+- **USB drives:** USB enclosures often need `--device /dev/sdX:sat`.
+- **Report does not open:** Without a detectable Wayland or X session, only the path is printed. Then run `xdg-open <path>` as the normal user.
+- **gpu-burn does not start:** The log `gpu-burn-*.log` names the cause. The script aborts after 20 s as invalid.
 
-## Aufbau
+## Structure
 
-`health_common.py` enthält alles, was mehr als eine Prüfung braucht:
+`health_common.py` contains everything that more than one check needs:
 
-- **Urteile:** Konstanten (`OK`, `WARN`, `FAIL`, `INFO`, `INVALID`) und `check()`
-- **Messhilfen:** gleitende Fenster und Steigung über Zeit
-- **System:** root- und sudo-Behandlung, Ergebnisordner, Laden der Historie, Speichern, Öffnen des Reports
-- **Hardware:** `CoolerControlPause` und `NzxtCooling` (Pumpe und Lüfter über liquidctl, mit Zurücklesen)
-- **Ausgabe:** Konsolentabelle, HTML-Tabelle, SVG-Diagramme, Prüfplakette, CSS
+- **Verdicts:** constants (`OK`, `WARN`, `FAIL`, `INFO`, `INVALID`) and `check()`
+- **Measurement helpers:** sliding windows and slope over time
+- **System:** root and sudo handling, results folder, loading the history, saving, opening the report
+- **Hardware:** `CoolerControlPause` and `NzxtCooling` (pump and fans via liquidctl, with read-back)
+- **Output:** console table, HTML table, SVG charts, check badge, CSS
 
-Jede Prüfung ist ein eigenständiges Skript mit Ablauf, Auswertung, Report und `verdict_text()`. `health_all.py` startet die Prüfungen als eigene Prozesse und baut die Übersicht aus deren JSON-Ergebnissen.
+Each check is a standalone script with sequence, evaluation, report and `verdict_text()`. `health_all.py` starts the checks as separate processes and builds the summary from their JSON results.
