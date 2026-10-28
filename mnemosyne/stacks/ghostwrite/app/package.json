@@ -8,9 +8,9 @@
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "express": "^4.19.2",
+    "express": "^4.22.3",
     "jsonwebtoken": "^9.0.2",
     "marked": "^13.0.0",
-    "multer": "^2.1.1"
+    "multer": "^2.5.0"
   }
 }
