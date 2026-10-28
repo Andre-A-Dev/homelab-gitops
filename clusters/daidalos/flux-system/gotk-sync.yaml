@@ -11,7 +11,7 @@ spec:
     branch: main
   secretRef:
     name: flux-system
-  url: ssh://git@192.168.1.10:2222/Andre/Homelab_Infra.git
+  url: ssh://git@192.168.1.10:2222/<user>/Homelab_Infra.git
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization

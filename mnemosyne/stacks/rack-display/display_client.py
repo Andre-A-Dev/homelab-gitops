@@ -372,7 +372,7 @@ class Renderer:
         # Signature, small and quiet, below the dots and well away from them.
         # Its own slow rhythm rather than the wordmark's, so the two drift in
         # and out of phase instead of pulsing in lockstep.
-        self._text("andre", "small",
+        self._text("<user>", "small",
                    scale(t.teal, self.breath(now, period=5.5, low=0.38)),
                    (cx, cy + 92), "center")
 

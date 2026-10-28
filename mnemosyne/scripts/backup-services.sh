@@ -155,7 +155,7 @@ MAX_SKIP_DAYS=$(( RETENTION_DAYS - 2 ))
 [ "$MAX_SKIP_DAYS" -lt 1 ] && MAX_SKIP_DAYS=1
 
 # Load Nextcloud DB password from stack .env
-ENV_NEXTCLOUD="/home/andre/stacks/nextcloud/.env"
+ENV_NEXTCLOUD="/home/<user>/stacks/nextcloud/.env"
 START_TIME=$(date +%s)
 
 if [ ! -f "$ENV_NEXTCLOUD" ]; then
@@ -894,12 +894,12 @@ else
     # syncthing.lock excluded too — a restored lock file can block startup.
     #
     # Patterns need the */ prefix: tar matches the stored path
-    # (home/andre/.local/state/syncthing/index-v0.14.0.db), not the
+    # (home/<user>/.local/state/syncthing/index-v0.14.0.db), not the
     # basename, so a bare 'index-v*.db' silently matched nothing.
     run_tar tar -czf "$BACKUP_DIR/$DATE/syncthing-config.tar.gz" \
       --exclude='*/index-v*.db' \
       --exclude='*/syncthing.lock' \
-      /home/andre/.local/state/syncthing/
+      /home/<user>/.local/state/syncthing/
     CONF_RC=$?
 
     if [ "$VAULT_RC" -ne 0 ] || [ "$CONF_RC" -ne 0 ]; then
@@ -980,7 +980,7 @@ if ! should_run "ghost"; then
 else
   # Sourced locally rather than globally so a missing Ghost .env only fails
   # this step, not unrelated --only runs. Same pattern as Immich.
-  ENV_GHOST="/home/andre/stacks/ghost/.env"
+  ENV_GHOST="/home/<user>/stacks/ghost/.env"
   if [ ! -f "$ENV_GHOST" ]; then
     fail "Ghost — .env not found: $ENV_GHOST"
   else
@@ -1127,7 +1127,7 @@ if ! should_run "immich"; then
 else
   # Sourced locally rather than globally (unlike ENV_NEXTCLOUD above) so a
   # missing Immich .env only fails this step, not unrelated --only runs.
-  ENV_IMMICH="/home/andre/stacks/immich/.env"
+  ENV_IMMICH="/home/<user>/stacks/immich/.env"
   if [ ! -f "$ENV_IMMICH" ]; then
     fail "Immich — .env not found: $ENV_IMMICH"
   else
@@ -1360,9 +1360,9 @@ else
   # and had been that way undetected since the symlink was introduced. The data
   # was never actually lost — the target is version-controlled in Gitea, which
   # is backed up — but the documented restore path did not work.
-  if assert_source "Stack configs" "/home/andre/stacks"; then
+  if assert_source "Stack configs" "/home/<user>/stacks"; then
     run_tar tar -czhf "$BACKUP_DIR/$DATE/stacks-config.tar.gz" \
-      /home/andre/stacks/
+      /home/<user>/stacks/
     if [ $? -ne 0 ]; then
       fail "Stack configs failed"
     elif assert_archive "Stack configs" "$BACKUP_DIR/$DATE/stacks-config.tar.gz"; then

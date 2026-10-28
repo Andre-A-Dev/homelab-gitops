@@ -6,7 +6,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC="${SCRIPT_DIR}/prompt.sh"
-USER_NAME="andre"
+USER_NAME="<user>"
 HOSTS=("$@")
 (( ${#HOSTS[@]} == 0 )) && HOSTS=(mnemosyne boreas hephaestus zephyros)
 

@@ -84,9 +84,9 @@ Backs up Pi-hole, Unbound, Caddy, and misc configs to Mnemosyne via
 Tailscale rsync. Run from cron on Zephyros.
 
 ```
-Destination: andre@100.x.x.x:/mnt/codex/backups/zephyros/<date>/
+Destination: <user>@100.x.x.x:/mnt/codex/backups/zephyros/<date>/
 Retention:   30 daily snapshots (older ones deleted on Mnemosyne)
-SSH key:     /home/andre/.ssh/backup_key
+SSH key:     /home/<user>/.ssh/backup_key
 ```
 
 What gets backed up: `/etc/pihole/pihole.toml`, `/etc/pihole/custom.list`,

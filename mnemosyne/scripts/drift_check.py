@@ -50,8 +50,8 @@ import urllib.request
 # "deploy broken".
 from deploy_plan import MANUAL_STACKS
 
-REPO = "/home/andre/homelab-infra"
-STACKS_DIR = "/home/andre/stacks"
+REPO = "/home/<user>/homelab-infra"
+STACKS_DIR = "/home/<user>/stacks"
 # Shared with deploy-handler.sh: never inspect a half-applied deploy.
 LOCK = "/run/lock/mnemosyne-deploy.lock"
 LOCK_TIMEOUT = 900

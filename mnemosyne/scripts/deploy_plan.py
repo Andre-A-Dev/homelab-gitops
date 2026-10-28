@@ -28,7 +28,7 @@ import subprocess
 import sys
 from collections import defaultdict
 
-STACKS_DIR = "/home/andre/stacks"
+STACKS_DIR = "/home/<user>/stacks"
 PREFIX = "mnemosyne/stacks/"
 
 # Never touched automatically: the runner executing this very deploy, and the

@@ -39,7 +39,7 @@ Vitotronic 200 KW2
 | `scripts/viessmann-exporter.sh` | Reads all metrics in one vclient call, emits Prometheus textfile |
 | `scripts/viessmann-api.py` | Flask API with bearer-token auth for write operations from Grafana |
 | `scripts/hephaestus-display.sh` | Framebuffer dashboard: Heating → Network → Services, 10 s/page |
-| `systemd/viessmann-api.service` | Runs the Flask API as `andre`, `Requires=vcontrold.service` |
+| `systemd/viessmann-api.service` | Runs the Flask API as `<user>`, `Requires=vcontrold.service` |
 | `systemd/hephaestus-display.service` | Runs the display loop as root (needs fb/tty access) |
 | `monitoring/docker-compose.yml` | node-exporter with `textfile_collector` volume |
 

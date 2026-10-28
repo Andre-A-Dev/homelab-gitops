@@ -8,7 +8,7 @@
 
 [Unit]
 Description=restic weekly maintenance (prune + integrity check)
-Documentation=file:///home/andre/homelab-infra/mnemosyne/scripts/restic-maintenance.sh
+Documentation=file:///home/<user>/homelab-infra/mnemosyne/scripts/restic-maintenance.sh
 After=network-online.target
 Wants=network-online.target
 # Conflicts= removed 2026-08-20. It made systemd STOP a running offsite backup

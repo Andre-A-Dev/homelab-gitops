@@ -6,7 +6,7 @@
 
 [Unit]
 Description=Daily quick verification of the local backup
-Documentation=file:///home/andre/homelab-infra/mnemosyne/scripts/verify-backup.sh
+Documentation=file:///home/<user>/homelab-infra/mnemosyne/scripts/verify-backup.sh
 RequiresMountsFor=/mnt/backup
 # Never verify a backup that is still being written.
 After=backup-services.service

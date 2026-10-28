@@ -2,13 +2,13 @@
 # backup-zephyros.sh — backs up Pi-hole, Unbound and misc configs to Mnemosyne via Tailscale
 
 MNEMOSYNE_IP="100.x.x.x"       # Tailscale IP of Mnemosyne — update after setup
-BACKUP_USER="andre"
+BACKUP_USER="<user>"
 REMOTE_DIR="/mnt/codex/backups/zephyros"
 DATE=$(date +%F)
 BACKUP_DIR="/tmp/zephyros-backup-$DATE"
 LOG="/var/log/backup-zephyros.log"
-SSH_KEY="/home/andre/.ssh/backup_key"
-CADDY_DIR="/home/andre/homelab-infra/zephyros/caddy"
+SSH_KEY="/home/<user>/.ssh/backup_key"
+CADDY_DIR="/home/<user>/homelab-infra/zephyros/caddy"
 
 echo "=== Backup started: $(date) ===" >> $LOG
 
@@ -38,7 +38,7 @@ echo "Saving: Caddy CA..." >> $LOG
 mkdir -p "$BACKUP_DIR/caddy"
 sudo cp -a "$CADDY_DIR/data/caddy/pki" "$BACKUP_DIR/caddy/" 2>> $LOG
 # Fix permissions for rsync
-sudo chown -R andre:andre "$BACKUP_DIR"
+sudo chown -R "<user>:<user>" "$BACKUP_DIR"
 
 # Transfer to Mnemosyne via Tailscale
 echo "Transferring to Mnemosyne ($MNEMOSYNE_IP)..." >> $LOG

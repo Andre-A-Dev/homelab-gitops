@@ -84,7 +84,7 @@ After `bootstrap.sh`, in this order:
    `/etc/system-update.conf` with `TEXTFILE_DIR=/var/lib/prometheus/node-exporter`
    and `NTFY_TOPIC`.
 5. **Repo pulls:** clone to `~/homelab-infra`, crontab
-   `*/15 * * * * /home/andre/bin/gitea-pull.sh`. Webhook as on the Pis:
+   `*/15 * * * * /home/<user>/bin/gitea-pull.sh`. Webhook as on the Pis:
    `sudo apt install webhook`, unit `/etc/systemd/system/webhook.service`
    (`-hooks ~/homelab-infra/shared/webhook/hooks.json -port 9000`), a
    `hooks.json` with only the `gitea-pull` hook and its own secret (mode 600,

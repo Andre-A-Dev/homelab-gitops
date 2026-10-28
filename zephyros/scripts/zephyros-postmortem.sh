@@ -2,7 +2,7 @@
 # zephyros-postmortem.sh — collect evidence about the last outage on Zephyros.
 #
 # Usage:   sudo ./zephyros-postmortem.sh
-# Output:  /home/andre/postmortem-<timestamp>.txt
+# Output:  /home/<user>/postmortem-<timestamp>.txt
 #
 # Read-only: changes nothing on the system. Stderr is captured into the
 # report on purpose — a failing check is evidence, not noise.
@@ -14,7 +14,7 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
-REPORT="/home/andre/postmortem-$(date +%F_%H%M).txt"
+REPORT="/home/<user>/postmortem-$(date +%F_%H%M).txt"
 BOOTS_BACK=3   # crash boot + failed boot(s) after unplugging
 KEYWORDS='oom|killed process|undervoltage|under-voltage|i/o error|ext4-fs|uas|usb disconnect|reset .*usb|xhci|dwc_otg|brcmf|watchdog|emergency|fsck'
 
@@ -120,5 +120,5 @@ decode_throttled() {
   run "grep -A3 -E '^Start-Date' /var/log/apt/history.log | tail -n 40"
 } > "$REPORT" 2>&1
 
-chown andre:andre "$REPORT"
+chown "<user>:<user>" "$REPORT"
 echo "Report written to $REPORT"

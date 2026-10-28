@@ -19,11 +19,11 @@
 # Exit code: 0 if every copy succeeded, 1 otherwise (details in the log).
 # =============================================================================
 
-BACKUP_HOST="andre@192.168.1.10"
+BACKUP_HOST="<user>@192.168.1.10"
 BACKUP_PATH="/mnt/codex/backups/boreas"
 DATE=$(date +%Y-%m-%d)
 LOG="/var/log/backup-boreas.log"
-SSH_KEY="/home/andre/.ssh/backup_key"
+SSH_KEY="/home/<user>/.ssh/backup_key"
 RETENTION_DAYS=14
 
 FAILED=0

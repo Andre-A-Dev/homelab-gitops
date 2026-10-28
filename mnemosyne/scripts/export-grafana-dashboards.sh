@@ -1,7 +1,7 @@
 #!/bin/bash
 # Exports all Grafana dashboards as JSON files
 
-source /home/andre/stacks/monitoring/.env
+source /home/<user>/stacks/monitoring/.env
 
 GRAFANA_URL="https://grafana.home"
 GRAFANA_USER="admin"

@@ -132,7 +132,7 @@ Only `immich-server` is stopped while the upload directory is extracted. The dat
 
 ### Syncthing
 
-Syncthing runs on the host (`syncthing@andre`), not in Docker; the script stops and starts the systemd unit. Other devices may hold newer files and sync them back once Syncthing runs again.
+Syncthing runs on the host (`syncthing@<user>`), not in Docker; the script stops and starts the systemd unit. Other devices may hold newer files and sync them back once Syncthing runs again.
 
 ### Exporter tokens
 

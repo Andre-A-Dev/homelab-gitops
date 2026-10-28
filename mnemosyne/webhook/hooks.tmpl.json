@@ -1,9 +1,9 @@
 [
   {
     "id": "mnemosyne-deploy",
-    "execute-command": "/home/andre/homelab-infra/mnemosyne/scripts/deploy-handler.sh",
+    "execute-command": "/home/<user>/homelab-infra/mnemosyne/scripts/deploy-handler.sh",
     "trigger-rule-mismatch-http-response-code": 403,
-    "command-working-directory": "/home/andre/homelab-infra",
+    "command-working-directory": "/home/<user>/homelab-infra",
     "include-command-output-in-response": true,
     "include-command-output-in-response-on-error": true,
     "pass-arguments-to-command": [
@@ -19,9 +19,9 @@
   },
   {
     "id": "pump-alerts-deploy",
-    "execute-command": "/home/andre/homelab-infra/mnemosyne/scripts/pump-alerts-deploy.sh",
+    "execute-command": "/home/<user>/homelab-infra/mnemosyne/scripts/pump-alerts-deploy.sh",
     "trigger-rule-mismatch-http-response-code": 403,
-    "command-working-directory": "/home/andre",
+    "command-working-directory": "/home/<user>",
     "response-message": "pump-alerts deploy triggered",
     "trigger-rule": {
       "match": {

@@ -1,8 +1,8 @@
 [
   {
     "id": "gitea-pull",
-    "execute-command": "/home/andre/homelab-infra/shared/scripts/gitea-webhook-handler.sh",
-    "command-working-directory": "/home/andre/homelab-infra",
+    "execute-command": "/home/<user>/homelab-infra/shared/scripts/gitea-webhook-handler.sh",
+    "command-working-directory": "/home/<user>/homelab-infra",
     "response-message": "Webhook received",
     "trigger-rule": {
       "match": {
@@ -17,8 +17,8 @@
   },
   {
     "id": "pump-alerts-deploy",
-    "execute-command": "/home/andre/homelab-infra/mnemosyne/scripts/pump-alerts-deploy.sh",
-    "command-working-directory": "/home/andre",
+    "execute-command": "/home/<user>/homelab-infra/mnemosyne/scripts/pump-alerts-deploy.sh",
+    "command-working-directory": "/home/<user>",
     "response-message": "pump-alerts deploy triggered",
     "trigger-rule": {
       "match": {

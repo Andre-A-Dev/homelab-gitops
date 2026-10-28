@@ -13,7 +13,7 @@ services:
     environment:
       JOBIRIS_COMPOSE_DIR: /app
     volumes:
-      - /home/andre/homelab-infra/mnemosyne/stacks/jobiris:/app
+      - /home/<user>/homelab-infra/mnemosyne/stacks/jobiris:/app
       - /mnt/vault/jobiris:/mnt/vault/jobiris
       - /var/run/docker.sock:/var/run/docker.sock
       - /usr/bin/docker:/usr/bin/docker:ro
@@ -32,7 +32,7 @@ services:
     env_file:
       - .env
     volumes:
-      - /home/andre/homelab-infra/mnemosyne/stacks/jobiris:/app
+      - /home/<user>/homelab-infra/mnemosyne/stacks/jobiris:/app
       - /mnt/vault/jobiris:/mnt/vault/jobiris
 
 networks:

@@ -30,7 +30,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-TARGET_USER="${TARGET_USER:-andre}"
+TARGET_USER="${TARGET_USER:-<user>}"
 K3S_VERSION="${K3S_VERSION:-}"   # empty = latest stable channel
 
 log()  { echo -e "\033[1;32m[bootstrap]\033[0m $*"; }
@@ -190,7 +190,7 @@ cat << 'EOF'
  Next steps (manual, one-time):
    1. flux bootstrap against your Gitea repo:
         flux bootstrap git \
-          --url=ssh://git@<mnemosyne>:2222/andre/homelab-infra.git \
+          --url=ssh://git@<mnemosyne>:2222/<user>/homelab-infra.git \
           --branch=main \
           --path=clusters/daidalos
    2. Commit a throwaway hello-world manifest, push,

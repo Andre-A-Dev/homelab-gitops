@@ -8,6 +8,6 @@ source /usr/share/cachyos-fish-config/cachyos-config.fish
 alias lumux="source ~/.venv/lumux/bin/activate.fish && python -m lumux"
 
 # Added by LM Studio CLI (lms)
-set -gx PATH $PATH /home/andre/.lmstudio/bin
+set -gx PATH $PATH /home/<user>/.lmstudio/bin
 # End of LM Studio CLI section
 

@@ -5,10 +5,10 @@ Requires=vcontrold.service
 
 [Service]
 Type=simple
-User=andre
-WorkingDirectory=/home/andre/homelab-infra/hephaestus/scripts
-EnvironmentFile=/home/andre/homelab-infra/hephaestus/scripts/.env
-ExecStart=/usr/bin/python3 /home/andre/homelab-infra/hephaestus/scripts/viessmann-api.py
+User=<user>
+WorkingDirectory=/home/<user>/homelab-infra/hephaestus/scripts
+EnvironmentFile=/home/<user>/homelab-infra/hephaestus/scripts/.env
+ExecStart=/usr/bin/python3 /home/<user>/homelab-infra/hephaestus/scripts/viessmann-api.py
 Restart=on-failure
 RestartSec=10
 

@@ -2,10 +2,10 @@
 # Deploys pump-alerts.yml from Gitea to Prometheus.
 # Validates rules with promtool before deploying — aborts on invalid YAML.
 
-GITEA_TOKEN=$(grep PUMP_GITEA_TOKEN /home/andre/stacks/monitoring/.env | cut -d= -f2)
-REPO_URL="https://andre:${GITEA_TOKEN}@git.home/Andre/pump_alerts"
+GITEA_TOKEN=$(grep PUMP_GITEA_TOKEN "/home/<user>/stacks/monitoring/.env" | cut -d= -f2)
+REPO_URL="https://<user>:${GITEA_TOKEN}@git.home/<user>/pump_alerts"
 REPO_DIR="/tmp/pump-alerts-repo"
-OUTFILE="/home/andre/stacks/monitoring/prometheus/pump-alerts.yml"
+OUTFILE="/home/<user>/stacks/monitoring/prometheus/pump-alerts.yml"
 TMPFILE="/tmp/pump-alerts-check.yml"
 LOG="/var/log/webhook-handler.log"
 

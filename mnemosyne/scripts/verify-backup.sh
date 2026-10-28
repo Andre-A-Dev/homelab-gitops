@@ -21,10 +21,10 @@
 #   sudo /usr/local/bin/backup-services.sh && sudo /usr/local/bin/verify-backup.sh
 #
 # Remote execution via SSH (used by verify-backup.py on Windows):
-#   ssh andre@192.168.1.10 "sudo /usr/local/bin/verify-backup.sh"
+#   ssh <user>@192.168.1.10 "sudo /usr/local/bin/verify-backup.sh"
 #
 # For SSH remote execution without a password prompt, add to sudoers:
-#   andre ALL=(ALL) NOPASSWD: /usr/local/bin/verify-backup.sh
+#   <user> ALL=(ALL) NOPASSWD: /usr/local/bin/verify-backup.sh
 #
 # Exit codes:
 #   0 — all checks passed (warnings are non-fatal)

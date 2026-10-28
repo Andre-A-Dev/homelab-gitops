@@ -23,7 +23,7 @@
 #   Immich     — uploads only; the DB needs an empty database (see RUNBOOK)
 #   Calibre    — calibre-web is stopped during library restore to prevent
 #                read/write conflicts on the bind-mounted library path
-#   Syncthing  — host service (syncthing@andre), not a container
+#   Syncthing  — host service (syncthing@<user>), not a container
 #   Stack cfg  — ~/stacks/ is a symlink; tar extracts to the symlink target
 #                (homelab-infra/mnemosyne/stacks/). Symlink must be in place.
 #
@@ -43,10 +43,10 @@
 # touching the default. Destination paths for restored data are unaffected —
 # they are always the live production paths (see restore_* functions below).
 BACKUP_DIR="${BACKUP_DIR:-/mnt/backup}"
-STACKS_DIR="/home/andre/stacks"
+STACKS_DIR="/home/<user>/stacks"
 ENV_NEXTCLOUD="$STACKS_DIR/nextcloud/.env"
 ENV_GHOST="$STACKS_DIR/ghost/.env"
-SYNCTHING_UNIT="syncthing@andre.service"
+SYNCTHING_UNIT="syncthing@<user>.service"
 LOG="/var/log/restore-services.log"
 
 

@@ -24,8 +24,8 @@
 
 set -euo pipefail
 
-REPO="/home/andre/homelab-infra"
-STACKS_DIR="/home/andre/stacks"
+REPO="/home/<user>/homelab-infra"
+STACKS_DIR="/home/<user>/stacks"
 PLAN="$REPO/mnemosyne/scripts/deploy_plan.py"
 LOCK="/run/lock/mnemosyne-deploy.lock"
 # Long enough for a crash-looping container to show "restarting".

@@ -24,7 +24,7 @@
 
 [Unit]
 Description=Nightly local backup of all services
-Documentation=file:///home/andre/homelab-infra/mnemosyne/scripts/backup-services.sh
+Documentation=file:///home/<user>/homelab-infra/mnemosyne/scripts/backup-services.sh
 # Pointless to start if either the source or the destination is not mounted.
 RequiresMountsFor=/mnt/backup /mnt/codex /mnt/vault
 # Containers must be up: the script execs into ghost-db, nextcloud and

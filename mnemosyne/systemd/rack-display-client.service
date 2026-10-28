@@ -5,10 +5,10 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=andre
+User=<user>
 # DRM access needs the render and video groups; no X or Wayland is involved.
 SupplementaryGroups=video render input
-WorkingDirectory=/home/andre/homelab-infra/mnemosyne/stacks/rack-display
+WorkingDirectory=/home/<user>/homelab-infra/mnemosyne/stacks/rack-display
 Environment=RACK_DISPLAY_CONFIG=display.yml
 Environment=SDL_VIDEODRIVER=kmsdrm
 ExecStart=/usr/bin/python3 display_client.py

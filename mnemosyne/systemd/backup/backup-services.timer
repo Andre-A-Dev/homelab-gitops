@@ -10,7 +10,7 @@
 
 [Unit]
 Description=Nightly local backup at 02:00
-Documentation=file:///home/andre/homelab-infra/mnemosyne/scripts/backup-services.sh
+Documentation=file:///home/<user>/homelab-infra/mnemosyne/scripts/backup-services.sh
 
 [Timer]
 OnCalendar=*-*-* 02:00:00

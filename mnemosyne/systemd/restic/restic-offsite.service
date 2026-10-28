@@ -11,7 +11,7 @@
 
 [Unit]
 Description=restic offsite backup to Hetzner Storage Box
-Documentation=file:///home/andre/homelab-infra/mnemosyne/scripts/restic-offsite.sh
+Documentation=file:///home/<user>/homelab-infra/mnemosyne/scripts/restic-offsite.sh
 # Don't even attempt if the local backup mount is missing — nothing to back up.
 RequiresMountsFor=/mnt/backup
 After=network-online.target
