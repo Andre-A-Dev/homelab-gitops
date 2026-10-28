@@ -58,7 +58,9 @@ config.yaml
 *.db-shm
 
 # --- Claude Code ---------------------------------------------------------
-# Private, machine-specific context (vault path, internal hosts)
+# CLAUDE.local.md is tracked in the private repo, which this line does not
+# affect (gitignore only applies to untracked files). It guards checkouts
+# where the file is untracked, like the public mirror, against `git add .`.
 CLAUDE.local.md
 
 # Whitelist .claude/: ignore everything, re-include only shared files

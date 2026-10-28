@@ -11,11 +11,15 @@ Infrastructure-as-code and GitOps source of truth for a self-hosted, privacy-fir
 - **Backups that are checked, not assumed.** Nightly local backup, encrypted and deduplicated restic offsite copy, daily verification, weekly prune and integrity check. Each backup unit reports start and result to Healthchecks.io.
 - **Monitoring that watches itself.** Prometheus, Alertmanager, Grafana and Loki, with alerts for stale metrics, missing exporters and a Watchdog that must keep firing.
 - **Kubernetes on the side.** A single-node k3s cluster reconciled by Flux, for learning; production stays on Compose.
-- **Own code where nothing fit.** Exporters for Shelly plugs, the Prusa printer and the Viessmann heating (read over an optical serial link), a weather console and a touch panel for the rack front.
+- **Own code where nothing fit.** Exporters for Shelly plugs, the Prusa printer and the Viessmann heating (read over an optical serial link), a weather console and a touch panel for the rack front. In development: Galatea, a control plane for the 3D printer whose power-off interlock fails closed, and a Discord inactivity bot.
 
 ## About this repository
 
 The public GitHub repository is a sanitized mirror of a private Gitea repository, which is the actual source of truth and deploy target. Internal IPs, domains and personal data are replaced with placeholders (`192.168.1.x`, `yourdomain.dedyn.io`), a few private files are left out, and the full commit history stays private.
+
+## Working with AI agents
+
+Changes are drafted with Claude Code under the rules in [`CLAUDE.md`](CLAUDE.md) and [`.claude/rules/`](.claude/rules/). The agent proposes and verifies; I decide, review every diff, commit and push. It never commits, deploys or sends commands to devices, and it has to back every result with real command output: no output is not proof of success. Host-specific context (IPs, internal paths) lives in a private `CLAUDE.local.md` that is not part of this mirror.
 
 ---
 
@@ -28,7 +32,7 @@ The public GitHub repository is a sanitized mirror of a private Gitea repository
 | **Zephyros** | Raspberry Pi 3B+ (arm64) | DNS + ad blocking, reverse proxy (remote network) | `192.168.1.11`* | `100.y.y.y` |
 | **Hephaestus** | Raspberry Pi 3B (arm32) | Viessmann heating integration | `192.168.1.13` | — |
 | **Daidalos** | Dell OptiPlex 7070 Micro (i5-9500T, 16 GB, x86_64) | Single-node k3s learning cluster, Flux | `192.168.1.x` | — |
-| **AstraeusNX** | Desktop PC (Ryzen 9 9950X3D, RTX 5080, 64 GB) | Primary workstation, CachyOS (Windows 11 dual-boot for a few exceptions) | `192.168.1.x` | — |
+| **Astraeus(NX)** | Desktop PC (Ryzen 9 9950X3D, RTX 5080, 64 GB) | Primary workstation, CachyOS (Windows 11 dual-boot for a few exceptions) | `192.168.1.x` | — |
 | **Proteus** | Acer Switch Alpha 12 (N16P3) | Secondary workstation, mobile, CachyOS | DHCP | — |
 
 > \* Zephyros is on a separate network at a different location.
@@ -88,6 +92,10 @@ Most directories carry their own `README.md` with details.
 | Jobiris | `https://jobiris.home` | `jobiris/` |
 | Carousel | `https://carousel.home` | `carousel/` |
 | Rack display mirror | `https://rack.home` | `rack-display/` + systemd |
+| Galatea (in development) | `https://galatea.home` | `galatea/` |
+| Discord inactivity bot (in development, `inactive` profile) | — (Discord bot) | `discord-inactivity/` |
+| Diun | — (image update notifications via ntfy) | `diun/` |
+| Gitea Actions runner | — | `gitea-runner/` |
 | Grafana | `https://grafana.home` | `monitoring/` |
 | Prometheus | `https://prometheus.home` | `monitoring/` |
 | Alertmanager | `https://alertmanager.home` | `monitoring/` |
@@ -166,7 +174,7 @@ nano .env
 
 ## Workflow
 
-All changes are made on AstraeusNX and pushed to Gitea. Nothing is edited on a server.
+All changes are made on a workstation and pushed to Gitea. Nothing is edited on a server.
 
 - **Mnemosyne:** the Actions job `validate` checks every push (compose config, update-class labels, alert rules, Prometheus/Alertmanager configs, Grafana JSON, `.env.example` drift, shellcheck, executable bits, suppressed error output). Only if it passes, the job `deploy` calls the host webhook. `deploy-handler.sh` fast-forwards to exactly the validated commit and applies a per-file plan from `deploy_plan.py`: `docker compose up -d` for changed compose files, `--force-recreate` for services whose bind-mounted config changed, a rebuild for changed build contexts. It then verifies the touched containers. Changes it must not apply itself (Gitea and its runner, systemd units, unmounted files) are reported as manual follow-ups.
 - **Boreas, Zephyros, Hephaestus:** a Gitea webhook plus a 15-minute cron pull (`shared/scripts/gitea-webhook-handler.sh`, `gitea-pull.sh`). Zephyros applies its Caddy and monitoring stacks; the others restart specific systemd services.
