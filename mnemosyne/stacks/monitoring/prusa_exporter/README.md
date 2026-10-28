@@ -49,7 +49,7 @@ on the fly, so new firmware states won't silently disappear.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `PRUSA_HOST` | *(required)* | Printer IP or host (e.g. `192.168.178.xx`, `pygmalion.home`). Append `:PORT` only for a non-default PrusaLink port. |
+| `PRUSA_HOST` | *(required)* | Printer IP or host (e.g. `192.168.1.x`, `pygmalion.home`). Append `:PORT` only for a non-default PrusaLink port. |
 | `PRUSA_API_KEY` | *(auth)* | PrusaLink API key. Sent as the `X-Api-Key` header. Preferred if set. |
 | `PRUSA_PASSWORD` | *(auth)* | PrusaLink password. Used for HTTP Digest auth if no API key is set. |
 | `PRUSA_USERNAME` | `maker` | Digest-auth username (hardcoded to `maker` on current firmware). |
@@ -89,7 +89,7 @@ it.
 `.env`:
 
 ```dotenv
-PRUSA_HOST=192.168.178.xx
+PRUSA_HOST=192.168.1.x
 # Provide ONE of the two (whichever your firmware accepted in the curl test):
 PRUSA_API_KEY=<your-prusalink-api-key>
 # PRUSA_PASSWORD=<your-prusalink-password>

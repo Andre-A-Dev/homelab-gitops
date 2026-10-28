@@ -17,7 +17,7 @@ firmware accepts before deploying:
   curl -s --digest -u maker:$PASSWORD http://$PRUSA_HOST/api/v1/status | jq
 
 Config via environment variables:
-  PRUSA_HOST      Printer IP or host (e.g. 192.168.178.xx, or pygmalion.home).
+  PRUSA_HOST      Printer IP or host (e.g. 192.168.1.x, or pygmalion.home).
                   Append :PORT only if PrusaLink runs on a non-default port.
   PRUSA_API_KEY   PrusaLink API key (preferred if set).
   PRUSA_PASSWORD  PrusaLink password (used if no API key is set).

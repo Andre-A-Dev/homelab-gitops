@@ -59,7 +59,7 @@ Mnemosyne via its Tailscale IP (`100.x.x.x`).
 Prerequisites before activating (documented in the Caddyfile header):
 1. Disable Pi-hole's built-in port 443
 2. Set Pi-hole DNS records: all `.home` → `192.168.1.11`
-3. Enable Tailscale subnet router on Boreas (`192.168.1.x/24`)
+3. Enable Tailscale subnet router on Boreas (`192.168.1.0/24`)
 4. Change the remote FritzBox subnet to `192.168.179.0/24` to avoid collision
 
 ### `msmtprc` — email relay
@@ -93,7 +93,7 @@ docker compose up -d --force-recreate
 ## Network
 
 ```
-LAN 192.168.1.x/24
+LAN 192.168.1.0/24
         │
    Boreas :78
         ├── Pi-hole v6 (DNS :53)
