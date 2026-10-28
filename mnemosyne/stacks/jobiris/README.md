@@ -154,8 +154,8 @@ the UI. This grants root-equivalent access - acceptable for an internal
 
 Key quirks of the Jobsuche API v6 (reverse-engineered, undocumented):
 
-- **`wo` requires umlauts**: `Nuernberg` → `UNGUELTIG` → 0 results.
-  Use `Nürnberg`, `München` etc., or use `koordinaten` instead.
+- **`wo` requires umlauts**: `Koeln` → `UNGUELTIG` → 0 results.
+  Use `Köln`, `München` etc., or use `koordinaten` instead.
 - **`arbeitszeit=ho` is ineffective for IT roles**: returns 0 results even
   when jobs have `homeofficemoeglich: true`. Omitted from `search-profiles.yaml`;
   `home_office` is read from the response field instead.

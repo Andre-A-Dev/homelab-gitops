@@ -2,27 +2,27 @@
 tags:
   - api
   - bundesagentur
-  - jobsuche
-  - reverse-engineering
+  - job-search
+  - unofficial-api
   - python
-  - referenz
+  - reference
 created: 2026-06-19
 updated: 2026-06-19
 status: Done
 ---
 
-# Bundesagentur für Arbeit – Jobsuche API v6 (inoffiziell)
+# Bundesagentur für Arbeit (Federal Employment Agency) – Job Search API v6 (unofficial)
 
-> [!warning] Inoffizielle API
-> Diese API ist nicht öffentlich dokumentiert. Alle Erkenntnisse basieren auf
-> Reverse Engineering der offiziellen Jobsuche-Website sowie empirischen Tests.
-> Änderungen können jederzeit ohne Ankündigung erfolgen. Das offizielle
-> `openapi.yaml` auf `bundesAPI/jobsuche-api` (GitHub) dokumentiert noch das
-> veraltete v4-Schema – für v6 nicht verlässlich.
+> [!warning] Unofficial API
+> This API is not publicly documented. All findings are based on the requests
+> the official job search website sends and on empirical tests.
+> Changes can happen at any time without notice. The official `openapi.yaml`
+> in `bundesAPI/jobsuche-api` (GitHub) still documents the outdated v4
+> schema – not reliable for v6.
 
 ---
 
-## Basis-URL
+## Base URL
 
 ```
 GET https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs
@@ -30,24 +30,25 @@ GET https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs
 
 ---
 
-## Authentifizierung
+## Authentication
 
-Kein OAuth, kein persönlicher Account. Zwei Header sind erforderlich:
+No OAuth, no personal account. Two headers are required:
 
 ```http
 X-API-Key: jobboerse-jobsuche
 User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36
 ```
 
-> [!warning] User-Agent-Pflicht
-> Der Standard-`python-requests`-User-Agent (`python-requests/x.x`) wird von
-> der WAF mit **HTTP 403** geblockt, sobald zusätzliche Filterparameter
-> (`arbeitszeit`, `angebotsart`, `veroeffentlichtseit`) gesetzt sind. Ein
-> Browser-ähnlicher User-Agent ist daher zwingend erforderlich.
+> [!warning] User-Agent required
+> The API sits behind a WAF that answers requests with the default
+> `python-requests` user agent (`python-requests/x.x`) with **HTTP 403** as
+> soon as filter parameters (`arbeitszeit`, `angebotsart`,
+> `veroeffentlichtseit`) are set. The client therefore sends the same user
+> agent string as the official web frontend.
 >
-> Ohne Filter-Parameter funktioniert der Default-UA (empirisch bestätigt) –
-> das Blocking-Verhalten scheint parameterabhängig und möglicherweise
-> nicht-deterministisch zu sein.
+> Without filter parameters the default UA is accepted (empirically
+> confirmed) – the WAF behaviour appears to depend on the parameters and may
+> be non-deterministic.
 
 ```python
 import requests
@@ -63,89 +64,90 @@ HEADERS = {
 
 ---
 
-## Request-Parameter
+## Request parameters
 
-### Pflichtparameter (praktisch)
+### Required parameters (in practice)
 
-Technisch gibt es keine harten Pflichtparameter – ein Request ohne `was`/`wo`
-liefert HTTP 200 mit generischen Ergebnissen (empirisch: bundesweite Stellen
-ohne Geo-Filterung). Für sinnvolle Suchergebnisse sind jedoch erforderlich:
+Technically there are no hard required parameters – a request without
+`was`/`wo` returns HTTP 200 with generic results (empirically: nationwide
+listings without geo filtering). For meaningful search results, however, these
+are required:
 
-| Parameter | Typ | Beschreibung |
+| Parameter | Type | Description |
 |---|---|---|
-| `was` | string | Suchbegriff (Berufsbezeichnung, Tätigkeit). Wird als AND-Suche über mehrere Wörter interpretiert. Leer-String erlaubt (alle Stellen). |
-| `wo` | string | Ort: Stadtname **mit Umlaut** (z.B. `Nürnberg`), PLZ (z.B. `90402`) oder Bundesland (z.B. `Bayern`). Alternativ: `koordinaten`-Parameter. |
+| `was` | string | Search term (job title, activity). Interpreted as an AND search across multiple words. Empty string allowed (all listings). |
+| `wo` | string | Location: city name **with umlaut** (e.g. `Köln`), postal code (e.g. `50667`) or federal state (e.g. `Hessen`). Alternative: the `koordinaten` parameter. |
 
-> [!warning] Ortsnamen ohne Umlaut
-> `Nuernberg` statt `Nürnberg` liefert `woOutput.suchmodus: "UNGUELTIG"` und
-> 0 Treffer. Immer Umlaute verwenden oder auf `koordinaten` ausweichen.
+> [!warning] Place names without umlaut
+> A city name with the umlaut transliterated (`Koeln` instead of `Köln`)
+> returns `woOutput.suchmodus: "UNGUELTIG"` and 0 hits. Always use umlauts or
+> fall back to `koordinaten`.
 
-### Geo-Parameter
+### Geo parameters
 
-| Parameter | Typ | Beschreibung |
+| Parameter | Type | Description |
 |---|---|---|
-| `wo` | string | Ortsname, PLZ oder Bundesland (siehe oben) |
-| `umkreis` | integer | Suchradius in km um `wo`. Ohne Angabe: API wählt Default (empirisch: ~25 km). |
-| `koordinaten` | string | Alternativ zu `wo`: `"lat,lon"` (z.B. `"49.4521,11.0767"`). Liefert `woOutput.suchmodus: "UMKREISSUCHE_MIT_KOORDINATEN"`. |
+| `wo` | string | Place name, postal code or federal state (see above) |
+| `umkreis` | integer | Search radius in km around `wo`. If omitted, the API picks a default (empirically: ~25 km). |
+| `koordinaten` | string | Alternative to `wo`: `"lat,lon"` (e.g. `"50.9375,6.9603"`). Returns `woOutput.suchmodus: "UMKREISSUCHE_MIT_KOORDINATEN"`. |
 
-**`woOutput.suchmodus`-Werte:**
+**`woOutput.suchmodus` values:**
 
-| Wert | Bedeutung |
+| Value | Meaning |
 |---|---|
-| `UMKREISSUCHE` | Stadtname oder PLZ korrekt aufgelöst |
-| `UMKREISSUCHE_MIT_KOORDINATEN` | Koordinaten-Suche |
-| `BUNDESLANDSUCHE` | Bundesland erkannt (kein Radius, gesamtes Bundesland) |
-| `UNGUELTIG` | Ort nicht erkannt (0 Ergebnisse) |
+| `UMKREISSUCHE` | City name or postal code resolved correctly |
+| `UMKREISSUCHE_MIT_KOORDINATEN` | Coordinate search |
+| `BUNDESLANDSUCHE` | Federal state recognized (no radius, whole state) |
+| `UNGUELTIG` | Location not recognized (0 results) |
 
-### Paginierung
+### Pagination
 
-| Parameter | Typ | Beschreibung |
+| Parameter | Type | Description |
 |---|---|---|
-| `page` | integer | Seitennummer, 1-basiert |
-| `size` | integer | Ergebnisse pro Seite. **Maximum: 250** (bei `size=500` → HTTP 400). Bei `size=100`/`200` werden alle verfügbaren Treffer zurückgegeben (kein künstliches Cap unter 250 beobachtet). |
+| `page` | integer | Page number, 1-based |
+| `size` | integer | Results per page. **Maximum: 250** (`size=500` → HTTP 400). With `size=100`/`200` all available hits are returned (no artificial cap below 250 observed). |
 
-**Pagination-Verhalten:**
-- `maxErgebnisse` gibt die Gesamtanzahl aller Treffer an
-- Seiten jenseits der letzten liefern HTTP 200 mit leerem `ergebnisliste`-Array (kein Fehler)
-- `ceil(maxErgebnisse / size)` ergibt die letzte gültige Seite
+**Pagination behaviour:**
+- `maxErgebnisse` gives the total number of hits
+- Pages beyond the last one return HTTP 200 with an empty `ergebnisliste` array (no error)
+- `ceil(maxErgebnisse / size)` gives the last valid page
 
-### Filter-Parameter
+### Filter parameters
 
-| Parameter | Typ | Werte | Beschreibung |
+| Parameter | Type | Values | Description |
 |---|---|---|---|
-| `arbeitszeit` | string | Siehe Tabelle unten | Arbeitszeitmodell-Filter. Mehrere Werte mit `;` kombinierbar. |
-| `angebotsart` | integer | `1` | Angebotstyp. Nur `1` (ARBEIT) liefert Ergebnisse für reguläre Stellen. |
-| `veroeffentlichtseit` | integer | 0–100+ | Nur Stellen der letzten N Tage. `0` = heute (0 Ergebnisse beobachtet). API scheint einen internen Cap bei ~30 Tagen zu haben (30/60/100 lieferten identische Trefferzahl). |
-| `pav` | string | `"false"` / `"true"` | Privater Arbeitsvermittler. `"false"` = nur direkte Arbeitgeber (empfohlen); `"true"` = nur PAV-Angebote (deutlich weniger Treffer). |
-| `berufsfeld` | string | Freitext | Berufsfeld-Filter. Gültige Werte aus `facetten.berufsfeld.counts`. Z.B. `"Informatik"`, `"Elektrotechnik"`, `"Softwareentwicklung und Programmierung"`. |
-| `arbeitgeber` | string | Freitext | Arbeitgeberfilter. Leerer `was`-Wert bei Verwendung → HTTP 400. Scheint auf exakten/internen Firmennamen angewiesen zu sein (Siemens/BMW/Bosch/Continental lieferten 0 Treffer mit umkreis=200). |
+| `arbeitszeit` | string | See table below | Working time model filter. Multiple values can be combined with `;`. |
+| `angebotsart` | integer | `1` | Offer type. Only `1` (ARBEIT, employment) returns results for regular positions. |
+| `veroeffentlichtseit` | integer | 0–100+ | Only listings from the last N days. `0` = today (0 results observed). The API appears to have an internal cap at ~30 days (30/60/100 returned identical hit counts). |
+| `pav` | string | `"false"` / `"true"` | Private recruitment agency. `"false"` = direct employers only (recommended); `"true"` = agency listings only (significantly fewer hits). |
+| `berufsfeld` | string | Free text | Occupational field filter. Valid values from `facetten.berufsfeld.counts`. E.g. `"Informatik"`, `"Elektrotechnik"`, `"Softwareentwicklung und Programmierung"`. |
+| `arbeitgeber` | string | Free text | Employer filter. An empty `was` value when used → HTTP 400. Appears to depend on exact/internal company names (several well-known large employers returned 0 hits with umkreis=200). |
 
-**`arbeitszeit`-Enum-Werte:**
+**`arbeitszeit` enum values:**
 
-| Wert | Bedeutung | Response-Felder |
+| Value | Meaning | Response fields |
 |---|---|---|
-| `vz` | Vollzeit | `arbeitszeitVollzeit: true` |
-| `tz` | Teilzeit | `arbeitszeitTeilzeit*`-Felder |
-| `snw` | Schicht / Nacht / Wochenende | `arbeitszeitSchichtNachtWochenende: true` |
-| `ho` | Home Office | `homeofficemoeglich: true` |
-| `mj` | Minijob | `istGeringfuegigeBeschaeftigung: true` (Hypothese) |
+| `vz` | Full-time | `arbeitszeitVollzeit: true` |
+| `tz` | Part-time | `arbeitszeitTeilzeit*` fields |
+| `snw` | Shift / night / weekend | `arbeitszeitSchichtNachtWochenende: true` |
+| `ho` | Home office | `homeofficemoeglich: true` |
+| `mj` | Mini-job | `istGeringfuegigeBeschaeftigung: true` (hypothesis) |
 
-> [!warning] `ho`-Filter kaum wirksam
-> `arbeitszeit=ho` liefert für `Software Engineer` in Nürnberg 0 Treffer,
-> obwohl Items mit `homeofficemoeglich: true` existieren (empirisch). Viele
-> Arbeitgeber – besonders im Automotive/Embedded-Bereich – taggen Home-Office
-> nicht explizit. Für maximale Trefferzahl `arbeitszeit`-Filter weglassen und
-> stattdessen `homeofficemoeglich`/`homeofficetyp` aus dem Response auswerten.
+> [!warning] `ho` filter barely effective
+> `arbeitszeit=ho` returned 0 hits for `Software Engineer` in a large city,
+> even though items with `homeofficemoeglich: true` exist (empirically). Many
+> employers do not tag home office explicitly. For the maximum number of hits, omit the `arbeitszeit` filter and
+> evaluate `homeofficemoeglich`/`homeofficetyp` from the response instead.
 
-**Kombination:** Mehrere Werte mit `;` trennbar: `vz;ho`, `vz;tz`, `tz;ho`.
-Kombination wirkt als OR (nicht AND): `vz;ho` liefert identische Trefferzahl
-wie `vz` allein (empirisch bestätigt).
+**Combination:** Multiple values can be separated with `;`: `vz;ho`, `vz;tz`, `tz;ho`.
+The combination acts as OR (not AND): `vz;ho` returns the same hit count as
+`vz` alone (empirically confirmed).
 
 ---
 
-## Response-Format
+## Response format
 
-### Top-Level
+### Top level
 
 ```json
 {
@@ -158,98 +160,98 @@ wie `vz` allein (empirisch bestätigt).
 }
 ```
 
-| Feld | Typ | Beschreibung |
+| Field | Type | Description |
 |---|---|---|
-| `ergebnisliste` | array | Liste der Stellenangebote (siehe Item-Schema) |
-| `maxErgebnisse` | integer | Gesamtzahl aller Treffer (unabhängig von `size`/`page`) |
-| `page` | integer | Aktuelle Seite |
-| `size` | integer | Angeforderte Seitengröße |
-| `woOutput` | object | Aufgelöste Geo-Information (siehe oben) |
-| `facetten` | object | Aggregationen für UI-Filter (siehe unten) |
+| `ergebnisliste` | array | List of job listings (see item schema) |
+| `maxErgebnisse` | integer | Total number of hits (independent of `size`/`page`) |
+| `page` | integer | Current page |
+| `size` | integer | Requested page size |
+| `woOutput` | object | Resolved geo information (see above) |
+| `facetten` | object | Aggregations for UI filters (see below) |
 
-### Item-Schema (`ergebnisliste[]`)
+### Item schema (`ergebnisliste[]`)
 
-Vollständiges Feldverzeichnis, empirisch ermittelt. `—` = Feld fehlt in diesem
-Item (nicht `null`, sondern absent).
+Complete field list, determined empirically. `—` = field missing in this item
+(not `null`, but absent).
 
-| Feld | Typ | Beschreibung |
+| Field | Type | Description |
 |---|---|---|
-| `referenznummer` | string | Eindeutige ID (z.B. `"10001-1003112368-S"`). Als Dedup-Key geeignet. |
-| `stellenangebotsTitel` | string | Stellenbezeichnung |
-| `stellenangebotsart` | string | Bisher nur `"ARBEIT"` beobachtet |
-| `firma` | string | Arbeitgeberbezeichnung |
-| `hauptberuf` | string | Primäre Berufsbezeichnung (normalisiert) |
-| `alternativBeruf1` | string | Alternative Berufsbezeichnung |
-| `alternativBeruf2` | string | Weitere alternative Berufsbezeichnung |
-| `weitereBerufe` | array\<string\> | Weitere Berufsbezeichnungen/Keywords |
-| `alleBerufe` | array\<string\> | Alle Berufe inkl. Haupt- und Alternativberufe |
-| `stellenlokationen` | array | Standorte (siehe Unter-Schema) |
-| `entfernung` | integer | Entfernung in km vom gesuchten Ort |
-| `eintrittszeitraum` | object | `{"von": "YYYY-MM-DD"}` – frühestes Eintrittsdatum |
-| `datumErsteVeroeffentlichung` | string | Erstveröffentlichung (`YYYY-MM-DD`) |
+| `referenznummer` | string | Unique ID (format `"10001-<number>-S"`). Suitable as a dedup key. |
+| `stellenangebotsTitel` | string | Job title |
+| `stellenangebotsart` | string | Only `"ARBEIT"` observed so far |
+| `firma` | string | Employer name |
+| `hauptberuf` | string | Primary occupation title (normalized) |
+| `alternativBeruf1` | string | Alternative occupation title |
+| `alternativBeruf2` | string | Further alternative occupation title |
+| `weitereBerufe` | array\<string\> | Further occupation titles/keywords |
+| `alleBerufe` | array\<string\> | All occupations including primary and alternative ones |
+| `stellenlokationen` | array | Locations (see sub-schema) |
+| `entfernung` | integer | Distance in km from the searched location |
+| `eintrittszeitraum` | object | `{"von": "YYYY-MM-DD"}` – earliest start date |
+| `datumErsteVeroeffentlichung` | string | First publication (`YYYY-MM-DD`) |
 | `veroeffentlichungszeitraum` | object | `{"von": "YYYY-MM-DD"}` |
-| `aenderungsdatum` | string | Letzte Änderung (ISO 8601 mit Zeit) |
-| `vertragsdauer` | string | `UNBEFRISTET` / `KEINE_ANGABE` |
-| `arbeitszeitVollzeit` | boolean | Vollzeitstelle |
-| `arbeitszeitSchichtNachtWochenende` | boolean | Schicht/Nacht/Wochenende |
-| `arbeitszeitTeilzeitVormittag` | boolean | Teilzeit vormittags |
-| `arbeitszeitTeilzeitNachmittag` | boolean | Teilzeit nachmittags |
-| `arbeitszeitTeilzeitAbend` | boolean | Teilzeit abends |
-| `arbeitszeitTeilzeitFlexibel` | boolean | Flexible Teilzeit |
-| `istGeringfuegigeBeschaeftigung` | boolean | Minijob |
-| `homeofficemoeglich` | boolean | Home Office möglich |
+| `aenderungsdatum` | string | Last change (ISO 8601 with time) |
+| `vertragsdauer` | string | `UNBEFRISTET` (permanent) / `KEINE_ANGABE` (not specified) |
+| `arbeitszeitVollzeit` | boolean | Full-time position |
+| `arbeitszeitSchichtNachtWochenende` | boolean | Shift/night/weekend |
+| `arbeitszeitTeilzeitVormittag` | boolean | Part-time mornings |
+| `arbeitszeitTeilzeitNachmittag` | boolean | Part-time afternoons |
+| `arbeitszeitTeilzeitAbend` | boolean | Part-time evenings |
+| `arbeitszeitTeilzeitFlexibel` | boolean | Flexible part-time |
+| `istGeringfuegigeBeschaeftigung` | boolean | Mini-job |
+| `homeofficemoeglich` | boolean | Home office possible |
 | `homeofficetyp` | string | `ANGABE_IN_PROZENT` / `NACH_VEREINBARUNG` |
-| `homeofficeprozent` | integer | Anteil Home Office in % (wenn `homeofficetyp=ANGABE_IN_PROZENT`) |
-| `verguetungsangabe` | string | `KEINE_ANGABEN` / `JAHRESGEHALT` / weitere Enum-Werte |
-| `artDerVerguetung` | string | `GEHALTSSPANNE` / fehlt meist |
-| `gehaltsspanneVon` | float | Jahresgehalt von (EUR, wenn `artDerVerguetung=GEHALTSSPANNE`) |
-| `gehaltsspanneBis` | float | Jahresgehalt bis (EUR) |
-| `chiffrenummer` | string | Chiffre (bei anonymen Anzeigen) |
-| `externeURL` | string | Direkt-Link zur Stellenanzeige (oft nicht vorhanden) |
-| `arbeitgeberKundennummerHash` | string | Hash der Arbeitgeber-ID (für Dedup über Firma) |
+| `homeofficeprozent` | integer | Home office share in % (if `homeofficetyp=ANGABE_IN_PROZENT`) |
+| `verguetungsangabe` | string | `KEINE_ANGABEN` / `JAHRESGEHALT` / further enum values |
+| `artDerVerguetung` | string | `GEHALTSSPANNE` / usually missing |
+| `gehaltsspanneVon` | float | Annual salary from (EUR, if `artDerVerguetung=GEHALTSSPANNE`) |
+| `gehaltsspanneBis` | float | Annual salary to (EUR) |
+| `chiffrenummer` | string | Box number (for anonymous listings) |
+| `externeURL` | string | Direct link to the job listing (often missing) |
+| `arbeitgeberKundennummerHash` | string | Hash of the employer ID (for dedup by company) |
 
-**`stellenlokationen[]`-Unter-Schema:**
+**`stellenlokationen[]` sub-schema** (illustrative values):
 
 ```json
 {
   "adresse": {
-    "strasse": "Dombühler Str.",
-    "hausnummer": "2",
-    "plz": "90449",
-    "ort": "Nürnberg, Mittelfranken",
-    "region": "BAYERN",
+    "strasse": "Musterstr.",
+    "hausnummer": "1",
+    "plz": "12345",
+    "ort": "Musterstadt, Musterregion",
+    "region": "MUSTERLAND",
     "land": "DEUTSCHLAND"
   },
-  "breite": 49.421,
-  "laenge": 11.032
+  "breite": 51.0,
+  "laenge": 10.0
 }
 ```
 
-`strasse`/`hausnummer` fehlen bei nicht allen Einträgen. `ort` enthält oft
-den Regionszusatz (`"Nürnberg, Mittelfranken"`).
+`strasse`/`hausnummer` are not present in all entries. `ort` often contains the
+region suffix (`"<city>, <region>"`).
 
-### Facetten (`facetten`)
+### Facets (`facetten`)
 
-Aggregationen über alle Treffer – nützlich für Filter-UIs oder Statistiken:
+Aggregations over all hits – useful for filter UIs or statistics:
 
-| Facette | Beschreibung |
+| Facet | Description |
 |---|---|
-| `befristung` | Befristungsart: `1`=unbefristet, `2`=?, `3`=? (Zählwerte) |
-| `verguetung` | Vergütungsangaben: `"jahr"` = Jahresgehalt angegeben |
-| `externestellenboersen` | Ob Anzeige von externer Jobbörse: `true`/`false` |
-| `behinderung` | Stellen für Menschen mit Behinderung: `false` = keine Einschränkung |
-| `pav` | Privater Arbeitsvermittler-Anteil |
-| `berufsfeld` | Berufsfelder mit Anzahl (nutzbar als `berufsfeld`-Parameterwerte) |
-| `arbeitsort` | Orte mit Anzahl |
-| `arbeitsort_plz` | PLZ mit Anzahl |
-| `veroeffentlichtseit` | Treffer nach Alter: `1`/`7`/`14`/`28`/`alle` Tage |
-| `weitereberufe` | Weitere Berufsbezeichnungen mit Anzahl |
+| `befristung` | Type of fixed term: `1`=permanent, `2`=?, `3`=? (counts) |
+| `verguetung` | Pay information: `"jahr"` = annual salary given |
+| `externestellenboersen` | Whether the listing comes from an external job board: `true`/`false` |
+| `behinderung` | Positions for people with disabilities: `false` = no restriction |
+| `pav` | Share of private recruitment agencies |
+| `berufsfeld` | Occupational fields with counts (usable as `berufsfeld` parameter values) |
+| `arbeitsort` | Locations with counts |
+| `arbeitsort_plz` | Postal codes with counts |
+| `veroeffentlichtseit` | Hits by age: `1`/`7`/`14`/`28`/`alle` (all) days |
+| `weitereberufe` | Further occupation titles with counts |
 
 ---
 
-## Fehlerformat
+## Error format
 
-Bei Validierungsfehlern (HTTP 400):
+On validation errors (HTTP 400):
 
 ```json
 {
@@ -265,27 +267,27 @@ Bei Validierungsfehlern (HTTP 400):
 }
 ```
 
-| HTTP | Ursache |
+| HTTP | Cause |
 |---|---|
-| 200 | Erfolg (auch bei 0 Treffern) |
-| 400 | Validierungsfehler (z.B. `size > 250`, `arbeitgeber` ohne `was`) |
-| 403 | Falscher/fehlender API-Key, oder WAF-Block (User-Agent) |
+| 200 | Success (also with 0 hits) |
+| 400 | Validation error (e.g. `size > 250`, `arbeitgeber` without `was`) |
+| 403 | Wrong/missing API key, or WAF block (user agent) |
 
 ---
 
-## Rate Limiting
+## Rate limiting
 
-Kein hartes Rate-Limit beobachtet: 10 schnelle Requests ohne Delay lieferten
-alle HTTP 200. Response-Header `X-API-BLOCKED: 0` deutet auf ein
-Blocking-System hin, das bei moderater Nutzung nicht greift. Kein
-`Retry-After`- oder `X-RateLimit-*`-Header sichtbar.
+No hard rate limit observed: 10 rapid requests without delay all returned
+HTTP 200. The response header `X-API-BLOCKED: 0` points to a blocking system
+that does not kick in with moderate use. No `Retry-After` or `X-RateLimit-*`
+header visible.
 
-Empfehlung: 1–2 Sekunden Delay zwischen Requests als Courtesy gegenüber der
-öffentlichen API.
+Recommendation: 1–2 seconds of delay between requests as a courtesy towards the
+public API.
 
 ---
 
-## Minimales Python-Beispiel
+## Minimal Python example
 
 ```python
 import requests
@@ -300,9 +302,9 @@ HEADERS = {
 }
 
 resp = requests.get(API_BASE, headers=HEADERS, params={
-    "was": "Build Engineer",
-    "wo": "Nürnberg",
-    "umkreis": 75,
+    "was": "Software Engineer",
+    "wo": "Köln",
+    "umkreis": 25,
     "page": 1,
     "size": 50,
     "pav": "false",
@@ -311,7 +313,7 @@ resp = requests.get(API_BASE, headers=HEADERS, params={
 })
 
 data = resp.json()
-print(f"{data['maxErgebnisse']} Treffer")
+print(f"{data['maxErgebnisse']} hits")
 for job in data["ergebnisliste"]:
     ort = job["stellenlokationen"][0]["adresse"].get("ort", "?") \
           if job.get("stellenlokationen") else "?"
@@ -323,19 +325,19 @@ for job in data["ergebnisliste"]:
 
 ---
 
-## Offene Fragen / Unbekannt
+## Open questions / unknowns
 
-- **`angebotsart`-Werte 2/4/16/32/34/64**: alle lieferten 0 Treffer für
-  `was=Software Engineer` – ob diese Werte für andere Suchbegriffe
-  (Ausbildung, Praktikum) Ergebnisse liefern, wurde nicht getestet.
-- **`befristung`-Facette**: Werte `1`/`2`/`3` – genaue Bedeutung unklar
-  (1=unbefristet ist Hypothese).
-- **`arbeitgeber`-Parameter**: Scheint auf exakten internen Firmennamen
-  angewiesen zu sein; Siemens/BMW/Bosch/Continental lieferten 0 Treffer.
-  Möglicherweise ist ein Hash/ID statt Klartext erforderlich.
-- **`mj`-Wert bei `arbeitszeit`**: 0 Treffer – könnte valider Wert sein,
-  der für IT-Stellen schlicht nicht vorkommt.
+- **`angebotsart` values 2/4/16/32/34/64**: all returned 0 hits for
+  `was=Software Engineer` – whether these values return results for other
+  search terms (vocational training, internship) was not tested.
+- **`befristung` facet**: values `1`/`2`/`3` – exact meaning unclear
+  (1=permanent is a hypothesis).
+- **`arbeitgeber` parameter**: Appears to depend on exact internal company
+  names; several well-known large employers returned 0 hits. Possibly a hash/ID is
+  required instead of plain text.
+- **`mj` value for `arbeitszeit`**: 0 hits – could be a valid value that simply
+  does not occur for IT positions.
 
 ---
 
-*Empirisch ermittelt mit `probe_api.py` / `probe_api_2.py` · Claude · claude.ai*
+*Determined empirically with ad-hoc probe scripts · Claude · claude.ai*
