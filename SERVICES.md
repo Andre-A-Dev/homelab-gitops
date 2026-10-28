@@ -28,12 +28,15 @@ All internal `.home` domains require the Caddy root certificate to be imported o
 | Alertmanager | `https://alertmanager.home` | `443` | Internal CA | ✅ |
 | Alloy | `https://alloy.home` | `443` | Internal CA | ✅ |
 | Rack display mirror | `https://rack.home` | `443` | Internal CA | ✅ |
+| Galatea (in development) | `https://galatea.home` | `443` | Internal CA | ✅ |
 | Pi-hole admin (Boreas / Zephyros) | `https://pihole-boreas.home`, `https://pihole-zephyros.home` | `443` | Internal CA | ✅ |
 | FritzBox (remote) | `https://fritz-zephyros.home` | `443` | Internal CA | ✅ |
 | Caddy (HTTP) | — | `80` | — | — |
 | Webhook listener | — | `9000` | — | — |
 
 > Disabled Caddy sites: `homepage.home` (stack under the `inactive` profile) and `viessmann.home` (see Hephaestus). Their Pi-hole records on Boreas still exist.
+
+> Services without a URL: `diun` (image update notifications via ntfy), `gitea-runner` (Gitea Actions) and `discord-inactivity` (Discord bot, in development, under the `inactive` profile).
 
 ### Monitoring exporters (internal only)
 
