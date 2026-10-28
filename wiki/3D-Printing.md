@@ -79,7 +79,7 @@ docker compose logs prusa-exporter -f --tail 30
 
 ```bash
 # 1. Printer: Settings → Network → PrusaLink → regenerate password
-# 2. Update PRUSA_PASSWORD in the monitoring stack env (.env / .env.sops), then:
+# 2. Update PRUSA_PASSWORD in the monitoring stack env (.env), then:
 cd ~/stacks/monitoring
 docker compose up -d prusa-exporter
 # 3. Confirm

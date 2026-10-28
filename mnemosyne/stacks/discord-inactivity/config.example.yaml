@@ -1,5 +1,5 @@
 # config.yaml - Discord Inactivity Bot
-# Secrets (bot token) live in .env / .env.sops, never here.
+# Secrets (bot token) live in .env, never here.
 # Copy to config.yaml and fill in the IDs.
 
 guild:
