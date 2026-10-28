@@ -66,8 +66,9 @@ docker network ls | grep monitoring
 # 2. Build & start
 docker compose up -d --build
 
-# 3. Caddy: add the block from caddyfile-snippet.txt, then reload
-docker exec caddy caddy reload --config /etc/caddy/Caddyfile
+# 3. Caddy: add the block from caddyfile-snippet.txt, then recreate the container
+#    (reload/restart keep the old inode of the bind-mounted Caddyfile)
+cd ~/stacks/caddy && docker compose down && docker compose up -d
 
 # 4. Pi-hole: add Local DNS record  weather.home -> 192.168.1.10
 ```

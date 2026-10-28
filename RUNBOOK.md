@@ -17,14 +17,10 @@ docker compose logs -f --tail 50
 
 ## Reload Caddy Config
 
-Use after editing the Caddyfile. If the editor saves atomically (new file + rename), the bind-mount inode breaks — `reload` will silently read the stale config. Recreate the container instead (`down` + `up -d`); `restart` keeps the old inode too.
+Use after editing the Caddyfile. Editors, `git` and `sed -i` all replace the file (new file + rename), so the bind mount keeps pointing at the old inode — `caddy reload` and `restart` silently read the stale config. Recreate the container instead (`down` + `up -d`).
 
 ```bash
-# Safe for all cases
 cd ~/stacks/caddy && docker compose down && docker compose up -d
-
-# Only if you're certain the file was edited in-place (e.g. sed -i)
-docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 docker logs caddy --tail 20
 ```
 
@@ -192,7 +188,7 @@ Notable per-service behavior:
   container is stopped. Maintenance mode is toggled around the restore.
 - **Ghost** — app stopped, `ghost-db.sql` imported into the running `ghost-db`.
 - **Immich** — **uploads only.** The database needs the manual procedure below.
-- **Syncthing** — stops and starts the host service `syncthing@andre`.
+- **Syncthing** — stops and starts the host service `syncthing@<user>`.
   Other devices may still hold newer files and sync them back afterwards.
 - **Exporter tokens** — restarts only the exporters that were running
   (Midea is seasonal).
