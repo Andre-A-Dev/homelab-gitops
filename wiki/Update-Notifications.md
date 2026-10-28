@@ -203,7 +203,7 @@ sudo reboot                         # required after kernel updates
 
 **Docker images:** follow the update window in [[Update-Strategy]] -- which tag may move on its own, how to verify, and when it is safe to prune old images.
 
-See the [Runbook](Runbook) for the full update procedure per stack.
+See `RUNBOOK.md` in the repository root for the full update procedure per stack.
 
 ---
 

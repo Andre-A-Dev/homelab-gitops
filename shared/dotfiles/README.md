@@ -2,7 +2,7 @@
 
 | Path | Purpose |
 |---|---|
-| [`dotfiles/ssh_config`](dotfiles/ssh_config) | SSH client config covering all homelab hosts |
+| [`ssh_config`](ssh_config) | SSH client config covering all homelab hosts (private, not in the public mirror) |
 
 ## SSH config
 

@@ -63,7 +63,7 @@ Replace the SSD, mount it by UUID, restore all services from the local backup. E
 ### Scenario C -- Pi and local backup lost
 *"Fire, theft, water -- everything in the room is gone"*
 
-Only the offsite copy survives. This is the scenario the offsite layer exists for, not drive failure alone. Restore path: pull the newest backup day out of the restic repository onto a new drive mounted at `/mnt/backup`, then follow the normal restore procedure. Commands: [Runbook](Runbook), section "Restore from Offsite (restic)". Expected downtime: ~1 day plus download time.
+Only the offsite copy survives. This is the scenario the offsite layer exists for, not drive failure alone. Restore path: pull the newest backup day out of the restic repository onto a new drive mounted at `/mnt/backup`, then follow the normal restore procedure. Commands: `RUNBOOK.md` in the repository root, section "Restore from Offsite (restic)". Expected downtime: ~1 day plus download time.
 
 Scenario C needs three things that must exist **outside** Mnemosyne: the repository address, the restic password and a way to authenticate to the Storage Box.
 
@@ -157,4 +157,4 @@ A backup that has never been restored is not a backup. After any significant cha
 
 `restore-services.sh` restores individual services from a date directory under `/mnt/backup`. It requires `/mnt/backup` to be a mountpoint. For an offsite restore, the newest day is first pulled out of the restic repository onto a drive mounted there.
 
-See the [Runbook](Runbook) for the commands and for the services the restore script does not cover.
+See `RUNBOOK.md` in the repository root for the commands and for the services the restore script does not cover.
