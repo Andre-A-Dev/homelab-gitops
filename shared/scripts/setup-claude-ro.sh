@@ -2,12 +2,16 @@
 #
 # setup-claude-ro.sh — Provision a read-only SSH user for Claude Code
 #
-# Usage  : sudo ./setup-claude-ro.sh --pubkey "<ssh-ed25519 ...>" --from "<cidr>[,<cidr>...]"
+# Usage  : sudo ./setup-claude-ro.sh [--keys <file>]
 #          sudo ./setup-claude-ro.sh --remove
 #          add --dry-run to print the actions without changing anything
 #
-# Idempotent: safe to re-run. Re-running replaces authorized_keys and the
-# sudoers drop-in with the current arguments.
+# Keys   : one line per workstation, default shared/ssh/claude-ro.keys next to
+#          this script's repo checkout. Format:
+#            from="<tailscale-ip>/32" ssh-ed25519 AAAA... claude-ro@<workstation>
+#
+# Idempotent: safe to re-run. Re-running replaces authorized_keys with the
+# current keys file, so adding or revoking a workstation = edit file, re-run.
 #
 # Why: Claude Code runs commands as the local user and inherits its SSH keys.
 # Verification against live hosts only needs read access, so it gets its own
@@ -22,7 +26,7 @@
 #   - docker group membership (docker socket = root)
 #   - docker inspect / exec / compose (inspect prints env vars = secrets)
 #   - password login, PTY, agent/port/X11 forwarding (authorized_keys "restrict")
-#   - logins from outside the given --from networks
+#   - logins with a key from any address other than its from= list
 
 set -euo pipefail
 
@@ -32,8 +36,7 @@ set -euo pipefail
 RO_USER="claude-ro"
 SUDOERS_FILE="/etc/sudoers.d/90-claude-ro"
 
-PUBKEY=""
-FROM=""
+KEYS_FILE="$(dirname "$(readlink -f "$0")")/../ssh/claude-ro.keys"
 REMOVE=0
 DRY_RUN=0
 
@@ -42,13 +45,12 @@ warn() { echo -e "\033[1;33m[claude-ro]\033[0m $*"; }
 run()  { if [[ $DRY_RUN -eq 1 ]]; then echo "  would run: $*"; else "$@"; fi; }
 
 usage() {
-    sed -n '3,7p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '3,11p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --pubkey)  PUBKEY="${2:-}"; shift 2 ;;
-        --from)    FROM="${2:-}"; shift 2 ;;
+        --keys)    KEYS_FILE="${2:-}"; shift 2 ;;
         --remove)  REMOVE=1; shift ;;
         --dry-run) DRY_RUN=1; shift ;;
         -h|--help) usage; exit 0 ;;
@@ -81,12 +83,27 @@ if [[ $REMOVE -eq 1 ]]; then
     exit 0
 fi
 
-if [[ ! "$PUBKEY" =~ ^(ssh-ed25519|sk-ssh-ed25519@openssh.com)\ [A-Za-z0-9+/=]+( .*)?$ ]]; then
-    echo "--pubkey must be a single ed25519 public key line." >&2
+if [[ ! -r "$KEYS_FILE" ]]; then
+    echo "Keys file not readable: $KEYS_FILE (pass --keys <file>)" >&2
     exit 1
 fi
-if [[ ! "$FROM" =~ ^[0-9a-fA-F.:/,]+$ ]]; then
-    echo "--from must be a comma-separated list of CIDRs, e.g. 10.0.0.0/24,100.x.x.x/10" >&2
+
+# Only from= is accepted as option: restrict is added below, and anything
+# else (command=, permitopen=, ...) would widen or bypass it
+KEY_RE='^from="[0-9a-fA-F.:/,]+" (ssh-ed25519|sk-ssh-ed25519@openssh\.com) [A-Za-z0-9+/=]+ [^ ]+$'
+AUTH_LINES=()
+lineno=0
+while IFS= read -r line || [[ -n "$line" ]]; do
+    lineno=$((lineno + 1))
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    if [[ ! "$line" =~ $KEY_RE ]]; then
+        echo "$KEYS_FILE:$lineno: expected 'from=\"<cidr>[,...]\" ssh-ed25519 <key> <comment>'" >&2
+        exit 1
+    fi
+    AUTH_LINES+=("restrict,$line")
+done < "$KEYS_FILE"
+if [[ ${#AUTH_LINES[@]} -eq 0 ]]; then
+    echo "No keys in $KEYS_FILE." >&2
     exit 1
 fi
 
@@ -129,12 +146,12 @@ if id "$RO_USER" &>/dev/null; then
 else
     RO_HOME="/home/$RO_USER"   # dry run before the user exists
 fi
-log "Writing $RO_HOME/.ssh/authorized_keys (restrict, from=$FROM)..."
+log "Writing $RO_HOME/.ssh/authorized_keys (${#AUTH_LINES[@]} key(s) from $KEYS_FILE)..."
 run install -d -m 700 -o "$RO_USER" -g "$RO_USER" "$RO_HOME/.ssh"
 if [[ $DRY_RUN -eq 1 ]]; then
-    echo "  would write: restrict,from=\"$FROM\" $PUBKEY"
+    for line in "${AUTH_LINES[@]}"; do echo "  would write: $line"; done
 else
-    printf 'restrict,from="%s" %s\n' "$FROM" "$PUBKEY" > "$RO_HOME/.ssh/authorized_keys"
+    printf '%s\n' "${AUTH_LINES[@]}" > "$RO_HOME/.ssh/authorized_keys"
     chown "$RO_USER":"$RO_USER" "$RO_HOME/.ssh/authorized_keys"
     chmod 600 "$RO_HOME/.ssh/authorized_keys"
 fi
@@ -176,4 +193,4 @@ if command -v sshd >/dev/null && [[ $DRY_RUN -eq 0 ]]; then
     fi
 fi
 
-log "Done. Test from AstraeusNX: ssh <host>-ro 'id; sudo -n docker ps --format {{.Names}} | head -3'"
+log "Done. Test from each workstation: ssh <host>-ro 'id; sudo -n docker ps --format {{.Names}} | head -3'"

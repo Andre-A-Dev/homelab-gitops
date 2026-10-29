@@ -110,6 +110,6 @@ No Longhorn yet, see `.claude/rules/kubernetes.md`.
   `sdb3` carries the GPT swap partition type, so `systemd-gpt-auto-generator`
   activates it on every boot anyway (unit `dev-disk-by\x2ddiskseq-2\x2dpart3.swap`
   from `/run/systemd/generator.late/`). k3s runs anyway.
-- **SSH hardening not done.** `sshd_config` sets only `PermitRootLogin no`;
-  `PasswordAuthentication` is unset, so the default (`yes`) applies.
-  `bootstrap.sh` defers this until key auth has proven stable.
+- **SSH: key-only since 2026-10-29.** `sshd_config` sets `PermitRootLogin no`;
+  password login is off via `/etc/ssh/sshd_config.d/10-no-password.conf`
+  (RUNBOOK "Disable SSH Password Login"), not via `bootstrap.sh`.

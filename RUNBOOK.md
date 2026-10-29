@@ -327,6 +327,114 @@ docker cp caddy:/data/caddy/pki/authorities/local/root.crt ~/caddy-root.crt
 
 ---
 
+## Set Up Claude Code Read-Only SSH
+
+Claude Code runs as the workstation user and could use its admin SSH keys. Instead it gets the user `claude-ro` on every host: own key per workstation, accepted only from that workstation's Tailscale IP, journal/log read access, `sudo` only for `docker ps` and `docker logs`. Admin keys get a passphrase and an agent confirm prompt.
+
+### On each workstation (once)
+
+Commands in fish. `<repo>` is the local checkout of this repo.
+
+```fish
+# 1. Askpass for passphrase and confirm dialogs (not installed by default on CachyOS)
+sudo pacman -S ksshaskpass
+
+# 2. Passphrase on every admin key (Claude can't use them without the agent prompt)
+ssh-keygen -p -f ~/.ssh/id_ed25519_homelab   # repeat for every other private key
+ssh-keygen -y -P '' -f ~/.ssh/id_ed25519_homelab   # must fail: a missing askpass silently saves an empty passphrase
+
+# 3. Session-wide ssh-agent with ksshaskpass confirm, then log out and in
+mkdir -p ~/.config/environment.d
+ln -sf <repo>/shared/dotfiles/environment.d/ssh-agent.conf ~/.config/environment.d/ssh-agent.conf
+systemctl --user enable --now ssh-agent.socket
+
+# 4. SSH config with the *-ro aliases, see shared/dotfiles/README.md
+ln -sf <repo>/shared/dotfiles/ssh_config ~/.ssh/config
+
+# 5. Read-only key, no passphrase on purpose: Claude uses it unattended, the host limits it
+ssh-keygen -t ed25519 -N '' -C claude-ro@(hostnamectl hostname | string lower) -f ~/.ssh/id_ed25519_claude_ro
+
+# 6. Register it with this workstation's Tailscale IP, then commit and push
+printf 'from="%s/32" %s\n' (tailscale ip -4) (cut -d' ' -f1-3 ~/.ssh/id_ed25519_claude_ro.pub) >> <repo>/shared/ssh/claude-ro.keys
+```
+
+After the next login: `echo $SSH_AUTH_SOCK` shows `/run/user/<uid>/ssh-agent.socket`. Then restart the agent once with `systemctl --user restart ssh-agent.service`: an agent started before step 3 lacks `SSH_ASKPASS` and refuses every confirm, and keys it already holds stay usable without confirm. Afterwards the first `ssh <host>` per key asks for the passphrase, every further one opens a Yes/No confirm dialog. A second passphrase prompt with `agent refused operation` instead means the agent still runs with the old environment.
+
+The `-ro` aliases verify host keys against the LAN entry in `known_hosts` (`HostKeyAlias`), so connect once to every LAN host via its admin alias (`ssh <host> true`) before the first `-ro` login. Zephyros is reached via Tailscale only and needs its admin alias once as well. In VS Code the passphrase prompt appears as an input box at the top of the window, not as a KDE dialog.
+
+### On every host (after each change to `claude-ro.keys`)
+
+Mnemosyne, Boreas, Hephaestus, Zephyros and Daidalos, once the push has been pulled:
+
+```bash
+sudo ~/homelab-infra/shared/scripts/setup-claude-ro.sh --dry-run
+sudo ~/homelab-infra/shared/scripts/setup-claude-ro.sh
+```
+
+The script rewrites `authorized_keys` from the file, so revoking a workstation = delete its line, push, re-run on every host. Remove the user entirely with `--remove`.
+
+### Verify (from the workstation)
+
+```bash
+ssh mnemosyne-ro 'id; sudo -n docker ps --format "{{.Names}}" | head -3'   # works
+ssh mnemosyne-ro 'sudo -n docker inspect caddy'                            # must be refused
+ssh mnemosyne true; ssh mnemosyne true                                      # 2nd must open a Yes/No confirm dialog
+```
+
+### Kubernetes (Daidalos)
+
+Same idea for the cluster: the ServiceAccount `claude-ro` (`clusters/daidalos/claude-ro/`, ClusterRoles `view` + `claude-ro-cluster-read`) can read everything except Secrets and write nothing. Its kubeconfig is the workstation default; the admin kubeconfig stays only on Daidalos (`/etc/rancher/k3s/k3s.yaml`).
+
+On each workstation, in fish, while the admin kubeconfig is still in `~/.kube/config`:
+
+```fish
+set -l kc ~/.kube/claude-ro.yaml
+set -l ca (mktemp)
+kubectl -n kube-system get secret claude-ro-token -o jsonpath='{.data.ca\.crt}' | base64 -d > $ca
+kubectl --kubeconfig $kc config set-cluster daidalos --server=https://<daidalos-ip>:6443 --certificate-authority=$ca --embed-certs
+kubectl --kubeconfig $kc config set-credentials claude-ro --token=(kubectl -n kube-system get secret claude-ro-token -o jsonpath='{.data.token}' | base64 -d)
+kubectl --kubeconfig $kc config set-context claude-ro@daidalos --cluster=daidalos --user=claude-ro
+kubectl --kubeconfig $kc config use-context claude-ro@daidalos
+chmod 600 $kc
+rm $ca
+
+kubectl --kubeconfig $kc auth can-i delete pods -A   # must be "no"
+ssh -t daidalos sudo k3s kubectl get nodes           # admin path works, before deleting the local admin config
+rm ~/.kube/config
+mv $kc ~/.kube/config
+```
+
+Admin work afterwards: `ssh -t daidalos sudo k3s kubectl ...`, Flux via `ssh -t daidalos sudo flux --kubeconfig /etc/rancher/k3s/k3s.yaml ...`. Rotate the token: `ssh -t daidalos sudo k3s kubectl -n kube-system delete secret claude-ro-token`, Flux recreates it with a new token on its next reconcile, then rebuild the kubeconfig on every workstation. Revoke entirely: remove `clusters/daidalos/claude-ro/` and push.
+
+---
+
+## Disable SSH Password Login
+
+Every client needs a working key first (workstations, phone). Check that no password logins remain:
+
+```bash
+journalctl --since -30d -q -t sshd-session | grep "Accepted password"
+```
+
+Per host (Mnemosyne, Boreas, Hephaestus, Zephyros, Daidalos), with a second SSH session open as fallback:
+
+```bash
+sudo install -m 644 -o root -g root ~/homelab-infra/shared/ssh/10-no-password.conf /etc/ssh/sshd_config.d/
+sudo sshd -t && sudo systemctl reload ssh
+sudo sshd -T | grep -i '^passwordauthentication'   # passwordauthentication no
+```
+
+Verify from a workstation (fish):
+
+```fish
+ssh -o PubkeyAuthentication=no -o PreferredAuthentications=password <host> true   # Permission denied (publickey)
+ssh <host> true                                                                    # still works
+```
+
+The file is copied, not symlinked: a git pull must never change sshd config. After a change to it, re-run `install` and `reload` on every host.
+
+---
+
 ## Change Pi-hole Password
 
 ```bash

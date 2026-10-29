@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ssh mnemosyne-ro *)",
+      "Bash(ssh boreas-ro *)",
+      "Bash(ssh hephaestus-ro *)",
+      "Bash(ssh daidalos-ro *)",
+      "Bash(ssh zephyros-ro *)"
+    ],
+    "deny": [
+      "Bash(ssh mnemosyne *)",
+      "Bash(ssh boreas *)",
+      "Bash(ssh hephaestus *)",
+      "Bash(ssh daidalos *)",
+      "Bash(ssh zephyros *)",
+      "Bash(ssh mnemosyne-ts *)",
+      "Bash(ssh boreas-ts *)",
+      "Bash(ssh hephaestus-ts *)",
+      "Bash(ssh daidalos-ts *)",
+      "Bash(ssh git.home *)",
+      "Bash(ssh-add *)"
+    ]
+  }
+}

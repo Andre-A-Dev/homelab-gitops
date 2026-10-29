@@ -1,0 +1,66 @@
+# Read-only cluster access for Claude Code (counterpart of the claude-ro SSH user).
+# Built-in ClusterRole "view": get/list/watch incl. pods/log and Flux objects
+# (flux-view aggregates into it); no Secrets, no exec, no writes.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: claude-ro
+  namespace: kube-system
+---
+# Long-lived token, filled in by the API server (no data in the repo).
+# Rotate: delete the Secret on the cluster, Flux recreates it with a new token
+# (RUNBOOK "Set Up Claude Code Read-Only SSH").
+apiVersion: v1
+kind: Secret
+metadata:
+  name: claude-ro-token
+  namespace: kube-system
+  annotations:
+    kubernetes.io/service-account.name: claude-ro
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: claude-ro-view
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view
+subjects:
+  - kind: ServiceAccount
+    name: claude-ro
+    namespace: kube-system
+---
+# Cluster-scoped reads that "view" leaves out, needed for the pre-commit
+# checks in .claude/rules/kubernetes.md (StorageClass, CRD versions).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: claude-ro-cluster-read
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "persistentvolumes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingressclasses"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: claude-ro-cluster-read
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: claude-ro-cluster-read
+subjects:
+  - kind: ServiceAccount
+    name: claude-ro
+    namespace: kube-system

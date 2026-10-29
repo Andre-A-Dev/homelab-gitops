@@ -27,6 +27,9 @@ Applies to everything under `clusters/daidalos/`.
 
 ## Commands
 
+- Local `kubectl` and `flux` use the read-only ServiceAccount `claude-ro`
+  (no Secrets, no writes; RUNBOOK "Set Up Claude Code Read-Only SSH").
+  Admin access exists only on Daidalos itself.
 - Read-only is fine: `kubectl get/describe/logs`, `flux get ...`,
   `flux logs`, `flux tree ...`.
 - Never run state-changing commands unless I ask in this session:
@@ -36,10 +39,13 @@ Applies to everything under `clusters/daidalos/`.
 
 ## Verification before proposing a commit
 
-- Render: `kubectl kustomize <dir>` must succeed for every touched
-  kustomization.
+- Render: `flux build kustomization flux-system --path ./clusters/daidalos
+  --kustomization-file ./clusters/daidalos/flux-system/gotk-sync.yaml
+  --dry-run` must succeed (`clusters/daidalos` has no `kustomization.yaml`,
+  so `kubectl kustomize` fails there; Flux generates one).
 - Validate: `kubectl apply --dry-run=server -f <rendered>` (server-side catches
-  unknown CRDs and admission errors). Dry-run only — ask first.
+  unknown CRDs and admission errors). `claude-ro` can't run it (needs write
+  access): give me the command for `ssh -t daidalos sudo k3s kubectl ...`.
 - Images: Daidalos is x86_64, so arm64 gaps don't apply here. Check that the
   image tag exists before writing it.
 - Every name you reference (namespace, StorageClass, Secret, CRD version) must
