@@ -62,6 +62,8 @@ Caddy handles TLS automatically — both Let's Encrypt for public domains (`clou
 
 The internal CA means all local services run on HTTPS without self-signed certificate warnings, after a one-time import of the Caddy root certificate on each client.
 
+**Internal names are not access control.** Port 443 is forwarded to Caddy for the two public domains, and one Caddy serves both public and `.home` sites. A site is selected by SNI/Host, so until 2026-10 every `.home` service answered from the internet to anyone who sent its name to the public IP. Every `.home` site now imports the `lan_only` snippet, which aborts connections from outside the private ranges and Tailscale. Separating the public sites into their own Caddy would need a second address or port forward; the snippet is the smaller change.
+
 **Caddy on Zephyros**
 
 A second Caddy instance runs on Zephyros as a lightweight reverse proxy. It forwards `.home` requests from the remote network to Mnemosyne via Tailscale. This allows access to Ghostwrite and GhostProxy from an iPhone without Tailscale installed — only the Zephyros CA certificate needs to be imported once. The same pattern is the proof of concept for a planned Boreas Caddy stack that will serve the parents' network after a future move.

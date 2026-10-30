@@ -1,7 +1,22 @@
+# -- Snippet: LAN only ----------------------------------------------------
+# Port 443 is forwarded from the internet for the public sites (Nextcloud,
+# Ghost). Caddy picks the site by SNI/Host, so without this every .home site
+# answers anyone who sends its name to the public IP. Allowed: LAN and Docker
+# networks (private_ranges) and Tailscale (100.64.0.0/10, incl. Zephyros).
+# Every .home site imports it, the public sites must not.
+# Caddy sees the real client IP for IPv4 only: an IPv6 forward to this host
+# would arrive via docker-proxy as 172.x and pass the matcher.
+
+(lan_only) {
+  @external not remote_ip private_ranges 100.64.0.0/10
+  abort @external
+}
+
 # -- Vault ----------------------------------------------------------------
 
 vault.home {
   tls internal
+  import lan_only
 
   reverse_proxy vaultwarden:80 {
     header_up X-Real-IP {remote_host}
@@ -40,6 +55,7 @@ cloud.yourdomain.dedyn.io {
 
 git.home {
   tls internal
+  import lan_only
   reverse_proxy gitea:3000
 }
 
@@ -47,6 +63,7 @@ git.home {
 
 syncthing.home {
   tls internal
+  import lan_only
   reverse_proxy https://192.168.1.10:8384 {
     transport http {
       tls_insecure_skip_verify
@@ -58,6 +75,7 @@ syncthing.home {
 
 calibre.home {
   tls internal
+  import lan_only
   reverse_proxy calibre-web:8083
 }
 
@@ -65,6 +83,7 @@ calibre.home {
 
 kosync.home {
   tls internal
+  import lan_only
   reverse_proxy kosync:3000
 }
 
@@ -73,6 +92,7 @@ kosync.home {
 
 grafana.home {
   tls internal
+  import lan_only
   reverse_proxy grafana:3000
 }
 
@@ -80,6 +100,7 @@ grafana.home {
 
 prometheus.home {
   tls internal
+  import lan_only
   reverse_proxy prometheus:9090
 }
 
@@ -87,6 +108,7 @@ prometheus.home {
 
 alertmanager.home {
   tls internal
+  import lan_only
   reverse_proxy alertmanager:9093
 }
 
@@ -97,6 +119,7 @@ alertmanager.home {
 # (RUNBOOK: "Enable / disable Viessmann Control API"). Uncomment when enabled.
 # viessmann.home {
 #     tls internal
+#     import lan_only
 #
 #     reverse_proxy http://192.168.1.13:8081 {
 #         header_up Authorization "Bearer {env.VIESSMANN_API_TOKEN}"
@@ -110,6 +133,7 @@ alertmanager.home {
 
 pihole.home, pihole-boreas.home {
     tls internal
+    import lan_only
     redir / /admin/ 301
     reverse_proxy http://192.168.1.11:80
 }
@@ -117,6 +141,7 @@ pihole.home, pihole-boreas.home {
 # Plain HTTP over Tailscale; the tunnel is encrypted
 pihole-zephyros.home {
     tls internal
+    import lan_only
     redir / /admin/ 301
     reverse_proxy http://100.y.y.y:8081
 }
@@ -127,6 +152,7 @@ pihole-zephyros.home {
 
 fritz-zephyros.home {
     tls internal
+    import lan_only
     reverse_proxy https://100.y.y.y {
         header_up Host fritz-zephyros.home
         transport http {
@@ -165,6 +191,7 @@ ghostwrite.home {
 
 immich.home {
   tls internal
+  import lan_only
   reverse_proxy immich-server:2283
 }
 
@@ -177,6 +204,7 @@ http://100.x.x.x:2283 {
 
 jobiris.home {
   tls internal
+  import lan_only
   reverse_proxy jobiris-board:8042 {
     flush_interval -1
     transport http {
@@ -189,6 +217,7 @@ jobiris.home {
 
 wakapi.home {
     tls internal
+    import lan_only
     reverse_proxy wakapi:3000
 }
 
@@ -196,6 +225,7 @@ wakapi.home {
 
 weather.home {
   tls internal
+  import lan_only
   reverse_proxy aether:8050
 }
 
@@ -203,6 +233,7 @@ weather.home {
 
 alloy.home {
     tls internal
+    import lan_only
     reverse_proxy alloy:12345
 }
 
@@ -210,6 +241,7 @@ alloy.home {
 
 carousel.home {
     tls internal
+    import lan_only
     reverse_proxy carousel:5000
 }
 
@@ -217,6 +249,7 @@ carousel.home {
 
 rack.home {
     tls internal
+    import lan_only
     reverse_proxy 172.24.0.1:9120 {
       lb_try_duration 8s
     }
@@ -226,6 +259,7 @@ rack.home {
 
 galatea.home {
     tls internal
+    import lan_only
 
     basic_auth {
         {$GALATEA_BASIC_USER} {$GALATEA_BASIC_HASH}

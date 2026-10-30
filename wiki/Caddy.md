@@ -43,9 +43,12 @@ Services that run outside Docker (Syncthing as systemd) are reached via `host.do
 ```caddy
 service.home {
   tls internal
+  import lan_only
   reverse_proxy container-name:port
 }
 ```
+
+`import lan_only` is mandatory for every `.home` site. Port 443 is forwarded from the internet for the public sites, and Caddy selects a site by SNI/Host only -- without the snippet, a `.home` site answers anyone who sends its name to the public IP. The snippet at the top of the Caddyfile aborts every connection from outside the private ranges and Tailscale (`100.64.0.0/10`).
 
 **Public service (Let's Encrypt):**
 
