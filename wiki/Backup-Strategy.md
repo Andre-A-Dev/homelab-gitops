@@ -80,6 +80,7 @@ Safeguards built into the script:
 - **Change detection** -- unchanged services are skipped and get a `.SKIPPED` marker that names the date of the last real archive. A skip chain never outlives the retention window: after 5 days a full archive is forced.
 - **Archive assertion** -- an archive with fewer than 2 entries counts as a failure. An empty directory is not a successful backup.
 - **Free-space preflight** -- the run aborts before starting if less than 150 GB are free (one run writes roughly 73 GB).
+- **Root-only date directories** -- each `/mnt/backup/<YYYY-MM-DD>/` is created with mode `700`. The archives inside are `644` and contain every `.env`, the Caddy CA key and the Vaultwarden database; until 2026-10 any local user could read them.
 - **Mount drift** -- the script compares its source paths with the bind mounts of the running containers. A new stack with persistent data must either be added to `SOURCE_PATHS` or deliberately listed in `DRIFT_IGNORE`.
 
 `verify-backup.timer` runs `verify-backup.sh` at 04:00: archives exist and are readable, Vaultwarden SQLite integrity, Nextcloud dump header, disk space.

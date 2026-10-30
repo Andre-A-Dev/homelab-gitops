@@ -746,8 +746,11 @@ if [ -d "$BACKUP_DIR/$DATE" ] && [ "$OVERWRITE" = false ] && [ "$DRY_RUN" = fals
   exit 1
 fi
 
-# Create backup directory for today
-if ! mkdir -p "$BACKUP_DIR/$DATE"; then
+# Create backup directory for today. 700 because the archives inside are
+# written 644 and hold every stack's .env, the Caddy CA key and the
+# Vaultwarden DB. A UMask on the unit would also hit backup.prom, which
+# node-exporter reads as nobody. chmod also covers an existing dir (--overwrite).
+if ! { mkdir -p "$BACKUP_DIR/$DATE" && chmod 700 "$BACKUP_DIR/$DATE"; }; then
   echo -e "${RED}${BOLD}  ERROR: Failed to create backup directory.${RESET}"
   echo "  ERROR: Failed to create backup directory." >> "$LOG"
   exit 1
