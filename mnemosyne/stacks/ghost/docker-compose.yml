@@ -1,5 +1,7 @@
 services:
+  # Disabled 2026-10: blog not in use.
   ghost:
+    profiles: ["inactive"]
     image: ghost:6
     container_name: ghost
     labels:
@@ -31,6 +33,8 @@ services:
     restart: unless-stopped
 
   ghost-db:
+    # Stays active while ghost is disabled: backup-services.sh dumps it every
+    # night via `docker exec ghost-db mysqldump`.
     # Pinned to minor: 8.4 is the LTS line (support until 2032). In-place
     # upgrades work, downgrades do not - roll back from the ghost-db.sql dump.
     image: mysql:8.4

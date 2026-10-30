@@ -112,13 +112,15 @@ kosync.home {
 
 # -- Ghost ----------------------------------------------------------------
 
-ghostwrite.home {
-    import mnemosyne ghostwrite.home
-}
+# Disabled: ghostwrite and ghostproxy run under the "inactive" profile on
+# Mnemosyne. Uncomment together with the blocks in Mnemosyne's Caddyfile.
+# ghostwrite.home {
+#     import mnemosyne ghostwrite.home
+# }
 
-ghostproxy.home {
-    import mnemosyne ghostproxy.home
-}
+# ghostproxy.home {
+#     import mnemosyne ghostproxy.home
+# }
 
 # -- Immich ---------------------------------------------------------------
 

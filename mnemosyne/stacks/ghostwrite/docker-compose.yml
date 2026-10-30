@@ -1,5 +1,7 @@
 services:
+  # Disabled 2026-10 together with ghost: blog not in use.
   ghostwrite:
+    profiles: ["inactive"]
     build: ./app
     container_name: ghostwrite
     labels:

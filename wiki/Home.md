@@ -21,7 +21,7 @@ Infrastructure-as-code for a privacy-first Raspberry Pi homelab. Self-hosted alt
 
 **Externally accessible**
 - [Nextcloud](https://cloud.yourdomain.dedyn.io) -- file sync and sharing
-- [Ghost](https://blog.yourdomain.dedyn.io) -- public blog
+- [Ghost](https://blog.yourdomain.dedyn.io) -- public blog (inactive)
 
 **Internal (LAN + Tailscale)**
 - Vaultwarden -- password manager
@@ -29,7 +29,7 @@ Infrastructure-as-code for a privacy-first Raspberry Pi homelab. Self-hosted alt
 - Grafana / Prometheus / Alertmanager -- monitoring
 - Calibre-Web + KOSync -- ebook library
 - Gitea -- self-hosted Git
-- Ghostwrite / GhostProxy -- writing tools
+- Ghostwrite / GhostProxy -- writing tools (inactive)
 - Wakapi -- coding time tracker
 - Aether -- weather console (Netatmo/Tado/Shelly + forecast)
 - Jobiris -- job board monitor

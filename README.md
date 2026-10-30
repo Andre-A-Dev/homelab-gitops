@@ -81,9 +81,9 @@ Most directories carry their own `README.md` with details.
 | Vaultwarden | `https://vault.home` | `vaultwarden/` |
 | Nextcloud | `https://cloud.yourdomain.dedyn.io` | `nextcloud/` |
 | Gitea | `https://git.home` | `gitea/` |
-| Ghost | `https://blog.yourdomain.dedyn.io` | `ghost/` |
-| Ghostwrite | `https://ghostwrite.home` | `ghostwrite/` |
-| GhostProxy | `https://ghostproxy.home` | `ghostproxy/` |
+| Ghost (`inactive` profile) | `https://blog.yourdomain.dedyn.io` | `ghost/` |
+| Ghostwrite (`inactive` profile) | `https://ghostwrite.home` | `ghostwrite/` |
+| GhostProxy (`inactive` profile) | `https://ghostproxy.home` | `ghostproxy/` |
 | Immich | `https://immich.home` | `immich/` |
 | Calibre-Web | `https://calibre.home` | `calibre/` |
 | KOSync | `https://kosync.home` | `calibre/` |

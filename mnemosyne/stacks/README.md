@@ -23,9 +23,9 @@ needed for a one-off operation.
 | [monitoring](monitoring/) | Prometheus + Grafana + Alertmanager + Loki + Alloy + exporters | `grafana.home` `prometheus.home` `alertmanager.home` `alloy.home` | `/mnt/codex/{prometheus,grafana,alertmanager}` |
 | [calibre](calibre/) | Calibre-Web ebook library + KOSync read-progress sync | `calibre.home` `kosync.home` | `/mnt/codex/calibre-library` |
 | [homepage](homepage/) | Homelab dashboard (inactive profile) | `homepage.home` (disabled) | — |
-| [ghost](ghost/) | Blog | `blog.yourdomain.dedyn.io` (public) | — |
-| [ghostproxy](ghostproxy/) | Ghost API proxy | `ghostproxy.home` | — |
-| [ghostwrite](ghostwrite/) | Ghost writing interface | `ghostwrite.home` | — |
+| [ghost](ghost/) | Blog (inactive profile; `ghost-db` keeps running for the backup dump) | `blog.yourdomain.dedyn.io` (public, disabled) | — |
+| [ghostproxy](ghostproxy/) | Ghost API proxy (inactive profile) | `ghostproxy.home` (disabled) | — |
+| [ghostwrite](ghostwrite/) | Ghost writing interface (inactive profile) | `ghostwrite.home` (disabled) | — |
 | [wakapi](wakapi/) | Coding time tracker | `wakapi.home` | — |
 | [aether](aether/) | Weather console | `weather.home` | — |
 | [jobiris](jobiris/) | Job board monitor | `jobiris.home` | — |

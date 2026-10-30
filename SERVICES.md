@@ -12,9 +12,6 @@ All internal `.home` domains require the Caddy root certificate to be imported o
 | Nextcloud | `https://cloud.yourdomain.dedyn.io` | `443` | Let's Encrypt | ✅ public |
 | Gitea (web) | `https://git.home` | `443` | Internal CA | ✅ |
 | Gitea (SSH) | `ssh://git@192.168.1.10` | `2222` | — | ✅ |
-| Ghost | `https://blog.yourdomain.dedyn.io` | `443` | Let's Encrypt | ✅ public |
-| Ghostwrite | `https://ghostwrite.home` | `443` | Internal CA | ✅ |
-| GhostProxy | `https://ghostproxy.home` | `443` | Internal CA | ✅ |
 | Immich | `https://immich.home` | `443` | Internal CA | ✅ (`http://100.x.x.x:2283`) |
 | Grafana | `https://grafana.home` | `443` | Internal CA | ✅ |
 | Prometheus | `https://prometheus.home` | `443` | Internal CA | ✅ |
@@ -34,7 +31,7 @@ All internal `.home` domains require the Caddy root certificate to be imported o
 | Caddy (HTTP) | — | `80` | — | — |
 | Webhook listener | — | `9000` | — | — |
 
-> Disabled Caddy sites: `homepage.home` (stack under the `inactive` profile) and `viessmann.home` (see Hephaestus). Their Pi-hole records on Boreas still exist.
+> Disabled Caddy sites: `homepage.home` (stack under the `inactive` profile), `blog.yourdomain.dedyn.io`, `ghostwrite.home` and `ghostproxy.home` (Ghost, Ghostwrite and GhostProxy under the `inactive` profile; `ghost-db` keeps running for the nightly backup dump) and `viessmann.home` (see Hephaestus). Their Pi-hole records on Boreas still exist.
 
 > Services without a URL: `diun` (image update notifications via ntfy), `gitea-runner` (Gitea Actions) and `discord-inactivity` (Discord bot, in development, under the `inactive` profile).
 
@@ -138,8 +135,8 @@ Details: `zephyros/README.md`.
 | `kosync.home` | `192.168.1.10` | |
 | `syncthing.home` | `192.168.1.10` | |
 | `immich.home` | `192.168.1.10` | |
-| `ghostwrite.home` | `192.168.1.10` | |
-| `ghostproxy.home` | `192.168.1.10` | |
+| `ghostwrite.home` | `192.168.1.10` | Stale: Caddy site disabled |
+| `ghostproxy.home` | `192.168.1.10` | Stale: Caddy site disabled |
 | `weather.home` | `192.168.1.10` | Aether weather console |
 | `carousel.home` | `192.168.1.10` | Instagram carousel generator |
 | `alertmanager.home` | `192.168.1.10` | |
@@ -152,7 +149,7 @@ Details: `zephyros/README.md`.
 | `homepage.home` | `192.168.1.10` | Stale: Caddy site disabled |
 | `viessmann.home` | `192.168.1.10` | Stale: Caddy site disabled, API off |
 | `cloud.yourdomain.dedyn.io` | `192.168.1.10` | Also public via deSEC DynDNS |
-| `blog.yourdomain.dedyn.io` | `192.168.1.10` | Public via deSEC DynDNS |
+| `blog.yourdomain.dedyn.io` | `192.168.1.10` | Public via deSEC DynDNS. Stale: Caddy site disabled |
 | `yourdomain.dedyn.io` | `192.168.1.10` | deSEC DynDNS |
 
 ### DNS Records (Pi-hole, Zephyros — remote network)

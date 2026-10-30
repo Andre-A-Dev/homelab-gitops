@@ -32,7 +32,8 @@ profiles:
 
   inactive:
     purpose: switched-off
-    # No return date: homepage, solar, discord-inactivity, meross-exporter
+    # No return date: homepage, solar, discord-inactivity, meross-exporter,
+    #                 ghost, ghostproxy, ghostwrite
 
   seasonal:
     purpose: switched-off

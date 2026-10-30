@@ -165,25 +165,30 @@ fritz-zephyros.home {
 
 # -- Ghost -----------------------------------------------------------------
 
-blog.yourdomain.dedyn.io {
-  reverse_proxy ghost:2368
-}
+# Disabled: ghost, ghostproxy and ghostwrite run under the "inactive" profile.
+# Uncomment when enabled, together with the blocks in Zephyros' Caddyfile.
+# blog.yourdomain.dedyn.io {
+#   reverse_proxy ghost:2368
+# }
 
-ghostproxy.home {
-  tls internal
-  reverse_proxy ghostproxy:5000
-}
+# ghostproxy.home {
+#   tls internal
+#   import lan_only
+#   reverse_proxy ghostproxy:5000
+# }
 
-ghostwrite.home {
-  tls internal
-  reverse_proxy ghostwrite:5000
-}
+# ghostwrite.home {
+#   tls internal
+#   import lan_only
+#   reverse_proxy ghostwrite:5000
+# }
 
 # -- Homepage --------------------------------------------------------------
 
 # Disabled: homepage stack runs under the "inactive" profile. Uncomment when enabled.
 # homepage.home {
 #   tls internal
+#   import lan_only
 #   reverse_proxy homepage:3000
 # }
 

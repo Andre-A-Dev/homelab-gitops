@@ -53,9 +53,9 @@ Never use `docker compose restart` (does not re-read `env_file`) or
 | `prometheus.home` | `prometheus:9090` | |
 | `alertmanager.home` | `alertmanager:9093` | |
 | `viessmann.home` | `http://192.168.1.13:8081` | **Disabled** (commented out). Bearer token injected via `{env.VIESSMANN_API_TOKEN}` (from `.env`) |
-| `blog.yourdomain.dedyn.io` | `ghost:2368` | Public; Let's Encrypt |
-| `ghostproxy.home` | `ghostproxy:5000` | |
-| `ghostwrite.home` | `ghostwrite:5000` | |
+| `blog.yourdomain.dedyn.io` | `ghost:2368` | **Disabled** (commented out) — service under the `inactive` profile. Public; Let's Encrypt |
+| `ghostproxy.home` | `ghostproxy:5000` | **Disabled** (commented out) — stack under the `inactive` profile |
+| `ghostwrite.home` | `ghostwrite:5000` | **Disabled** (commented out) — stack under the `inactive` profile |
 | `homepage.home` | `homepage:3000` | **Disabled** (commented out) — stack under the `inactive` profile |
 | `immich.home` | `immich-server:2283` | |
 | `http://100.x.x.x:2283` | `immich-server:2283` | Tailscale HTTP access — no TLS (Tailscale encrypts the tunnel) |
