@@ -37,6 +37,8 @@ Replaces internal IPs, personal domains, and usernames with generic
 placeholders. Removes sensitive files (`.env`, private keys, `hooks.json`).
 
 Automatically runs `audit_repo.py` on the export before finishing.
+Aborts if the repo tracks symlinks: the copy would contain the link target's
+content, bypassing the blocklist. `sync_public.py` applies the same check.
 
 ```bash
 python export_public.py                         # export next to current repo
