@@ -40,7 +40,7 @@ declare -A KNOWN_NETWORK_OWNERS=(
 )
 
 # Stacks intentionally paused - skipped unless explicitly requested via --only
-PAUSED_STACKS=("solar")
+PAUSED_STACKS=("solar" "ghostproxy" "ghostwrite" "homepage" "discord-inactivity")
 
 # Default is the gentle 'up -d': picks up new images/config, leaves healthy
 # containers alone. --force-recreate is opt-in, not default - it tears down
