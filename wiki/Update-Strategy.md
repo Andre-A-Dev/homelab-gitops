@@ -96,7 +96,9 @@ Keep the old images until verification has passed. They are the only quick way b
 | 4 | Zephyros | Only after Boreas is clean. Remote: a hung reboot cannot be fixed on site. |
 | 5 | Mnemosyne | Last, directly followed by the container updates. |
 
-Per host:
+`scripts/update-hosts.sh` walks this order from a workstation: dry-run, confirm, update, reboot only when required and confirmed, wait for the host to come back. A non-zero exit code, failed units or a failed reboot stop the run unless confirmed. It writes a Markdown report per run (`$UPDATE_REPORT_DIR`, see `scripts/README.md`). The host list in the script follows this table; change both together.
+
+Per host, by hand:
 
 ```bash
 system-update --dry-run   # what is coming: kernel? Docker engine?

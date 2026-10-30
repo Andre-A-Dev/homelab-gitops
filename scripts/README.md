@@ -12,6 +12,7 @@ Not intended for deployment on individual hosts.
 | `repo-tree.py` | Python | Print a directory tree respecting `.gitignore` |
 | `export_public.py` | Python | Export a sanitized public copy of the repo |
 | `audit_repo.py` | Python | Scan repo for secrets before publishing |
+| `update-hosts.sh` | Bash | Guided `system-update` run over all servers, with a Markdown report |
 
 ---
 
@@ -64,3 +65,29 @@ python audit_repo.py --template config/audit_report.html.j2  # HTML report
 ```
 
 **Optional dependencies:** `pip install colorama jinja2` (color output + HTML report)
+
+---
+
+## update-hosts.sh
+
+Runs `system-update` on all servers via SSH, one host at a time, in the order
+of [wiki/Update-Strategy.md](../wiki/Update-Strategy.md#system-updates). For
+the monthly update window, started by hand; every update and every reboot
+asks first. Uses the admin SSH aliases (interactive `sudo` on the hosts).
+
+Per host: dry-run → confirm (yes / skip / quit) → update → reboot if the host
+requires one and you confirm → wait for a new boot ID and a finished boot. A
+non-zero exit code, failed systemd units or a failed reboot stop the run
+unless you confirm to continue.
+
+```bash
+./scripts/update-hosts.sh                  # all servers
+./scripts/update-hosts.sh --from boreas    # resume after an abort
+```
+
+On exit, also after an abort or Ctrl-C, it writes a Markdown report to
+`$UPDATE_REPORT_DIR/System-Update_<YYYY-MM-DD_HHMM>.md` (default: `$HOME`):
+a summary table, then per host the exit code, failed units, reboot, kernel
+and the package changes from `/var/log/apt/history.log`. Point
+`UPDATE_REPORT_DIR` at a vault folder to keep the reports there (fish:
+`set -Ux UPDATE_REPORT_DIR <path>`).
