@@ -241,6 +241,12 @@ List explicitly what could not be verified and why.
 - **Caddy:** after Caddyfile changes the container must be recreated
   (`up -d --force-recreate` or `down && up -d`), never `restart` or
   `caddy reload`. The Mnemosyne deploy handler recreates it on its own.
+- **Decommissioning a probed service:** remove the blackbox target and deploy
+  first, then disable the Caddy site and the container. In one commit, a probe
+  that fails before Prometheus is recreated leaves a `0`; a recreated
+  Prometheus writes no stale markers for removed targets, so the `0` stays
+  visible for the 5-minute lookback and `ServiceDown` fires once. Doing both in
+  one commit is fine if that short false alarm is acceptable.
 - **up vs. restart:** env/config changes need `docker compose up -d`;
   add `--build` when `Dockerfile` or `app.py` changed.
 - **Networks:** `caddy_proxy` is external and pre-created manually. Stack-owned
