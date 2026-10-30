@@ -92,11 +92,15 @@ sudo cp ~/vcontrold/xml/kw/vcontrold.xml /etc/vcontrold/
 sudo cp ~/vcontrold/xml/kw/vito.xml /etc/vcontrold/
 ```
 
-Edit `/etc/vcontrold/vcontrold.xml` -- two changes required:
+Edit `/etc/vcontrold/vcontrold.xml` -- three changes required:
 
 ```xml
 <!-- Serial device -->
 <tty>/dev/ttyUSB0</tty>
+
+<!-- Loopback only: without <listen> the daemon binds every interface, and
+     anyone who reaches port 3002 can send set commands (no auth) -->
+<listen>127.0.0.1</listen>
 
 <!-- Device ID for Vitotronic 200 KW2 -->
 <device ID="2098"/>
