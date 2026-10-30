@@ -123,6 +123,26 @@ print. Read-only `GET`s for verification are fine.
   interpolates `env_file` values too. Check with
   `docker exec <container> printenv VAR | wc -c` (bcrypt = 61).
 
+## Third-party files and licenses
+
+Own work is MIT (`LICENSE`). Files from other projects keep their upstream
+license and are listed in the README section "License". Leave `LICENSE` itself
+unchanged: extra text there breaks GitHub's license detection.
+
+- Adding a file from another project (vendored JS/CSS, fonts, a grafana.com
+  dashboard, an upstream sample config, generated manifests): look up its
+  license at the source, then add a row to the README "License" section in the
+  same change set (path, upstream link, SPDX ID). Dashboards are listed by
+  subject, not by file name; the file names change.
+- Keep upstream copyright and license headers in vendored files.
+- Code adapted from another project: a comment naming the source at the
+  adapted part; a whole file or a substantial part also gets a README row.
+- Copyleft (GPL, AGPL) or no stated license: tell me before adding it. Whether
+  it reaches the public mirror is my call (`scripts/config/.publicignore`).
+- Only files in the repo count. Dependencies installed at build time (`pip`,
+  `npm` in a Dockerfile) need no entry.
+- Removing or replacing such a file: update its row in the same change set.
+
 ## Git — you never commit
 
 I commit and push myself, after reviewing the code and the diff.
