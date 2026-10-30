@@ -435,6 +435,35 @@ The file is copied, not symlinked: a git pull must never change sshd config. Aft
 
 ---
 
+## Emergency SSH Key
+
+For the case that every client (workstations, phone) is lost at once. Passphrase-protected ed25519 key, private part offline only (USB stick off-site, passphrase on paper stored separately), public part in `authorized_keys` of `<user>` on every host. Never loaded into an agent, never kept on a workstation or in the password manager (its SSH key item type strips the passphrase on import).
+
+Use it (fish, from any machine with OpenSSH; no repo config, no agent needed):
+
+```fish
+ssh -F /dev/null -o IdentitiesOnly=yes -o IdentityAgent=none -i <key-file> <user>@<host-ip>
+```
+
+Create or rotate, on a workstation (fish). The key lives in tmpfs only:
+
+```fish
+set -g d (mktemp -d /run/user/(id -u)/emergency.XXXX)
+env SSH_ASKPASS_REQUIRE=never ssh-keygen -t ed25519 -a 100 -C emergency@homelab-<yyyy-mm> -f $d/id_ed25519_emergency
+for h in mnemosyne boreas hephaestus zephyros daidalos
+    ssh $h 'cat >> ~/.ssh/authorized_keys' < $d/id_ed25519_emergency.pub
+end
+for ip in <host-ips>
+    env SSH_ASKPASS_REQUIRE=never ssh -F /dev/null -o IdentitiesOnly=yes -o IdentityAgent=none -i $d/id_ed25519_emergency <user>@$ip true; and echo "$ip ok"
+end
+# copy the private key to the USB stick, check the copy with ssh-keygen -lf, then:
+rm -r $d
+```
+
+On rotation, delete the old key's line (comment `emergency@homelab-…`) from `authorized_keys` on every host. Test once a year with the copy from the USB stick: one login per host, then check the fingerprint in `journalctl -t sshd-session | grep "Accepted publickey"`.
+
+---
+
 ## Change Pi-hole Password
 
 ```bash
