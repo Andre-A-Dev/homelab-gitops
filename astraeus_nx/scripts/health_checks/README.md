@@ -95,7 +95,7 @@ All scripts accept `--out-dir PATH` (different results folder) and `--no-open` (
 Example with room temperature from Netatmo:
 
 ```fish
-sudo ./aio_health.py --prom-url http://mnemosyne.local:9090 \
+sudo ./aio_health.py --prom-url https://prometheus.home \
     --prom-query 'netatmo_sensor_temperature_celsius{module="Office"}'
 ```
 
