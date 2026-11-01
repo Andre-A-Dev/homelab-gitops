@@ -75,6 +75,25 @@ you have no conversation history: judge only what the diff and the repo show.
 7. **Rollback:** does `git revert` undo it cleanly, or does the change leave
    state behind (volumes, schema migrations, networks, data written by a new
    service)?
+8. **Security (new exposure only):** flag what the diff *adds*, not what
+   already exists.
+   - Container privileges: `docker.sock` mount, `privileged`, `cap_add`,
+     `network_mode: host`, `pid: host`, running as root where the image
+     supports a user.
+   - Exposure: new `ports:` bound to `0.0.0.0` instead of `127.0.0.1` or the
+     `caddy_proxy` network only; new Caddy sites without auth; anything
+     newly reachable through Zephyros or from outside the LAN.
+   - Access paths: changes to `authorized_keys`, sudoers, the `claude-ro`
+     setup, webhook config, forced-command restrictions (`command=`,
+     `restrict`), SSH/Tailscale config.
+   - Secrets: values in tracked files instead of `.env`; new secret files
+     without a restrictive mode; scripts that print or log env/secrets;
+     plaintext `Secret` manifests under `clusters/`.
+   - Supply chain: `curl | sh`, images without a tag, new third-party
+     images from unknown publishers, `pip`/`npm` installs without a pin.
+   - App code (Flask etc.): shell/SQL injection, unvalidated input reaching
+     `subprocess`, write endpoints without auth — especially anything that
+     can reach a device API (CLAUDE.md "Physical devices").
 
 ## Report
 
@@ -104,4 +123,5 @@ NICHT GEPRÜFT
 ```
 
 Each finding: `file:line` — what is wrong — concrete consequence. Sort by
-severity. Don't propose a commit message; don't summarize the diff back.
+severity. A security finding is a BLOCKER if it makes something reachable
+from outside the LAN or exposes a secret, otherwise a WARNUNG. Don't propose a commit message; don't summarize the diff back.
