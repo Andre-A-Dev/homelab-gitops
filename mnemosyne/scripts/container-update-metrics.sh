@@ -119,19 +119,26 @@ escape_label() {
 }
 
 # =============================================================================
-# write_metric CONTAINER IMAGE STATUS_CODE COMPOSE_PATH
+# write_metric CONTAINER IMAGE STATUS_CODE COMPOSE_PATH [LOCAL_DIGEST]
 #
 # Status codes:
 #   0 = up to date
 #   1 = update available
 #   2 = local build  (not tracked, no registry)
 #   3 = error        (registry unreachable or digest mismatch)
+#
+# LOCAL_DIGEST (status 0/1 only) goes on container_image_update_available, so
+# the running version can be resolved without docker access on the host. Not
+# on container_image_check_status: the overview dashboard shows every label
+# of that metric as a table column. No remote digest label: it changes with
+# every upstream push of a floating tag and would reset alert `for:` timers.
 # =============================================================================
 write_metric() {
     local container="$1"
     local image="$2"
     local status_code="$3"
     local compose_path="$4"
+    local local_digest="${5:-}"
 
     local safe_container; safe_container=$(escape_label "$container")
     local safe_image;     safe_image=$(escape_label "$image")
@@ -141,7 +148,7 @@ write_metric() {
 
     # 1 if update is available, 0 otherwise (local builds and errors are absent)
     if [[ "$status_code" -eq 0 || "$status_code" -eq 1 ]]; then
-        echo "container_image_update_available{${labels}} ${status_code}" >> "$TMP_FILE"
+        echo "container_image_update_available{${labels},local_digest=\"$(escape_label "$local_digest")\"} ${status_code}" >> "$TMP_FILE"
     fi
 
     # Full status code for all containers (useful for dashboards and alerts)
@@ -184,9 +191,9 @@ check_container() {
     fi
 
     if [[ "$local_digest" == "$remote_digest" ]]; then
-        write_metric "$name" "$image" 0 "$compose_path"
+        write_metric "$name" "$image" 0 "$compose_path" "$local_digest"
     else
-        write_metric "$name" "$image" 1 "$compose_path"
+        write_metric "$name" "$image" 1 "$compose_path" "$local_digest"
     fi
 }
 

@@ -85,7 +85,7 @@ All scripts write atomically: output goes to a `.tmp` file first, then `mv` repl
 `container-update-metrics.sh` uses `skopeo` to fetch the manifest digest from the registry without downloading layers, then compares it against the locally running image digest. Emits:
 
 ```
-container_image_update_available{container="...",image="...",compose_path="..."} 0|1
+container_image_update_available{container="...",image="...",compose_path="...",local_digest="sha256:..."} 0|1
 container_image_check_status{...}  # 0=up_to_date 1=update_available 2=local_build 3=error
 container_update_check_timestamp_seconds
 container_update_check_duration_seconds
