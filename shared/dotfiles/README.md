@@ -17,7 +17,8 @@ chmod 600 ~/.ssh/config
 
 Covers:
 - `mnemosyne` / `boreas` / `hephaestus` / `daidalos` — LAN hosts by IP
-- `git.home` — Gitea SSH on port 2222 via Mnemosyne
+- `git.home` — Gitea SSH on port 2222 via Mnemosyne's Tailscale IP (the remote
+  LAN shares the subnet, so the LAN IP is unreachable there)
 - `mnemosyne-ts` / `boreas-ts` / `hephaestus-ts` / `daidalos-ts` — Tailscale FQDN entries
 - `zephyros` — Tailscale IP (remote node, no LAN access)
 - `<host>-ro` — read-only user `claude-ro` for Claude Code, via Tailscale IP
