@@ -180,6 +180,33 @@ detect_reboot_required() {
         REBOOT_REQUIRED=true
         return 0
     fi
+    # apt-based without update-notifier (Debian, Raspberry Pi OS): nothing sets
+    # the flag file, so compare the running kernel with the newest installed
+    # linux-image of the same flavour (the part after "+", e.g. deb13-amd64,
+    # rpt-rpi-2712; Pis carry several flavours side by side).
+    if command -v dpkg-query &>/dev/null; then
+        local running flavour newest
+        running=$(uname -r)
+        if [[ "$running" == *+* ]]; then
+            flavour=${running#*+}
+            # stderr dropped on purpose: no match means no newer kernel
+            newest=$(dpkg-query -W -f='${db:Status-Abbrev} ${Package}\n' "linux-image-*+${flavour}" 2>/dev/null \
+                | awk '$1 == "ii" { sub(/^linux-image-/, "", $2); print $2 }' | sort -V | tail -1) || newest=""
+            if [[ -n "$newest" && "$newest" != "$running" ]]; then
+                REBOOT_REQUIRED=true
+                print_info "Running kernel ${running}, installed ${newest}"
+                # Set the flag like update-notifier does: the prompt and
+                # scripts/update-hosts.sh read it, /run is cleared on boot
+                if ! $DRY_RUN; then
+                    if ! { printf '*** System restart required ***\n' | sudo tee /var/run/reboot-required >/dev/null &&
+                           printf 'linux-image-%s\n' "$newest" | sudo tee /var/run/reboot-required.pkgs >/dev/null; }; then
+                        print_warn "Could not write /var/run/reboot-required"
+                    fi
+                fi
+                return 0
+            fi
+        fi
+    fi
     # Arch: running kernel version vs installed package version
     if command -v pacman &>/dev/null; then
         local running installed

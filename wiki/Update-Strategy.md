@@ -91,6 +91,8 @@ Keep the old images until verification has passed. They are the only quick way b
 
 `system-update` (`shared/scripts/system-update.sh`) runs `apt update` → `dist-upgrade` → `autoremove` → `autoclean`, reports failed systemd units and whether a reboot is needed, and writes `system_update.prom`. It never reboots on its own.
 
+"Reboot needed" means `/run/reboot-required` exists or a newer `linux-image` of the running kernel's flavour is installed. Debian and Raspberry Pi OS create no such flag file, so `system-update` writes it when it finds a newer kernel. The bash prompt (`scripts/prompt.sh`) shows `⟳reboot` while the file exists, `scripts/update-hosts.sh` offers the reboot based on it, and the reboot clears it (`/run` is a tmpfs).
+
 | Order | Host | Why at this position |
 |---|---|---|
 | 1 | Daidalos | Learning cluster, no production impact. Plain Debian 13 (x86_64): a broken Debian package shows up here first. |

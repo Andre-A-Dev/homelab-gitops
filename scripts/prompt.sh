@@ -32,6 +32,9 @@ fi
 # \001/\002 mark non-printing bytes so line wrapping stays correct.
 __prompt_status() {
   local s=$? sig
+  # Newer kernel installed than running: flag set by update-notifier or
+  # system-update; /run is cleared on boot, so the marker goes away by itself.
+  [[ -f /run/reboot-required ]] && printf '\001\e[38;5;220m\002⟳reboot\001\e[0m\002 '
   (( s == 0 )) && return
   # >128 = killed by signal 128+n -> show its name (130 -> INT, 137 -> KILL).
   # stderr dropped on purpose: unknown signal numbers keep the plain code.
