@@ -28,3 +28,21 @@ certutil -d sql:$HOME/.pki/nssdb \
 ```
 
 Run this for each user profile that runs Electron apps.
+
+## Room Climate plasmoid
+
+`plasmoids/local.homelab.roomclimate/` is a Plasma 6 panel widget showing the
+Netatmo values (temperature, CO2, humidity, 24 h trend) from Prometheus. It
+only reads the `netatmo_sensor_*` series of the netatmo-exporter; it has no
+Netatmo token of its own. Needs the Caddy CA above, since it queries
+`https://prometheus.home` through Qt's system trust store.
+
+- Install: `dotfiles/install.sh` symlinks it to
+  `~/.local/share/plasma/plasmoids/`. Then right-click the panel, "Add
+  Widgets…", "Room Climate".
+- Settings (stored per machine by Plasma): module shown in the panel (on
+  AstraeusNX: `Home / Office`), CO2 thresholds, refresh interval, Grafana link.
+  Without a choice it shows the first base station.
+- After pulling changes to the QML: `systemctl --user restart plasma-plasmashell`.
+- Test without touching the panel:
+  `plasmawindowed local.homelab.roomclimate` opens it in a window.

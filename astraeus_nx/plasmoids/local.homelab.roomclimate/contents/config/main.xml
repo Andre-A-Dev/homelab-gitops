@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0
+      http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+    <kcfgfile name=""/>
+
+    <group name="General">
+        <entry name="prometheusUrl" type="String">
+            <label>Prometheus base URL</label>
+            <default>https://prometheus.home</default>
+        </entry>
+        <entry name="home" type="String">
+            <label>Netatmo home of the module shown in the panel (empty = automatic)</label>
+            <default></default>
+        </entry>
+        <entry name="module" type="String">
+            <label>Netatmo module shown in the panel (empty = automatic)</label>
+            <default></default>
+        </entry>
+        <entry name="refreshInterval" type="Int">
+            <label>Refresh interval in minutes</label>
+            <default>5</default>
+        </entry>
+        <entry name="co2Warning" type="Int">
+            <label>CO2 warning threshold in ppm</label>
+            <default>1000</default>
+        </entry>
+        <entry name="co2Critical" type="Int">
+            <label>CO2 critical threshold in ppm</label>
+            <default>2000</default>
+        </entry>
+        <entry name="grafanaUrl" type="String">
+            <label>Dashboard opened from the popup (empty = no button)</label>
+            <default>https://grafana.home/d/netatmo</default>
+        </entry>
+    </group>
+</kcfg>

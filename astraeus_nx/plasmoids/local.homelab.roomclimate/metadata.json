@@ -1,0 +1,14 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Category": "Environment and Weather",
+        "Description": "Netatmo temperature, humidity and CO2 from Prometheus",
+        "EnabledByDefault": true,
+        "Icon": "temperature-normal",
+        "Id": "local.homelab.roomclimate",
+        "License": "MIT",
+        "Name": "Room Climate",
+        "Version": "1.0"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}
