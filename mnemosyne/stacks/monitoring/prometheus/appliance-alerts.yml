@@ -21,3 +21,24 @@ groups:
         annotations:
           summary: "Washing machine finished"
           description: "The cycle is complete, the machine has switched itself off."
+
+      # Dryer finished — same routing as the washing machine.
+      #
+      # Power profile measured on one cycle (2026-10-30): heating at
+      # ~2450 W with ~160 W dips (drum reversal), then ~10 min cool-down at
+      # ~155 W, then anti-crease mode: ~2.6 W with single ~150-340 W drum
+      # turns every 2-8 min, until someone opens the door (16.6 W). The
+      # dryer never drops to 0 W, so the washer rule doesn't work here. The
+      # 5-minute median ignores the drum turns and is only below 5 W in
+      # anti-crease mode; the 1000 W condition requires a heating phase in
+      # the last 30 min. Backtested: fires ~3 min into anti-crease mode
+      # (~15 min after heating ends) and resolves by itself ~15 min later.
+      - alert: DryerFinished
+        expr: |
+          quantile_over_time(0.5, shelly_power_watts{device="Trockner"}[5m]) < 5
+          and max_over_time(shelly_power_watts{device="Trockner"}[30m]) > 1000
+        labels:
+          notify: appliance
+        annotations:
+          summary: "Dryer finished"
+          description: "The cycle is complete, the dryer is in anti-crease mode."
