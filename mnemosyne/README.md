@@ -8,6 +8,7 @@ is the backup destination for the satellite nodes (Zephyros).
 
 | Mount | Device | Filesystem | Contents |
 |---|---|---|---|
+| `/` | NVMe SSD (HAT) | ext4 | OS, Docker and containerd data (`/var/lib/docker`, `/var/lib/containerd`) |
 | `/mnt/codex` | Samsung SSD | ext4 | Gitea, Nextcloud, Calibre, Syncthing, Aegis, KOSync data |
 | `/mnt/backup` | WD My Passport | exFAT | 7-day rolling service backups |
 | `/mnt/vault` | — | ext4 | Vaultwarden data, Caddy TLS certificates |
@@ -111,8 +112,8 @@ Both services are `Type=oneshot` — systemd considers them done when the script
 `daemon.json` → `/etc/docker/daemon.json`. JSON allows no comments, so the
 reasoning lives here.
 
-- `data-root` — images, volumes and container logs live on `/mnt/codex`, not
-  on the root filesystem.
+- No `data-root`: images, volumes and container logs stay in the default
+  `/var/lib/docker` on the NVMe boot SSD (see `ARCHITECTURE.md`).
 - `log-opts` — rotate each container's json log at 10 MB, keep 3 files
   (max. 30 MB per container). Without it the logs grew unbounded (kosync
   reached 231 MB). Rotation also bounds the damage of a hard power loss: ext4

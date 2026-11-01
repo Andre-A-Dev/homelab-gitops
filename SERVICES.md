@@ -180,8 +180,8 @@ Details: `zephyros/README.md`.
 | Tado token | `/mnt/codex/tado-exporter/` | Mnemosyne |
 | Midea device credentials | `/mnt/codex/midea-exporter/` | Mnemosyne |
 | Carousel job output | `/mnt/codex/carousel/jobs/` (last 30 renders, older pruned automatically) | Mnemosyne |
-| Docker data root | `/mnt/codex/docker/` | Mnemosyne |
-| containerd root | `/mnt/codex/containerd/` | Mnemosyne |
+| Docker data root | `/var/lib/docker/` (NVMe boot SSD) | Mnemosyne |
+| containerd root | `/var/lib/containerd/` (NVMe boot SSD) | Mnemosyne |
 | Backup target (local) | `/mnt/backup/` | Mnemosyne (UUID `XXXX-XXXX`) |
 | Backup target (offsite) | Hetzner Storage Box, restic repository over SFTP (client-side encryption) | External — Germany/Finland |
 | restic config | `/etc/restic/restic-offsite.env` (template: `mnemosyne/scripts/restic-offsite.env.example`) | Mnemosyne |

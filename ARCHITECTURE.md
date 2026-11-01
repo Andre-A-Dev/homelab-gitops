@@ -94,16 +94,15 @@ The tradeoff is slightly more directory navigation. It is worth it.
 
 ---
 
-## Docker and containerd Storage on SSD
+## Docker and containerd Storage on the Boot SSD
 
-By default, Docker writes image layers, volumes, and container state to `/var/lib/docker` on the boot device (SD card). containerd independently writes its content store to `/var/lib/containerd`. On a Raspberry Pi with a large stack, both directories grow to 15–20 GB and will eventually exhaust SD card space.
+Docker writes volumes, container state and logs to `/var/lib/docker`. containerd independently writes its content store and snapshots to `/var/lib/containerd`. Docker runs with the containerd image store (`containerd-snapshotter=true`), so the image layers live in the containerd root, not in the Docker root.
 
-Both roots are redirected to the SSD:
+Mnemosyne boots from an NVMe SSD on the HAT, so both roots stay at their defaults on the boot device: no `data-root` in `/etc/docker/daemon.json`, no `root` in `/etc/containerd/config.toml`. Service data stays on the USB SSD (`/mnt/codex`, `/mnt/vault`) as bind mounts; `docker.service` keeps `RequiresMountsFor=/mnt/codex` so no container starts before those mounts exist.
 
-- Docker: `/etc/docker/daemon.json` → `"data-root": "/mnt/codex/docker"`
-- containerd: `/etc/containerd/config.toml` → `root = "/mnt/codex/containerd"`
+History: while Mnemosyne booted from the SD card, both roots were redirected to `/mnt/codex` to stop them from filling the card. They moved back once the NVMe boot SSD was in place.
 
-**Critical:** Docker's `data-root` setting does not affect containerd. If only the Docker data root is moved, containerd continues writing to the SD card and will rebuild its cache there after every restart. Both must be configured explicitly.
+**Critical:** Docker's `data-root` setting does not affect containerd, and with the containerd image store the containerd root is not a cache: deleting it deletes every image. Move both roots together, with both daemons stopped.
 
 ---
 
