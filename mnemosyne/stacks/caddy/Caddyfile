@@ -101,6 +101,14 @@ grafana.home {
 prometheus.home {
   tls internal
   import lan_only
+  # Lifecycle API (POST/PUT /-/quit, /-/reload) is used in-container only
+  # (pump-alerts-deploy.sh), never through the proxy. Prometheus has no
+  # login of its own, so block it for every client; reads stay open.
+  @lifecycle {
+    path /-/*
+    not method GET HEAD
+  }
+  respond @lifecycle "Forbidden" 403
   reverse_proxy prometheus:9090
 }
 

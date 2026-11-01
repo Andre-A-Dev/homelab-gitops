@@ -50,7 +50,7 @@ Never use `docker compose restart` (does not re-read `env_file`) or
 | `calibre.home` | `calibre-web:8083` | |
 | `kosync.home` | `kosync:3000` | |
 | `grafana.home` | `grafana:3000` | |
-| `prometheus.home` | `prometheus:9090` | |
+| `prometheus.home` | `prometheus:9090` | Write requests to `/-/*` (lifecycle API: `/-/quit`, `/-/reload`) get `403` |
 | `alertmanager.home` | `alertmanager:9093` | |
 | `viessmann.home` | `http://192.168.1.13:8081` | **Disabled** (commented out). Bearer token injected via `{env.VIESSMANN_API_TOKEN}` (from `.env`) |
 | `blog.yourdomain.dedyn.io` | `ghost:2368` | **Disabled** (commented out) — service under the `inactive` profile. Public; Let's Encrypt |
