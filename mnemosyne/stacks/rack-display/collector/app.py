@@ -638,8 +638,6 @@ NETWORK_LOCATION = os.environ.get("NETWORK_LOCATION", "home")
 # stays missing, and the warning disappears without anything being fixed.
 SMART_EXPECTED_DEVICES = int(os.environ.get("SMART_EXPECTED_DEVICES", "0"))
 
-# Shelly device labels for the rack itself. Both sit on the same plug strip:
-# one reports ambient air, the other the draw of everything in the rack.
 # The dead man's switch fires permanently by design, so it is not a condition
 # and never belongs in the alert list — a warning that is always on teaches you
 # to stop looking. Its ABSENCE is the signal: no watchdog means the alerting
@@ -650,6 +648,8 @@ WATCHDOG_ALERT = os.environ.get("WATCHDOG_ALERT", "Watchdog")
 # only turn the panel yellow and fill the incident history.
 INFO_SEVERITY = "info"
 
+# Shelly device labels for the rack itself. Both sit on the same plug strip:
+# one reports ambient air, the other the draw of everything in the rack.
 RACK_TEMP_DEVICE = os.environ.get("RACK_TEMP_DEVICE", "Talos-Temp")
 RACK_PLUG_DEVICE = os.environ.get("RACK_PLUG_DEVICE", "Talos-Plug")
 # Chosen here, not derived from an alert rule — adjust once there is one.
