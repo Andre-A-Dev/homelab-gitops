@@ -323,7 +323,7 @@ docker cp caddy:/data/caddy/pki/authorities/local/root.crt ~/caddy-root.crt
 
 **Android:** Copy via Syncthing or ADB → Settings → Security → Install certificate → CA certificate. Use Brave or Chrome for `.home` access — Firefox on Android uses its own certificate store and ignores the system CA.
 
-**CachyOS:** `trust extract-compat` after adding the cert to the system trust store. Electron apps (VSCodium, Bitwarden desktop) ignore the system CA — add to the NSS database: `certutil -d sql:$HOME/.pki/nssdb -A -t "CT,," -n "Caddy Local CA" -i ~/caddy-root.crt`.
+**CachyOS:** `sudo install -m 644 ~/caddy-root.crt /etc/ca-certificates/trust-source/anchors/caddy-mnemosyne.crt && sudo update-ca-trust`. Mobile workstations also need the Zephyros root (`caddy-zephyros.crt`), see [wiki/Caddy.md](wiki/Caddy.md#import-per-platform). Electron apps (VSCodium, Bitwarden desktop) ignore the system CA — add to the NSS database: `certutil -d sql:$HOME/.pki/nssdb -A -t "CT,," -n "Caddy Local CA" -i ~/caddy-root.crt`.
 
 ---
 

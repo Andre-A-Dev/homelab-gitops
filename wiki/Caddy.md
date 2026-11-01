@@ -187,9 +187,23 @@ Copy via Syncthing or ADB → Settings → Security → Install certificate → 
 
 **CachyOS / Arch:**
 ```bash
-sudo trust anchor --store caddy-root.crt
-update-ca-trust
+sudo install -m 644 ~/caddy-root.crt /etc/ca-certificates/trust-source/anchors/caddy-mnemosyne.crt
+sudo update-ca-trust
 ```
+
+`update-ca-trust` rebuilds `/etc/ssl/certs/ca-certificates.crt`, which curl, Git, Python and Qt read. `libnssckbi.so` is a symlink to `p11-kit-trust.so` on CachyOS, so Firefox and Chromium see the system anchors too (restart the browser after the import). One file name per CA: the Mnemosyne and Zephyros roots have the same subject (`Caddy Local Authority - <year> ECC Root`) and differ only in their key. `sudo trust anchor --store` works as well, but names its file after that subject.
+
+Mobile workstations that also connect from the remote network need the Zephyros root next to it (see [Zephyros Caddy](#zephyros-caddy)): there `.home` resolves to Zephyros, whose certificates chain to its own CA. With only the Mnemosyne root installed, curl fails with `curl: (60) unable to get local issuer certificate`.
+
+```bash
+# on Zephyros
+docker exec caddy cat /data/caddy/pki/authorities/local/root.crt > ~/zephyros-ca.crt
+# on the workstation, after copying the file
+sudo install -m 644 ~/zephyros-ca.crt /etc/ca-certificates/trust-source/anchors/caddy-zephyros.crt
+sudo update-ca-trust
+```
+
+Check: `trust list --filter=ca-anchors | grep -A2 Caddy` lists one entry per imported root.
 
 Electron apps (VSCodium, Bitwarden desktop) ignore the system CA. Add to the NSS database:
 
