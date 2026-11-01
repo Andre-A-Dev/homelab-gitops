@@ -29,7 +29,7 @@ All internal `.home` domains require the Caddy root certificate to be imported o
 | Pi-hole admin (Boreas / Zephyros) | `https://pihole-boreas.home`, `https://pihole-zephyros.home` | `443` | Internal CA | ✅ |
 | FritzBox (remote) | `https://fritz-zephyros.home` | `443` | Internal CA | ✅ |
 | Caddy (HTTP) | — | `80` | — | — |
-| Webhook listener | — | `9000` | — | — |
+| Webhook listener | — | `9000` (docker0 `172.17.0.1` only) | — | — |
 | iperf3 server (target of `network-quality.sh`) | — | `5201` | — | — |
 
 > Disabled Caddy sites: `homepage.home` (stack under the `inactive` profile), `blog.yourdomain.dedyn.io`, `ghostwrite.home` and `ghostproxy.home` (Ghost, Ghostwrite and GhostProxy under the `inactive` profile; `ghost-db` keeps running for the nightly backup dump) and `viessmann.home` (see Hephaestus). Their Pi-hole records on Boreas still exist.
