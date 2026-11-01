@@ -66,6 +66,7 @@ CLAUDE.local.md
 # Whitelist .claude/: ignore everything, re-include only shared files
 .claude/*
 !.claude/rules/
+!.claude/skills/
 !.claude/settings.json
 # settings.local.json stays ignored via .claude/*
 # Caddy runtime state — certificates, private keys, internal PKI, locks.

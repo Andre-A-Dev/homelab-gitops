@@ -19,7 +19,7 @@ The public GitHub repository is a sanitized mirror of a private Gitea repository
 
 ## Working with AI agents
 
-Changes are drafted with Claude Code under the rules in [`CLAUDE.md`](CLAUDE.md) and [`.claude/rules/`](.claude/rules/). The agent proposes and verifies; I decide, review every diff, commit and push. It never commits, deploys or sends commands to devices, and it has to back every result with real command output: no output is not proof of success. Host-specific context (IPs, internal paths) lives in a private `CLAUDE.local.md` that is not part of this mirror.
+Changes are drafted with Claude Code under the rules in [`CLAUDE.md`](CLAUDE.md) and [`.claude/rules/`](.claude/rules/). The agent proposes and verifies; I decide, review every diff, commit and push. It never commits, deploys or sends commands to devices, and it has to back every result with real command output: no output is not proof of success. A read-only review skill ([`.claude/skills/repo-review/`](.claude/skills/repo-review/)) checks a diff against these rules before commit. Host-specific context (IPs, internal paths) lives in a private `CLAUDE.local.md` that is not part of this mirror.
 
 ---
 
