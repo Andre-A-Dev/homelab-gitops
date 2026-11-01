@@ -246,7 +246,8 @@ checks you can run yourself. "Done" means verified, not written.
 
 **After I deployed:** when I say a change is live, check the effect
 read-only (container state, logs since restart, target `up`, the new metric or
-query returning data) and report the actual output.
+query returning data) and report the actual output. The `deploy-check` skill
+walks through it.
 
 **Reporting:** for every check, state the command and the relevant output.
 List explicitly what could not be verified and why.
