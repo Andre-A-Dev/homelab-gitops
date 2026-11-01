@@ -90,6 +90,7 @@ Devices on the remote's network without Tailscale can access all `.home` service
 |---|---|
 | `pihole.home`, `pihole-zephyros.home` | Local Pi-hole admin, not proxied |
 | `immich.home` | Proxied directly to the Tailscale IP (the DNS chain would loop back) |
+| `prometheus.home`, `alertmanager.home`, `alloy.home` | Read-only: only `GET`/`HEAD` pass, anything else gets `403` (no login of their own; blocks `/-/quit` and new silences) |
 | all other Mnemosyne `.home` sites | Proxied to Mnemosyne Caddy with the same hostname |
 
 Details: `zephyros/README.md`.

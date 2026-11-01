@@ -25,6 +25,19 @@
     }
 }
 
+# -- Snippet: read-only proxy to Mnemosyne --------------------------------
+# Usage: import mnemosyne_readonly <hostname>
+# For sites without their own login. Mnemosyne trusts Zephyros' Tailscale IP
+# like the home LAN, so every remote LAN client would get write access:
+# Prometheus' lifecycle API (POST /-/quit) and Alertmanager silences.
+# Only GET and HEAD pass; reading (UI, Room Climate plasmoid) keeps working.
+
+(mnemosyne_readonly) {
+    @write not method GET HEAD
+    respond @write "Read-only via Zephyros" 403
+    import mnemosyne {args[0]}
+}
+
 # -- Pihole ---------------------------------------------------------------
 
 pihole.home, pihole-zephyros.home {
@@ -75,15 +88,15 @@ grafana.home {
 }
 
 prometheus.home {
-    import mnemosyne prometheus.home
+    import mnemosyne_readonly prometheus.home
 }
 
 alertmanager.home {
-    import mnemosyne alertmanager.home
+    import mnemosyne_readonly alertmanager.home
 }
 
 alloy.home {
-    import mnemosyne alloy.home
+    import mnemosyne_readonly alloy.home
 }
 
 # -- Syncthing ------------------------------------------------------------
