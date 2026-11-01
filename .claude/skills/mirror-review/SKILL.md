@@ -46,6 +46,9 @@ These shaped the steps below; keep them in mind when something looks off.
   two commits). `commits` flags repeated subjects.
 - `git rebase -i` fails without a configured editor, and a todo list pasted
   into fish runs every line as a command (`(caddy)`, `(backup)` exist there).
+- Splitting a sync with `git add -p` attached hunks of shared files
+  (`SERVICES.md`, `appliance-alerts.yml`) to the wrong commit; the rebuild
+  script avoids that.
 - Any `git ls-remote`/`fetch` against GitHub opens a passphrase dialog the
   user may not see. Use the local tracking ref instead.
 
@@ -104,21 +107,31 @@ These shaped the steps below; keep them in mind when something looks off.
 ## B. Check the user's commits (`commits`)
 
 1. `preflight`, then `… mirror_check.py commits` (add `--tree <ref>` after a
-   rebase to prove the content did not change).
+   rebuild to prove the content did not change).
 2. Per commit, compare files and message with the proposal from this
    conversation, or else with the private commits. A repeated subject or a
    message that doesn't describe the files is a finding.
 3. `scan` again: `0 written` plus a clean working tree means everything is
    committed and matches the private state; the message scan covers the
    unpushed commits.
-4. **Fixing unpushed commits** without an editor:
-   - Write the todo list and any new messages to the session scratchpad.
-     Replace `reword` with `exec git commit --amend --quiet -F <msg-file>`.
-   - Test first in a throwaway clone (`git clone -q <mirror> <scratch>/…`,
-     then the same rebase against the upstream SHA). Check the commit count,
-     files per commit and `HEAD^{tree}` equal to the original `HEAD^{tree}`.
-   - Hand the user: `env GIT_SEQUENCE_EDITOR="cp <todo-file>" git rebase -i
-     <upstream>`, with absolute scratchpad paths.
+4. **Fixing unpushed commits:** rebuild instead of rebase.
+   - Write a plan dir to the session scratchpad: `plan.txt` with
+     `<msg-nr> <private-commit>...` per line (`#` comments) and one message
+     file per commit (`msgs/<msg-nr>.txt`). Group private commits on one
+     line only when one of them would break a checkout alone.
+   - `.claude/skills/mirror-review/scripts/rebuild.sh <mirror>
+     <upstream-sha> <plan-dir>` syncs each private commit with
+     `sync_public.py` and commits exactly the files that commit touched. It
+     refuses to start unless HEAD is the upstream SHA and the tree is clean,
+     and aborts on leftovers.
+   - Test it in a throwaway clone (`git clone -q <mirror> <scratch>/…`,
+     `git -C <clone> switch -q -C rebuild <upstream>`). Check: commit count,
+     no repeated subjects, each `HEAD^{tree}` equal to a probe sync of its
+     private commit, the final tree equal to the mirror working tree
+     (`diff -r -x .git`, exec bits), and a leak scan of `git log -p`.
+   - Hand the user, in fish: `git reset --hard github/main`, removal of the
+     untracked sync files, then the script call with absolute paths and the
+     expected final tree hash.
    - Already pushed: don't rewrite; name the mistake and move on.
 5. After the push, verify with local refs only: `git status -sb` shows no
    ahead/behind and `git rev-parse HEAD` equals the upstream ref.
