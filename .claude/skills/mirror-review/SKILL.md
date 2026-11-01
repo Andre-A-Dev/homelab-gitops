@@ -115,11 +115,12 @@ These shaped the steps below; keep them in mind when something looks off.
      `<msg-nr> <private-commit>...` per line (`#` comments) and one message
      file per commit (`msgs/<msg-nr>.txt`). Group private commits on one
      line only when one of them would break a checkout alone.
-   - `.claude/skills/mirror-review/scripts/rebuild.sh <mirror>
+   - `<private>/.claude/skills/mirror-review/scripts/rebuild.sh <mirror>
      <upstream-sha> <plan-dir>` syncs each private commit with
      `sync_public.py` and commits exactly the files that commit touched. It
      refuses to start unless HEAD is the upstream SHA and the tree is clean,
-     and aborts on leftovers.
+     and aborts on leftovers. Run the copy in `<private>`, never the one in
+     the mirror: the rebuild rewrites the mirror's copy while it runs.
    - Test it in a throwaway clone (`git clone -q <mirror> <scratch>/…`,
      `git -C <clone> switch -q -C rebuild <upstream>`). Check: commit count,
      no repeated subjects, each `HEAD^{tree}` equal to a probe sync of its
