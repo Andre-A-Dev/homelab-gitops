@@ -53,6 +53,7 @@ All internal `.home` domains require the Caddy root certificate to be imported o
 | Prusa Exporter | `9118` | PrusaLink: temps, state, job progress (Pygmalion MK4S) |
 
 > Prometheus (`9090`) and all exporters are internal only. Never expose these ports externally.
+> Prometheus, Alertmanager and the Node, Blackbox, Fritz and Shelly exporters publish their ports on `127.0.0.1` only (host-side `curl` for debugging); Prometheus scrapes them by container name. The Midea and Meross exporters still publish on all interfaces when their profile is active.
 > `prometheus.home` answers write requests to the lifecycle API (`/-/*`) with `403` for every client.
 
 ---

@@ -91,7 +91,7 @@ services:
     hostname: Mnemosyne
     restart: unless-stopped
     ports:
-      - "9100:9100"
+      - "127.0.0.1:9100:9100"
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -229,7 +229,7 @@ services:
     labels:
       homelab.update-class: "B"
     ports:
-      - "9787:9787"
+      - "127.0.0.1:9787:9787"
     environment:
       - FRITZ_HOSTNAME=${FRITZ_HOSTNAME}
       - FRITZ_USERNAME=${FRITZ_USERNAME}
@@ -260,7 +260,7 @@ services:
       homelab.update-class: "B"
     restart: unless-stopped
     ports:
-      - "9115:9115"
+      - "127.0.0.1:9115:9115"
     volumes:
       - ./blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
     networks:
@@ -323,7 +323,7 @@ services:
       - POLL_INTERVAL=${POLL_INTERVAL_SHELLY:-15}
       - EXPORTER_PORT=9117
     ports:
-      - "9117:9117"
+      - "127.0.0.1:9117:9117"
     restart: unless-stopped
     networks:
       - monitoring
