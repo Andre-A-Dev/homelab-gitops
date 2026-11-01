@@ -437,30 +437,35 @@ The file is copied, not symlinked: a git pull must never change sshd config. Aft
 
 ## Emergency SSH Key
 
-For the case that every client (workstations, phone) is lost at once. Passphrase-protected ed25519 key, private part offline only (USB stick off-site, passphrase on paper stored separately), public part in `authorized_keys` of `<user>` on every host. Never loaded into an agent, never kept on a workstation or in the password manager (its SSH key item type strips the passphrase on import).
+For the case that every client (workstations, phone) is lost at once. Passphrase-protected ed25519 key, private part only on the LUKS-encrypted USB stick `homelab-keys` (off-site; LUKS passphrase and key passphrase on paper, stored separately), public part in `authorized_keys` of `<user>` on every host. Never loaded into an agent, never kept on a workstation or in the password manager (its SSH key item type strips the passphrase on import).
 
-Use it (fish, from any machine with OpenSSH; no repo config, no agent needed):
+Open and lock the stick (fish):
 
 ```fish
-ssh -F /dev/null -o IdentitiesOnly=yes -o IdentityAgent=none -i <key-file> <user>@<host-ip>
+sudo cryptsetup open /dev/disk/by-label/homelab-keys homelab-keys; and sudo mount /dev/mapper/homelab-keys /mnt/keys
+sudo umount /mnt/keys; and sudo cryptsetup close homelab-keys
 ```
 
-Create or rotate, on a workstation (fish). The key lives in tmpfs only:
+Use it (from any machine with OpenSSH; no repo config, no agent needed):
 
 ```fish
-set -g d (mktemp -d /run/user/(id -u)/emergency.XXXX)
-env SSH_ASKPASS_REQUIRE=never ssh-keygen -t ed25519 -a 100 -C emergency@homelab-<yyyy-mm> -f $d/id_ed25519_emergency
+ssh -F /dev/null -o IdentitiesOnly=yes -o IdentityAgent=none -i /mnt/keys/homelab/id_ed25519_emergency <user>@<host-ip>
+```
+
+Create or rotate, with the stick open. Generate the key directly on the stick: a key kept in tmpfs "until copied" is gone after the next reboot.
+
+```fish
+env SSH_ASKPASS_REQUIRE=never ssh-keygen -t ed25519 -a 100 -C emergency@homelab-<yyyy-mm-dd> -f /mnt/keys/homelab/id_ed25519_emergency
+# replace the previous key's line (old comment) and append the new one, on every host
 for h in mnemosyne boreas hephaestus zephyros daidalos
-    ssh $h 'cat >> ~/.ssh/authorized_keys' < $d/id_ed25519_emergency.pub
+    ssh $h 'echo "$(hostname): removing $(grep -c " emergency@homelab-<old-date>$" ~/.ssh/authorized_keys) old line(s)"; sed -i "/ emergency@homelab-<old-date>\$/d" ~/.ssh/authorized_keys && cat >> ~/.ssh/authorized_keys' < /mnt/keys/homelab/id_ed25519_emergency.pub
 end
 for ip in <host-ips>
-    env SSH_ASKPASS_REQUIRE=never ssh -F /dev/null -o IdentitiesOnly=yes -o IdentityAgent=none -i $d/id_ed25519_emergency <user>@$ip true; and echo "$ip ok"
+    env SSH_ASKPASS_REQUIRE=never ssh -F /dev/null -o IdentitiesOnly=yes -o IdentityAgent=none -i /mnt/keys/homelab/id_ed25519_emergency <user>@$ip true; and echo "$ip ok"
 end
-# copy the private key to the USB stick, check the copy with ssh-keygen -lf, then:
-rm -r $d
 ```
 
-On rotation, delete the old key's line (comment `emergency@homelab-…`) from `authorized_keys` on every host. Test once a year with the copy from the USB stick: one login per host, then check the fingerprint in `journalctl -t sshd-session | grep "Accepted publickey"`.
+`ssh-keygen -y -f <key>` proves the file and its passphrase (`-lf` does not ask, it only reads the public part). Test once a year: one login per host, then check the fingerprint in `journalctl -t sshd-session | grep "Accepted publickey"`.
 
 ---
 
