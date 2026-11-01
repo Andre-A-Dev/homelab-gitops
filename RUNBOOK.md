@@ -4,14 +4,18 @@ Common operational procedures. No explanations — just the commands.
 
 ---
 
-## Update a Stack
+## Update Containers
+
+Monthly window, order, tag classes and verification: [wiki/Update-Strategy.md](wiki/Update-Strategy.md#update-window-monthly-manual).
 
 ```bash
-cd ~/stacks/<stack>
-docker compose pull
-docker compose up -d
-docker compose logs -f --tail 50
+sudo verify-backup.sh
+check-container-updates                                     # pull/up commands per container
+docker ps --format '{{.Names}}\t{{.Image}}\t{{.Status}}'    # a bare image ID instead of the tag = old image still running
+docker image prune                                          # only after verification
 ```
+
+Nextcloud: update the whole stack at once (`docker compose pull && docker compose up -d`), not per service.
 
 ---
 

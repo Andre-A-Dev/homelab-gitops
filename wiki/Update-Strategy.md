@@ -64,6 +64,9 @@ check-container-updates --quiet
 cd ~/stacks/<stack>
 docker compose pull
 docker compose up -d
+# Nextcloud: always the whole stack like this, never per service.
+# Compose keeps the depends_on order (DB -> Redis -> Nextcloud -> notify_push),
+# and the entrypoint runs occ upgrade itself.
 
 # Local builds: refresh the base image
 docker compose build --pull
@@ -159,7 +162,7 @@ One commit per stack, never bundled into a "bump everything" commit.
 ## Verification pitfalls
 
 - **Compare versions, not image IDs.** Comparing a container's image ID with the local tag, or registry digests with each other, said "no change" for Gitea, Immich and Ghost. All three moved a minor or patch version on deploy.
-- **A pulled image is not a running image.** `docker compose pull` without `up -d` leaves the old container running. The Immich Redis container ran a dangling image for days that way.
+- **A pulled image is not a running image.** `docker compose pull` without `up -d` leaves the old container running. The Immich Redis container ran a dangling image for days that way. On 2026-11-01 `docker compose up -d caddy` reported `Running` right after a pull that moved `caddy:2`, and the old container stayed. Check after every window: in `docker ps --format '{{.Names}}\t{{.Image}}'` a bare 12-character image ID instead of the tag means the container still runs the old image. Fix with `docker compose up -d --force-recreate <service>`.
 
 ---
 
