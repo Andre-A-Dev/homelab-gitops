@@ -77,6 +77,12 @@ a corresponding entry to `SHELLY_BLU_DEVICES`.
 
 All metrics carry labels `device` (display name) and `host` (IP address).
 
+A plug that fails to respond gets `shelly_device_online 0` at once. Its
+other metrics keep the last value for 5 minutes (short WLAN dropouts are
+common) and are then dropped, so Prometheus marks them stale instead of
+repeating the last value. H&T and BLU H&T keep their last reading: the H&T
+sleeps between measurements and is unreachable most of the time.
+
 ## Rebuild & restart
 
 ```bash

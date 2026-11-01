@@ -103,6 +103,28 @@ def parse_blu_devices() -> list[dict]:
 
 # --- Polling -----------------------------------------------------------------
 
+# Plug readings dropped while a plug is unreachable; otherwise the gauges keep
+# their last value and every scrape records it as current. H&T devices are
+# left out on purpose: they sleep between measurements and are unreachable
+# most of the time, so their last reading is the current one.
+PLUG_METRICS = (POWER, VOLTAGE, CURRENT, ENERGY, SWITCH, DEV_TEMP)
+# WLAN dropouts of up to 2 min are common (Pumpe-Keller: 107 in 30 days).
+# Keeping the last reading through them stops each dropout from resetting
+# the `for:` timers of the pump alerts.
+STALE_AFTER = 300
+LAST_OK: dict[str, float] = {}  # device name → monotonic time of last good poll
+
+
+def mark_plug_offline(device: dict) -> None:
+    """Set ONLINE=0; after STALE_AFTER, drop the plug's readings so Prometheus marks them stale."""
+    ONLINE.labels(device["name"], device["host"]).set(0)
+    last_ok = LAST_OK.get(device["name"])
+    if last_ok is not None and time.monotonic() - last_ok < STALE_AFTER:
+        return
+    for metric in PLUG_METRICS:
+        metric.remove(device["name"], device["host"])
+
+
 def poll_gen1(device: dict) -> None:
     """Poll Gen1 devices via /status endpoint."""
     url = f"http://{device['host']}/status"
@@ -124,9 +146,11 @@ def poll_gen1(device: dict) -> None:
         if "tmp" in data:
             DEV_TEMP.labels(*labels).set(data["tmp"].get("tC", 0))
 
+        LAST_OK[device["name"]] = time.monotonic()
+
     except Exception as exc:
         log.warning("Gen1 poll failed for %s (%s): %s", device["name"], device["host"], exc)
-        ONLINE.labels(device["name"], device["host"]).set(0)
+        mark_plug_offline(device)
 
 
 def poll_gen2(device: dict) -> None:
@@ -150,9 +174,11 @@ def poll_gen2(device: dict) -> None:
         if "temperature" in data:
             DEV_TEMP.labels(*labels).set(data["temperature"].get("tC", 0))
 
+        LAST_OK[device["name"]] = time.monotonic()
+
     except Exception as exc:
         log.warning("Gen2 poll failed for %s (%s): %s", device["name"], device["host"], exc)
-        ONLINE.labels(device["name"], device["host"]).set(0)
+        mark_plug_offline(device)
 
 
 def poll_ht_gen3(device: dict) -> None:
