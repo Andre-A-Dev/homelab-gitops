@@ -31,14 +31,34 @@ fi
 # Show exit code of the last command if non-zero (the only red in the prompt).
 # \001/\002 mark non-printing bytes so line wrapping stays correct.
 __prompt_status() {
-  local s=$?
-  (( s != 0 )) && printf '\001\e[38;5;196m\002✗%s\001\e[0m\002 ' "$s"
+  local s=$? sig
+  (( s == 0 )) && return
+  # >128 = killed by signal 128+n -> show its name (130 -> INT, 137 -> KILL).
+  # stderr dropped on purpose: unknown signal numbers keep the plain code.
+  if (( s > 128 )) && sig=$(kill -l "$((s - 128))" 2>/dev/null); then
+    s=$sig
+  fi
+  printf '\001\e[38;5;196m\002✗%s\001\e[0m\002 ' "$s"
 }
+
+# Git marker inside a checkout: branch, * unstaged / + staged changes,
+# upstream state (= in sync, < behind, > ahead, <> diverged).
+# Server checkouts are deploy sources: local edits or commits break the
+# fast-forward deploy and the cron pull, so make them visible.
+_git_part=''
+if [[ -r /usr/lib/git-core/git-sh-prompt ]]; then
+  # shellcheck source=/dev/null
+  . /usr/lib/git-core/git-sh-prompt
+  GIT_PS1_SHOWDIRTYSTATE=1
+  GIT_PS1_SHOWUPSTREAM=auto
+  # shellcheck disable=SC2016  # expanded at prompt time, not here
+  _git_part='$(__git_ps1 " (%s)")'
+fi
 
 # \e]0;...\a sets the terminal tab/window title -> hostname visible in tabs
 PS1="\[\e]0;\u@\h [${_host_tag}]: \w\a\]"
 PS1+='$(__prompt_status)'
 PS1+="\[\e[${_host_color}m\]\u@\h [${_host_tag}]\[\e[0m\]"
-PS1+=':\w\$ '   # path in default terminal color to avoid clashing with host colors
+PS1+=":\w${_git_part}\\$ "   # path in default terminal color to avoid clashing with host colors
 
-unset _host_color _host_tag
+unset _host_color _host_tag _git_part
