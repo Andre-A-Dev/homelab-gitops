@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# deploy-prompt.sh — copy prompt.sh to all Pis and hook it into ~/.bashrc
+# deploy-prompt.sh — copy prompt.sh to all servers and hook it into ~/.bashrc
 # Idempotent: re-running only updates ~/.prompt.sh, the .bashrc hook is added once.
 # Run from the repo root: ./scripts/deploy-prompt.sh [host ...]
 set -euo pipefail
@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC="${SCRIPT_DIR}/prompt.sh"
 USER_NAME="<user>"
 HOSTS=("$@")
-(( ${#HOSTS[@]} == 0 )) && HOSTS=(mnemosyne boreas hephaestus zephyros)
+(( ${#HOSTS[@]} == 0 )) && HOSTS=(mnemosyne boreas hephaestus zephyros daidalos)
 
 failed=()
 for h in "${HOSTS[@]}"; do

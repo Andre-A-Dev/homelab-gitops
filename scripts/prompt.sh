@@ -1,7 +1,7 @@
 # shellcheck shell=bash
-# prompt.sh — host-aware bash prompt for all homelab Pis
+# prompt.sh — host-aware bash prompt for all homelab servers
 # Sourced, not executed — hence a shell directive instead of a shebang.
-# Deployed to ~/.prompt.sh on each Pi and sourced from ~/.bashrc.
+# Deployed to ~/.prompt.sh on each server and sourced from ~/.bashrc.
 # Same file everywhere; color and tag are picked by hostname.
 #
 # Color rules:
@@ -19,6 +19,7 @@ case "${HOSTNAME,,}" in
   boreas)     _host_color='1;38;5;33';  _host_tag='dns·home'  ;;  # blue
   zephyros)   _host_color='1;38;5;80';  _host_tag='dns·away'  ;;  # turquoise (DNS family)
   hephaestus) _host_color='1;38;5;214'; _host_tag='heat·home' ;;  # amber
+  daidalos)   _host_color='1;38;5;112'; _host_tag='k8s·home'  ;;  # green
   *)          _host_color='1;38;5;250'; _host_tag='unknown'   ;;  # grey = not in list
 esac
 
