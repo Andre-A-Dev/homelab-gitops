@@ -129,6 +129,8 @@ def fetch_alerts() -> tuple[list[dict], dict]:
         if name == WATCHDOG_ALERT:
             watchdog = True
             continue
+        if labels.get("severity") == INFO_SEVERITY:
+            continue
         alerts.append({
             "name": name,
             "instance": labels.get("instance", ""),
@@ -566,7 +568,8 @@ def fetch_alert_history() -> dict:
         LOG.warning("silence lookup failed: %s", exc)
 
     params = urllib.parse.urlencode({
-        "query": f'ALERTS{{alertstate="firing",alertname!="{WATCHDOG_ALERT}"}}',
+        "query": (f'ALERTS{{alertstate="firing",alertname!="{WATCHDOG_ALERT}",'
+                  f'severity!="{INFO_SEVERITY}"}}'),
         "start": start, "end": end, "step": ALERT_STEP_S,
     })
     try:
@@ -642,6 +645,10 @@ SMART_EXPECTED_DEVICES = int(os.environ.get("SMART_EXPECTED_DEVICES", "0"))
 # to stop looking. Its ABSENCE is the signal: no watchdog means the alerting
 # pipeline itself is broken, and then "no active alerts" would be a lie.
 WATCHDOG_ALERT = os.environ.get("WATCHDOG_ALERT", "Watchdog")
+# severity="info" marks notices, not problems: an appliance cycle finished, the
+# update window reminder. Their own ntfy routes deliver them; here they would
+# only turn the panel yellow and fill the incident history.
+INFO_SEVERITY = "info"
 
 RACK_TEMP_DEVICE = os.environ.get("RACK_TEMP_DEVICE", "Talos-Temp")
 RACK_PLUG_DEVICE = os.environ.get("RACK_PLUG_DEVICE", "Talos-Plug")

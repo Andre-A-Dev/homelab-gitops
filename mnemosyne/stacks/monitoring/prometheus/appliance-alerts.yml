@@ -17,6 +17,7 @@ groups:
           max_over_time(shelly_power_watts{device="Waschmaschine"}[2m]) < 1
           and max_over_time(shelly_power_watts{device="Waschmaschine"}[30m]) > 100
         labels:
+          severity: info
           notify: appliance
         annotations:
           summary: "Washing machine finished"
@@ -38,6 +39,7 @@ groups:
           quantile_over_time(0.5, shelly_power_watts{device="Trockner"}[5m]) < 5
           and max_over_time(shelly_power_watts{device="Trockner"}[30m]) > 1000
         labels:
+          severity: info
           notify: appliance
         annotations:
           summary: "Dryer finished"
