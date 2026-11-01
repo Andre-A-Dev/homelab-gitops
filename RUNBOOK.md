@@ -271,9 +271,9 @@ If it fails: `docker compose down`, put `db.before-restore` back, `docker compos
 
 ## Restore from Offsite (restic)
 
-For the case where the Pi and/or the backup HDD are gone. Untested end to end — the steps follow restic's documented behaviour and the scripts.
+For the case where the Pi and/or the backup HDD are gone. Repository access with the offline key stick alone was tested on 2026-10-30; the restore itself is untested — the steps follow restic's documented behaviour and the scripts.
 
-Needed from outside Mnemosyne: repository address (`RESTIC_REPOSITORY`), the restic password, and an SSH key accepted by the Storage Box.
+Needed from outside Mnemosyne: repository address (`RESTIC_REPOSITORY`), the restic password, and an SSH key accepted by the Storage Box. All three are on the [Offline Key Stick](#offline-key-stick).
 
 1. Prepare a drive and mount it at `/mnt/backup` (ext4, UUID in `/etc/fstab`, `nofail`).
 2. Install restic, then restore the newest day as root. The snapshot stores absolute paths, so `--target /` writes straight back to `/mnt/backup/<YYYY-MM-DD>/`:
@@ -466,6 +466,79 @@ end
 ```
 
 `ssh-keygen -y -f <key>` proves the file and its passphrase (`-lf` does not ask, it only reads the public part). Test once a year: one login per host, then check the fingerprint in `journalctl -t sshd-session | grep "Accepted publickey"`.
+
+---
+
+## Offline Key Stick
+
+Everything needed when Mnemosyne, the backup HDD and every client are gone, on the stick `homelab-keys` (GPT, LUKS2, ext4 inside). Gitea and this runbook live on Mnemosyne, so `README.txt` on the stick repeats the restore commands. Open and lock it as in [Emergency SSH Key](#emergency-ssh-key).
+
+| File in `/mnt/keys/homelab/` | Source |
+|---|---|
+| `password` | Mnemosyne `/root/.config/restic/password` |
+| `restic-offsite.env` | Mnemosyne `/etc/restic/` — repository address; its paths are Mnemosyne's |
+| `hetzner_storagebox`, `.pub` | Mnemosyne `~/.ssh/` |
+| `id_ed25519_emergency`, `.pub` | [Emergency SSH Key](#emergency-ssh-key) |
+| `aegis-backup-<date>.json` | Aegis export, encrypted |
+| `recovery-codes.txt` | one-time codes of the external accounts, one value per line |
+| `README.txt` | file list and restore commands, no secrets |
+
+Before writing anything: `findmnt /mnt/keys` must show `/dev/mapper/homelab-keys`. Without the stick mounted, `/mnt/keys` is a plain directory on the workstation's unencrypted root, and btrfs snapshots keep whatever lands there.
+
+Prove the restore set with the stick alone (fish, any Linux with restic). Read-only; `--no-cache` because the env file points `RESTIC_CACHE_DIR` at Mnemosyne's path:
+
+```fish
+bash -euo pipefail -c '
+set -a; . /mnt/keys/homelab/restic-offsite.env; set +a
+h=${RESTIC_REPOSITORY#sftp:}; h=${h%%:*}
+restic -r "$RESTIC_REPOSITORY" --password-file /mnt/keys/homelab/password --no-lock --no-cache \
+  -o "sftp.command=ssh -F /dev/null -o IdentitiesOnly=yes -o IdentityAgent=none -i /mnt/keys/homelab/hetzner_storagebox -p 23 $h -s sftp" \
+  snapshots --latest 1
+'
+```
+
+Expected: the snapshot of this morning, host `Mnemosyne`, path `/mnt/backup`. The first connection asks to accept the Storage Box host key.
+
+Refresh the restic files after a password or key rotation (fish, stick open):
+
+```fish
+ssh -t mnemosyne 'install -d -m 700 ~/keys-export && sudo install -m 600 -o <user> -g <user> /root/.config/restic/password /etc/restic/restic-offsite.env ~/keys-export/ && install -m 600 ~/.ssh/hetzner_storagebox ~/.ssh/hetzner_storagebox.pub ~/keys-export/'
+scp 'mnemosyne:keys-export/*' /mnt/keys/homelab/
+ssh mnemosyne 'rm -r ~/keys-export'
+```
+
+Refresh the Aegis export (after adding 2FA accounts; delete the older file on the stick):
+
+```fish
+set f (ssh mnemosyne 'ls -t /mnt/codex/syncthing/aegis/aegis-*.json | head -1')
+scp "mnemosyne:$f" /mnt/keys/homelab/; and chmod 600 /mnt/keys/homelab/(basename $f)
+grep -q '"slots": *null' /mnt/keys/homelab/(basename $f); and echo UNENCRYPTED; or echo encrypted
+```
+
+Set up an additional or replacement stick, with the current stick open at `/mnt/keys` (fish). Same LUKS label, so every command above works with either stick. Type `YES` in capitals at the prompt:
+
+```fish
+bash -euo pipefail -c '
+D=/dev/sdX    # the NEW stick: lsblk -o NAME,SIZE,MODEL,TRAN
+[ "$(lsblk -dno TRAN $D)" = usb ] || { echo "$D is not a USB device - stop"; exit 1; }
+findmnt -S ${D}1 >/dev/null && udisksctl unmount -b ${D}1
+sudo wipefs -a $D
+sudo parted -s $D mklabel gpt mkpart keys 1MiB 100%
+sudo udevadm settle
+sudo cryptsetup luksFormat --type luks2 --pbkdf argon2id --pbkdf-memory 262144 --label homelab-keys ${D}1
+sudo cryptsetup open ${D}1 homelab-keys-new
+sudo mkfs.ext4 -q -L keys /dev/mapper/homelab-keys-new
+sudo mkdir -p /mnt/keys-new
+sudo mount /dev/mapper/homelab-keys-new /mnt/keys-new
+rsync -a /mnt/keys/homelab/ /mnt/keys-new/homelab/
+sync
+ls -l /mnt/keys-new/homelab
+'
+```
+
+`--pbkdf-memory 262144` (256 MiB) keeps the stick unlockable on a Pi 3 or the uConsole; the default is sized for the machine that formats it. Then test the new stick on its own: lock the old one, `sudo umount /mnt/keys-new; and sudo mount /dev/mapper/homelab-keys-new /mnt/keys`, run the snapshot test, lock with `sudo umount /mnt/keys; and sudo cryptsetup close homelab-keys-new`.
+
+Once a year, for every stick: snapshot test, `ssh-keygen -y -f /mnt/keys/homelab/id_ed25519_emergency`, Aegis export not older than the last vault change. Reading the stick also refreshes its flash cells.
 
 ---
 

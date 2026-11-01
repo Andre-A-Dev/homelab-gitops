@@ -65,7 +65,7 @@ Replace the SSD, mount it by UUID, restore all services from the local backup. E
 
 Only the offsite copy survives. This is the scenario the offsite layer exists for, not drive failure alone. Restore path: pull the newest backup day out of the restic repository onto a new drive mounted at `/mnt/backup`, then follow the normal restore procedure. Commands: `RUNBOOK.md` in the repository root, section "Restore from Offsite (restic)". Expected downtime: ~1 day plus download time.
 
-Scenario C needs three things that must exist **outside** Mnemosyne: the repository address, the restic password and a way to authenticate to the Storage Box.
+Scenario C needs three things that must exist **outside** Mnemosyne: the repository address, the restic password and a way to authenticate to the Storage Box. They are on a LUKS-encrypted offline key stick (`RUNBOOK.md`, section "Offline Key Stick"); opening the repository with the stick alone was tested on 2026-10-30.
 
 ---
 
