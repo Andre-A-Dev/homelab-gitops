@@ -86,15 +86,11 @@ These shaped the steps below; keep them in mind when something looks off.
      `claude-ro` kubeconfig, Prometheus API): confirm the private change
      works, since the mirror documents it as done.
 5. **Propose commits.** One per private commit; merge only trivial ones.
-   - Files touched by more than one commit: run `… mirror_check.py hunks
-     <file>…` and derive the `git add -p` keys (`y`, `n`, `s`, `a`, `d`)
-     from the numbered list. Its numbers follow the `(n/N)` counter of
-     `add -p`, so a mode change, which `add -p` asks about first, is entry 1.
-     Contiguous changes cannot be split with `s`;
-     then pick the coarser grouping and say so instead of prescribing `e`.
+   - Files touched by more than one commit: don't split them by hand.
+     Propose a rebuild of the whole sync instead (B.4: plan dir, test in a
+     throwaway clone, hand-over); it replaces the staging blocks below.
    - Check coverage before you answer: every path from `git status
-     --porcelain` appears in exactly one block, or in several only via
-     `add -p`.
+     --porcelain` appears in exactly one block.
    - Per block: the staging commands (fish, `git add -- …`; `git add` on a
      deleted file stages the deletion), then the message in its own code
      block.

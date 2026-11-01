@@ -8,7 +8,6 @@ talks to the network (a GitHub fetch would open a passphrase dialog).
 
     mirror_check.py preflight        remotes, upstream, tags, half-done rebases
     mirror_check.py scan             sync dry-run, leak scan, sanitizer artifacts
-    mirror_check.py hunks FILE...    numbered hunks per file, for git add -p
     mirror_check.py commits [--tree REF]
                                      unpushed commits: subject, files, modes
 
@@ -221,32 +220,6 @@ def scan() -> None:
     scan_messages(patterns)
 
 
-# ── hunks ────────────────────────────────────────────────────────────────────
-
-def hunks(files: list[str]) -> None:
-    # Numbered like the "(n/N)" counter of git add -p, which asks about a mode
-    # change before the first hunk (sync_public.py syncs exec bits)
-    for f in files:
-        diff = git("diff", "-U3", "--", f)
-        print(f"== {f}")
-        if not diff:
-            print("   (no unstaged changes)")
-            continue
-        n, header, first = 0, "", None
-        old_mode = re.search(r"^old mode (\d+)$", diff, re.M)
-        new_mode = re.search(r"^new mode (\d+)$", diff, re.M)
-        if old_mode and new_mode:
-            n = 1
-            print(f"   {n:2}: mode change {old_mode.group(1)} → {new_mode.group(1)}")
-        for line in diff.splitlines() + ["@@END"]:
-            if line.startswith("@@"):
-                if header:
-                    print(f"   {n:2}: {header[:60]:60} | {(first or '')[:70]}")
-                n, header, first = n + 1, line, None
-            elif first is None and line[:1] in "+-" and not line.startswith(("+++", "---")):
-                first = line
-
-
 # ── commits ──────────────────────────────────────────────────────────────────
 
 def commits(tree_ref: str | None) -> None:
@@ -293,8 +266,6 @@ def main() -> int:
         preflight()
     elif cmd == "scan":
         scan()
-    elif cmd == "hunks" and rest:
-        hunks(rest)
     elif cmd == "commits":
         commits(rest[1] if rest[:1] == ["--tree"] and len(rest) > 1 else None)
     else:
