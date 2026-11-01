@@ -208,11 +208,6 @@ immich.home {
   reverse_proxy immich-server:2283
 }
 
-# Tailscale access — HTTP only, no TLS (Tailscale encrypts the tunnel itself)
-http://100.x.x.x:2283 {
-  reverse_proxy immich-server:2283
-}
-
 # -- Jobiris --------------------------------------------------------------
 
 jobiris.home {

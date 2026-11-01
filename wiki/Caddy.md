@@ -102,16 +102,6 @@ jobiris.home {
 
 `flush_interval -1` disables response buffering for server-sent events. `versions 1.1` forces HTTP/1.1 for services that do not support HTTP/2.
 
-**Tailscale-only HTTP access (no TLS):**
-
-```caddy
-http://100.x.x.x:2283 {
-  reverse_proxy immich-server:2283
-}
-```
-
-For clients that access via Tailscale IP directly. Tailscale encrypts the tunnel; the inner connection is plain HTTP.
-
 ### Data paths
 
 | What | Path |

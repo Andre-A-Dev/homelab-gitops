@@ -58,7 +58,6 @@ Never use `docker compose restart` (does not re-read `env_file`) or
 | `ghostwrite.home` | `ghostwrite:5000` | **Disabled** (commented out) — stack under the `inactive` profile |
 | `homepage.home` | `homepage:3000` | **Disabled** (commented out) — stack under the `inactive` profile |
 | `immich.home` | `immich-server:2283` | |
-| `http://100.x.x.x:2283` | `immich-server:2283` | Tailscale HTTP access — no TLS (Tailscale encrypts the tunnel) |
 | `jobiris.home` | `jobiris-board:8042` | `flush_interval -1` for SSE streaming; `versions 1.1` |
 | `wakapi.home` | `wakapi:3000` | |
 | `weather.home` | `aether:8050` | |
@@ -75,10 +74,6 @@ write access.
 **`syncthing.home`** — proxied to the host IP (`192.168.1.10`) rather than a
 container name because Syncthing runs natively on the host. The TLS cert on
 Syncthing's side is self-signed, so `tls_insecure_skip_verify` is set.
-
-**`immich.home` Tailscale entry** — plain HTTP on the Tailscale IP. Zephyros's
-Caddy proxies `immich.home` directly to this address; Tailscale provides
-transport encryption so a second TLS layer is unnecessary.
 
 **`jobiris.home`** — `flush_interval -1` disables Caddy's response buffering,
 required for the server-sent events (SSE) stream the board UI uses. Without it

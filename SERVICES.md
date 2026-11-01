@@ -12,7 +12,7 @@ All internal `.home` domains require the Caddy root certificate to be imported o
 | Nextcloud | `https://cloud.yourdomain.dedyn.io` | `443` | Let's Encrypt | ✅ public |
 | Gitea (web) | `https://git.home` | `443` | Internal CA | ✅ |
 | Gitea (SSH) | `ssh://git@192.168.1.10` | `2222` | — | ✅ |
-| Immich | `https://immich.home` | `443` | Internal CA | ✅ (`http://100.x.x.x:2283`) |
+| Immich | `https://immich.home` | `443` | Internal CA | ✅ |
 | Grafana | `https://grafana.home` | `443` | Internal CA | ✅ |
 | Prometheus | `https://prometheus.home` | `443` | Internal CA | ✅ |
 | Calibre-Web | `https://calibre.home` | `443` | Internal CA | ✅ |

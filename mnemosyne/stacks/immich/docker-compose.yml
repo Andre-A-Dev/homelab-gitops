@@ -9,8 +9,7 @@ services:
       # Diun: new tags from the pinned one upward; move the lower bound with the tag.
       diun.watch_repo: "true"
       diun.include_tags: '^v([3-9]|[1-9][0-9])$$'
-    ports:
-      - "2283:2283"
+    # No published port: clients use https://immich.home (LAN and Tailscale).
     volumes:
       - ${UPLOAD_LOCATION}:/usr/src/app/upload
       - /etc/localtime:/etc/localtime:ro
