@@ -10,6 +10,7 @@ import time
 import json
 import logging
 import requests
+from requests.auth import HTTPDigestAuth
 from flask import Flask, Response
 from prometheus_client import (
     Gauge, CollectorRegistry, generate_latest, CONTENT_TYPE_LATEST
@@ -39,6 +40,19 @@ BATTERY  = Gauge("shelly_battery_percent",     "Battery charge in percent",     
 TIMEOUT       = int(os.getenv("SHELLY_TIMEOUT",   "5"))
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL",    "15"))
 EXPORTER_PORT = int(os.getenv("EXPORTER_PORT",    "9117"))
+# Digest auth for Gen2+ devices (user "admin", SHA-256), one password for all.
+# Empty = devices without auth. Gen1 uses basic auth and is not covered.
+SHELLY_PASSWORD = os.getenv("SHELLY_PASSWORD", "")
+
+# One auth object per host: HTTPDigestAuth replays the last challenge, so a
+# shared one would answer every host switch with an extra 401 round trip.
+_AUTH: dict[str, HTTPDigestAuth] = {}
+
+
+def auth_for(host: str) -> HTTPDigestAuth | None:
+    if not SHELLY_PASSWORD:
+        return None
+    return _AUTH.setdefault(host, HTTPDigestAuth("admin", SHELLY_PASSWORD))
 
 
 def parse_devices() -> list[dict]:
@@ -157,7 +171,7 @@ def poll_gen2(device: dict) -> None:
     """Poll Gen2/3 plug devices via RPC endpoint."""
     url = f"http://{device['host']}/rpc/Switch.GetStatus?id=0"
     try:
-        r = requests.get(url, timeout=TIMEOUT)
+        r = requests.get(url, auth=auth_for(device["host"]), timeout=TIMEOUT)
         r.raise_for_status()
         data = r.json()
 
@@ -185,7 +199,7 @@ def poll_ht_gen3(device: dict) -> None:
     """Poll Shelly H&T Gen3 via /rpc/Shelly.GetStatus (one call → temp, humidity, battery)."""
     url = f"http://{device['host']}/rpc/Shelly.GetStatus"
     try:
-        r = requests.get(url, timeout=TIMEOUT)
+        r = requests.get(url, auth=auth_for(device["host"]), timeout=TIMEOUT)
         r.raise_for_status()
         data = r.json()
 
@@ -210,7 +224,7 @@ def poll_blu_ht(device: dict) -> None:
     """
     url = f"http://{device['host']}/rpc/KVS.Get"
     try:
-        r = requests.get(url, params={"key": device["mac"]}, timeout=TIMEOUT)
+        r = requests.get(url, params={"key": device["mac"]}, auth=auth_for(device["host"]), timeout=TIMEOUT)
         r.raise_for_status()
         raw = r.json()
         # KVS value is a JSON-encoded string

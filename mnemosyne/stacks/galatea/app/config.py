@@ -22,6 +22,9 @@ PRUSA_USERNAME = os.environ.get("PRUSA_USERNAME", "maker")
 PRUSA_PASSWORD = _required("PRUSA_PASSWORD")
 
 PLUG_HOST = _required("PLUG_HOST")
+# Digest auth of every Shelly (Gen2+: user "admin", SHA-256), the same value
+# as in the shelly-exporter. Empty = the devices have no auth enabled.
+SHELLY_PASSWORD = os.environ.get("SHELLY_PASSWORD", "")
 
 CLIMATE_GATEWAY_HOST = _required("CLIMATE_GATEWAY_HOST")
 CLIMATE_SENSOR_MAC = _required("CLIMATE_SENSOR_MAC")

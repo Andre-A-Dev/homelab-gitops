@@ -10,17 +10,29 @@ import json
 import time
 
 import requests
+from requests.auth import HTTPDigestAuth
 
 from app import config
+
+# One auth object per host: HTTPDigestAuth replays the last challenge, so a
+# shared one would answer every host switch with an extra 401 round trip.
+_AUTH: dict[str, HTTPDigestAuth] = {}
 
 
 class UpstreamError(Exception):
     """The Shelly device could not be reached or returned something unusable."""
 
 
+def _auth(host: str) -> HTTPDigestAuth | None:
+    if not config.SHELLY_PASSWORD:
+        return None
+    return _AUTH.setdefault(host, HTTPDigestAuth("admin", config.SHELLY_PASSWORD))
+
+
 def _rpc_get(host: str, method: str, params: dict | None = None) -> dict:
     try:
-        resp = requests.get(f"http://{host}/rpc/{method}", params=params, timeout=config.HTTP_TIMEOUT_S)
+        resp = requests.get(f"http://{host}/rpc/{method}", params=params, auth=_auth(host),
+                            timeout=config.HTTP_TIMEOUT_S)
         resp.raise_for_status()
         return resp.json()
     except (requests.RequestException, ValueError) as exc:

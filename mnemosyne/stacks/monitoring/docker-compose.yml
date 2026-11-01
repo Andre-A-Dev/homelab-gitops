@@ -318,6 +318,8 @@ services:
       - SHELLY_HT_DEVICES=${SHELLY_HT_DEVICES:-}
       # BLU H&T via gateway KVS — format: "name;gateway_host;mac,..."
       - SHELLY_BLU_DEVICES=${SHELLY_BLU_DEVICES:-}
+      # Shared digest password of all Gen2+ devices; empty = no auth on them
+      - SHELLY_PASSWORD=${SHELLY_PASSWORD:-}
       - POLL_INTERVAL=${POLL_INTERVAL_SHELLY:-15}
       - EXPORTER_PORT=9117
     ports:

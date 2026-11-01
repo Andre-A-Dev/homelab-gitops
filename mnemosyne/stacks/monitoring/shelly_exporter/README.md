@@ -36,7 +36,13 @@ SHELLY_BLU_DEVICES=BLU-Keller;192.168.1.x;c0:2c:ed:77:df:12
 ```
 POLL_INTERVAL_SHELLY=15   # seconds between polls
 SHELLY_TIMEOUT=5          # HTTP request timeout in seconds
+SHELLY_PASSWORD=          # digest auth of all Gen2+ devices (user admin), empty = no auth
 ```
+
+With `SHELLY_PASSWORD` set, Gen2+ requests answer the device's SHA-256 digest
+challenge; devices without auth keep working, so the value can be set before
+auth is enabled on the devices. Gen1 (basic auth) is not covered. Galatea uses
+the same password. Procedure: RUNBOOK "Enable Shelly Authentication".
 
 ## BLU Gateway setup
 

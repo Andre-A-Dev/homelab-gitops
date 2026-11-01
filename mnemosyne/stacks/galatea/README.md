@@ -59,10 +59,11 @@ Never build on unverified identifiers. From Mnemosyne:
 curl -s --digest -u maker:"$PRUSA_PASSWORD" http://<printer>/api/v1/status | jq '{state: .printer.state, nozzle: .printer.temp_nozzle, job: .job}'
 
 # Plug: switch component 0 exists and reports power
-curl -s "http://<plug>/rpc/Switch.GetStatus?id=0" | jq '{output, apower}'
+# (--digest only answers a challenge, so it also works before auth is enabled)
+curl -s --digest -u admin:"$SHELLY_PASSWORD" "http://<plug>/rpc/Switch.GetStatus?id=0" | jq '{output, apower}'
 
 # Climate: gateway KVS holds a recent reading for the sensor MAC
-curl -s "http://<gateway>/rpc/KVS.Get?key=<mac>" | jq -r .value | jq
+curl -s --digest -u admin:"$SHELLY_PASSWORD" "http://<gateway>/rpc/KVS.Get?key=<mac>" | jq -r .value | jq
 
 # Container user for ./data
 id -u; id -g
@@ -140,6 +141,9 @@ ever contacts real hardware.
 - **Plug firmware updates** make the plug unreachable for several minutes.
   Galatea then reports power as unknown and changes nothing. Consider
   disabling auto-update on the printer plug and updating deliberately.
+- **Shelly auth:** `SHELLY_PASSWORD` must match the password on the plug and
+  the gateway (shared with the shelly-exporter). A wrong or missing value looks
+  like an unreachable plug: Galatea changes nothing and answers 502.
 - **Filament consumption** is booked by hand for now (weigh, update). Automatic
   booking from PrusaLink follows once the firmware's usage field is verified.
 - **Camera** is Phase 2.

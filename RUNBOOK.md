@@ -542,6 +542,34 @@ Once a year, for every stick: snapshot test, `ssh-keygen -y -f /mnt/keys/homelab
 
 ---
 
+## Enable Shelly Authentication
+
+All Shellys share one password (Gen2+: digest auth, fixed user `admin`). Readers: shelly-exporter (monitoring stack) and Galatea. Both accept the password before the devices require it, so the order below never cuts them off. Order matters: clients first, devices second, the printer plug last and only while the printer is idle.
+
+1. Generate a password without `$` (Compose would interpolate it): `openssl rand -hex 16`. Store it in Vaultwarden.
+2. On Mnemosyne, set `SHELLY_PASSWORD=<value>` in `~/stacks/monitoring/.env` and `~/stacks/galatea/.env`, then apply both (if the change is not part of a deploy that recreates them anyway):
+
+```bash
+cd ~/stacks/monitoring && docker compose up -d shelly-exporter
+cd ~/stacks/galatea && docker compose up -d
+docker exec shelly-exporter printenv SHELLY_PASSWORD | wc -c   # 33 = 32 hex + newline
+docker exec galatea printenv SHELLY_PASSWORD | wc -c
+```
+
+3. Per device, in its web UI (`http://<ip>` → Settings → Authentication): enable, same password. Battery H&T sensors only answer while awake (press the button). Then check that it requires auth and the exporter still reads it:
+
+```bash
+curl -s http://<ip>/rpc/Shelly.GetDeviceInfo | jq .auth_en            # true (this call stays open by design)
+curl -s -o /dev/null -w '%{http_code}\n' "http://<ip>/rpc/Shelly.GetStatus"   # 401 without password
+curl -s "http://localhost:9090/api/v1/query" --data-urlencode 'query=shelly_device_online{host="<ip>"}' | jq '.data.result[].value[1]'   # "1"
+```
+
+4. Galatea: after the plug and the BLU gateway, open the UI and check that plug and climate show values. A wrong password shows as "Plug does not answer".
+
+Roll back a device: Settings → Authentication → disable. Lost password: factory reset of that device.
+
+---
+
 ## Change Pi-hole Password
 
 ```bash
