@@ -20,5 +20,17 @@
       "Bash(ssh git.home *)",
       "Bash(ssh-add *)"
     ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/skills/mirror-review/scripts/session_title.py\" || exit 1"
+          }
+        ]
+      }
+    ]
   }
 }
