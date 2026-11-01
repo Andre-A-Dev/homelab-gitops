@@ -3,7 +3,9 @@
 
 MNEMOSYNE_IP="100.x.x.x"       # Tailscale IP of Mnemosyne — update after setup
 BACKUP_USER="<user>"
-REMOTE_DIR="/mnt/codex/backups/zephyros"
+# On Mnemosyne this key is forced into `rrsync -wo /mnt/codex/backups/zephyros`
+# (zephyros/README.md): paths are relative to that directory, and no shell
+# command runs. Mnemosyne's backup-services.sh prunes old copies.
 DATE=$(date +%F)
 BACKUP_DIR="/tmp/zephyros-backup-$DATE"
 LOG="/var/log/backup-zephyros.log"
@@ -43,13 +45,9 @@ sudo chown -R "<user>:<user>" "$BACKUP_DIR"
 # Transfer to Mnemosyne via Tailscale
 echo "Transferring to Mnemosyne ($MNEMOSYNE_IP)..." >> $LOG
 rsync -az --delete \
-    -e "ssh -i $SSH_KEY -o StrictHostKeyChecking=no" \
+    -e "ssh -i $SSH_KEY -o StrictHostKeyChecking=accept-new" \
     "$BACKUP_DIR/" \
-    "$BACKUP_USER@$MNEMOSYNE_IP:$REMOTE_DIR/$DATE/" >> $LOG 2>&1
-
-# Keep only last 30 days on Mnemosyne
-ssh -i "$SSH_KEY" "$BACKUP_USER@$MNEMOSYNE_IP" \
-    "find $REMOTE_DIR -maxdepth 1 -type d -name '20*' -mtime +30 -exec rm -rf {} +" 2>> $LOG
+    "$BACKUP_USER@$MNEMOSYNE_IP:$DATE/" >> $LOG 2>&1
 
 # Clean up local temp dir
 rm -rf "$BACKUP_DIR"

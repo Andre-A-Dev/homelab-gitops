@@ -85,9 +85,21 @@ Tailscale rsync. Run from cron on Zephyros.
 
 ```
 Destination: <user>@100.x.x.x:/mnt/codex/backups/zephyros/<date>/
-Retention:   30 daily snapshots (older ones deleted on Mnemosyne)
+Retention:   30 days, pruned by Mnemosyne's backup-services.sh
 SSH key:     /home/<user>/.ssh/backup_key
 ```
+
+The key may only write into that directory. Its line in Mnemosyne's
+`~/.ssh/authorized_keys` carries a forced command, so a compromised Zephyros
+gets neither a shell nor the other backups on Mnemosyne:
+
+```
+restrict,from="100.y.y.y",command="/usr/bin/rrsync -wo /mnt/codex/backups/zephyros" ssh-ed25519 AAAA... <comment>
+```
+
+Find the line with `ssh-keygen -lf ~/.ssh/authorized_keys` (fingerprint of
+`backup_key.pub`). Check from Zephyros: `sudo ssh -i ~/.ssh/backup_key
+<user>@100.x.x.x id` must be refused, then run the backup script once.
 
 What gets backed up: `/etc/pihole/pihole.toml`, `/etc/pihole/custom.list`,
 `/etc/unbound/unbound.conf.d/pi-hole.conf`, `/etc/msmtprc`, `/etc/apticron/apticron.conf`,
