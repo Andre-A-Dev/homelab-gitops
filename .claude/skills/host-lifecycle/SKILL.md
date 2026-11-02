@@ -21,7 +21,7 @@ host appear, and where is the new one missing.
   (CLAUDE.md, "Deployment"). Changes to `scripts/sync_public.py`,
   `scripts/export_public.py` or `.publicignore`: flag them every time.
 - Public files carry no IPs, internal domains or usernames. IPs go into the
-  private files only (`shared/dotfiles/ssh_config`, `shared/ssh/claude-ro.keys`,
+  private files only (`shared/workstations/dotfiles/ssh_config`, `shared/ssh/claude-ro.keys`,
   `CLAUDE.local.md`) or into files the sanitizer rewrites. `REPLACEMENTS` in
   `scripts/sync_public.py` has catch-alls for the LAN range and Tailscale
   IPs, so a new IP does not leak; a dedicated rule only gives it a distinct
@@ -61,10 +61,9 @@ by the user later, replaces Proteus) and the ClockworkPi uConsole
 (workstation on Raspberry Pi hardware, arm64: check tool support; light
 monitoring optional, not automated).
 
-Shared workstation parts live under `astraeus_nx/` today (e.g. the plasmoid
-`astraeus_nx/plasmoids/local.homelab.roomclimate/` runs on both
-workstations). The user plans that restructuring; don't move files, name
-what a new workstation needs from there.
+Shared workstation parts live under `shared/workstations/` (`dotfiles/`,
+`plasmoids/`, `systemd/`, `scripts/`). A new workstation needs a branch in
+the hostname `case` of `shared/workstations/install.sh`.
 
 ## A. add `<host>` like `<reference>`
 

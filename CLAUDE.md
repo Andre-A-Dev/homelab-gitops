@@ -72,6 +72,10 @@ print. Read-only `GET`s for verification are fine.
 - `clusters/daidalos/` — Kubernetes manifests, reconciled by Flux
 - `shared/scripts/` — multi-host scripts, symlinked to `/usr/local/bin/`,
   hostname-based dispatch
+- `shared/workstations/` — files for every workstation (dotfiles, plasmoids,
+  scripts, systemd units); `shared/workstations/install.sh` links them plus
+  the host-specific `<host>/dotfiles/` (hostname `case`). Hardware-bound
+  files stay in the node folder.
 - `shared/compose-profiles.yml` — profile vocabulary and per-host activation
 - `shared/apticron/apticron.conf` — symlinked to `/etc/apticron/apticron.conf`
   on all Pis; recipients stay host-local in `/etc/apticron/apticron.local.conf`

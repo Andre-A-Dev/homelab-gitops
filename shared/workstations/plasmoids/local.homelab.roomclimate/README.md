@@ -27,20 +27,14 @@ so a second client on the same app would invalidate the exporter's token.
 The widget is installed as a symlink into the repo checkout, so a `git pull`
 updates it.
 
-**AstraeusNX:** `astraeus_nx/dotfiles/install.sh` creates the link.
-
-**Other workstations (Proteus):** don't run `install.sh` there, it links
-AstraeusNX-only configs (OpenRGB, CoolerControl, kwinrc, EasyEffects) and moves
-the existing files into a backup. Link the widget alone, `<repo>` being the
-checkout:
+`shared/workstations/install.sh` creates the link on every workstation it
+knows (see `shared/workstations/README.md`). Check:
 
 ```fish
-mkdir -p ~/.local/share/plasma/plasmoids
-ln -s <repo>/astraeus_nx/plasmoids/local.homelab.roomclimate ~/.local/share/plasma/plasmoids/
 kpackagetool6 -t Plasma/Applet -l | grep roomclimate
 ```
 
-The last command must print `local.homelab.roomclimate`.
+It must print `local.homelab.roomclimate`.
 
 Optional, test in a window without touching the panel:
 

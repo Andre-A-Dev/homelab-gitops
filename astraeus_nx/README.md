@@ -31,7 +31,8 @@ Run this for each user profile that runs Electron apps.
 
 ## Room Climate plasmoid
 
-`plasmoids/local.homelab.roomclimate/` is a Plasma 6 panel widget showing the
+`shared/workstations/plasmoids/local.homelab.roomclimate/` is a Plasma 6 panel widget showing the
 Netatmo values from Prometheus. It needs the Caddy CA above.
-`dotfiles/install.sh` installs it on AstraeusNX; installation on other
-workstations, settings and updates: `plasmoids/local.homelab.roomclimate/README.md`.
+`shared/workstations/install.sh` installs it together with the AstraeusNX
+dotfiles in `dotfiles/`; settings and updates:
+`shared/workstations/plasmoids/local.homelab.roomclimate/README.md`.

@@ -2,6 +2,8 @@
 
 Tools to detect wear on AstraeusNX early: AIO cooling, GPU, RAM and drives. Each check establishes fixed test conditions, verifies that they actually hold, and compares the result with its own baseline. What matters is the trend over months. Absolute limits only serve as a rough safety net.
 
+The folder lives in `shared/workstations/` because `disk_health.py` also runs on Proteus. `aio_health.py` (NZXT Kraken, NZXT fan controllers) and `gpu_health.py` (NVIDIA, NZXT case fans) are tied to the AstraeusNX hardware.
+
 ## Overview
 
 | Script | Checks | Duration | Schedule |
@@ -36,7 +38,7 @@ paru -S gpu-burn-git stressapptest
 
 ## Installation
 
-All files live together in `homelab-infra/astraeus_nx/scripts/health_checks/`. The test scripts import `health_common.py` from the same folder.
+All files live together in `homelab-infra/shared/workstations/scripts/health_checks/`. The test scripts import `health_common.py` from the same folder; Python resolves symlinks for that, so a link in `/usr/local/bin` works.
 
 ```fish
 chmod +x aio_health.py gpu_health.py ram_health.py disk_health.py health_all.py
@@ -45,10 +47,11 @@ git add --chmod=+x aio_health.py gpu_health.py ram_health.py disk_health.py heal
 
 ### Weekly drive check
 
-The units live under `homelab-infra/astraeus_nx/scripts/systemd/`. The path in `ExecStart` must point to this folder.
+The units live under `homelab-infra/shared/workstations/systemd/` and call `/usr/local/bin/disk-health`, so they work with any checkout path. Run from the repo root on each workstation:
 
 ```fish
-sudo cp ../systemd/disk-health.{service,timer} /etc/systemd/system/
+sudo ln -sf $PWD/shared/workstations/scripts/health_checks/disk_health.py /usr/local/bin/disk-health
+sudo cp shared/workstations/systemd/disk-health.{service,timer} /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now disk-health.timer
 systemctl list-timers disk-health.timer

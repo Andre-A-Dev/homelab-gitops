@@ -1,5 +1,7 @@
 ## What is tracked here
 
+All files are linked into place by [`../install.sh`](../README.md#installsh).
+
 | Path | Purpose |
 |---|---|
 | [`ssh_config`](ssh_config) | SSH client config covering all homelab hosts (private, not in the public mirror) |
@@ -7,13 +9,7 @@
 
 ## SSH config
 
-Symlink into place on the CachyOS install:
-
-```bash
-mkdir -p ~/.ssh
-ln -sf ~/homelab-infra/astraeus_nx/dotfiles/ssh_config ~/.ssh/config
-chmod 600 ~/.ssh/config
-```
+Linked to `~/.ssh/config`.
 
 Covers:
 - `mnemosyne` / `boreas` / `hephaestus` / `daidalos` — LAN hosts by IP

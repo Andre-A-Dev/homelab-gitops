@@ -16,7 +16,7 @@ does not cover (AstraeusNX: --alias astraeus_nx). --alias applies to the
 first host (refs, ips) or to <new> (gaps); the reference in gaps is matched
 by its name and IPs only.
 
-IPs come from shared/dotfiles/ssh_config (Host entries starting with the
+IPs come from shared/workstations/dotfiles/ssh_config (Host entries starting with the
 name), shared/ssh/claude-ro.keys (from= of claude-ro@<name>) and the
 Prometheus static targets labelled with the name. They also match in their
 regex-escaped form, as the mirror tooling writes them.
@@ -47,7 +47,7 @@ def collect_ips(names):
     low = [n.lower() for n in names]
     found = {}
 
-    ssh = REPO / "shared" / "dotfiles" / "ssh_config"
+    ssh = REPO / "shared" / "workstations" / "dotfiles" / "ssh_config"
     if ssh.exists():
         hosts = []
         for line in ssh.read_text().splitlines():

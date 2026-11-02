@@ -347,13 +347,13 @@ sudo pacman -S ksshaskpass
 ssh-keygen -p -f ~/.ssh/id_ed25519_homelab   # repeat for every other private key
 ssh-keygen -y -P '' -f ~/.ssh/id_ed25519_homelab   # must fail: a missing askpass silently saves an empty passphrase
 
-# 3. Session-wide ssh-agent with ksshaskpass confirm, then log out and in
-mkdir -p ~/.config/environment.d
-ln -sf <repo>/shared/dotfiles/environment.d/ssh-agent.conf ~/.config/environment.d/ssh-agent.conf
+# 3. Session-wide ssh-agent with ksshaskpass confirm, then log out and in.
+#    install.sh links ssh-agent.conf and the SSH config of step 4 (a new
+#    workstation first needs its hostname branch, see shared/workstations/README.md)
+<repo>/shared/workstations/install.sh
 systemctl --user enable --now ssh-agent.socket
 
-# 4. SSH config with the *-ro aliases, see shared/dotfiles/README.md
-ln -sf <repo>/shared/dotfiles/ssh_config ~/.ssh/config
+# 4. SSH config with the *-ro aliases: linked in step 3, see shared/workstations/dotfiles/README.md
 
 # 5. Read-only key, no passphrase on purpose: Claude uses it unattended, the host limits it
 ssh-keygen -t ed25519 -N '' -C claude-ro@(hostnamectl hostname | string lower) -f ~/.ssh/id_ed25519_claude_ro

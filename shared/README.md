@@ -3,6 +3,8 @@
 Generic maintenance scripts shared across all hosts. Each script is symlinked
 to `/usr/local/bin/` on every host that uses it.
 
+Files for the workstations only: [`workstations/README.md`](workstations/README.md).
+
 ---
 
 ## Overview
@@ -13,7 +15,6 @@ to `/usr/local/bin/` on every host that uses it.
 | `check-container-updates.sh` | Check running containers for image updates | Mnemosyne |
 | `gitea-webhook-handler.sh` | Pull repo changes and run host-specific actions | Boreas, Hephaestus, Zephyros, Daidalos |
 | `gitea-pull.sh` | Pull latest repo changes unattended (cron) | Boreas, Hephaestus, Zephyros, Daidalos |
-
 ---
 
 ## system-update.sh

@@ -148,12 +148,12 @@ Caddy on Mnemosyne also proxies the Pi-hole admin UIs (`pihole.home`, `pihole-ze
 | Directory | Contents |
 |---|---|
 | `astraeus_nx/stacks/ollama/` | Local LLM runtime |
-| `astraeus_nx/scripts/health_checks/` | Hardware health checks (disk, RAM, GPU, AIO) |
+| `shared/workstations/scripts/health_checks/` | Hardware health checks (disk, RAM, GPU, AIO); the disk check also runs on Proteus |
 | `astraeus/scripts/win_diag/` | Windows diagnostics script for the Windows boot |
 
 AstraeusNX runs Node Exporter on CachyOS and the Windows Exporter (port `9182`) when booted into Windows, both scraped by Prometheus on Mnemosyne.
 
-The workstation dotfiles (KDE, OpenRGB, CoolerControl) are version-controlled in this repository as well and symlinked into place by an install script. They are personal and not published to the public mirror; the shared shell config is in `shared/dotfiles/`.
+The workstation dotfiles (KDE, OpenRGB, CoolerControl) are version-controlled in this repository as well and symlinked into place by an install script. They are personal and not published to the public mirror; files for all workstations (shell and SSH config, the Room Climate panel widget) are in `shared/workstations/`.
 
 Full service, DNS and storage reference: [`SERVICES.md`](SERVICES.md).
 
