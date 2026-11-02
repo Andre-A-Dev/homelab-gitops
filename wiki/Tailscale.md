@@ -182,13 +182,49 @@ Packet flow from Android to a LAN device (`192.168.1.x`):
 
 ## Security considerations
 
-All devices in your Tailnet can reach all `192.168.1.x` devices via the subnet router -- including the FritzBox admin interface, Pi-hole, Syncthing, and any other internal service. This is intentional for personal use.
+All own (untagged) devices in the Tailnet can reach all `192.168.1.x` devices via the subnet router -- including Pi-hole, Syncthing, and any other internal service. This is intentional for personal use.
 
-If you ever add devices belonging to other people, use Tailscale ACLs to restrict which device can reach which:
+### Policy: Zephyros is tagged and restricted
 
+Zephyros sits at a remote site and is the one node outside the home. It carries `tag:remote`, which takes it out of `autogroup:member`, so the unrestricted grant no longer covers it. It may only open the connections it needs itself; connections *to* Zephyros (Prometheus scrapes, Caddy upstreams, Gitea webhook) come from untagged devices and stay allowed. Tagged nodes have no key expiry.
+
+The policy lives only in the admin console (Access controls → JSON editor); this is a copy for review:
+
+```jsonc
+{
+  "hosts": {
+    "mnemosyne": "100.x.x.x",
+    "boreas":    "100.x.x.x",
+    "zephyros":  "100.y.y.y",
+  },
+  "tagOwners": { "tag:remote": ["autogroup:admin"] },
+  "grants": [
+    // Own (untagged) devices: unrestricted, incl. the subnet route
+    {"src": ["autogroup:member"], "dst": ["*"], "ip": ["*"]},
+    // Zephyros -> Mnemosyne: Caddy upstream (443), backup via rrsync-only key (22), git pull (2222)
+    {"src": ["tag:remote"], "dst": ["mnemosyne"], "ip": ["tcp:22", "tcp:443", "tcp:2222"]},
+    // Zephyros -> Boreas: Tailscale DNS, Boreas is the first resolver
+    {"src": ["tag:remote"], "dst": ["boreas"], "ip": ["udp:53", "tcp:53"]},
+  ],
+  "ssh": [
+    {"action": "check", "src": ["autogroup:member"], "dst": ["autogroup:self"],
+     "users": ["autogroup:nonroot", "root"]},
+  ],
+  "tests": [
+    {"src": "tag:remote",
+     "accept": ["mnemosyne:443", "mnemosyne:22", "mnemosyne:2222", "boreas:53"],
+     "deny":   ["mnemosyne:8384", "mnemosyne:9000", "mnemosyne:3000", "<daidalos-ts-ip>:22"]},
+    // Mnemosyne stands in for all untagged devices (tests reject autogroups as src)
+    {"src": "mnemosyne",
+     "accept": ["zephyros:9100", "zephyros:9666", "zephyros:9787", "zephyros:9042",
+                "zephyros:443", "zephyros:8081", "zephyros:9000"]},
+  ],
+}
 ```
-Tailscale Admin → Access controls → JSON configuration
-```
+
+- **Zephyros needs a new connection** (new service, new scrape direction): add it to its grant *and* to the `tests` block, so the console rejects a policy that breaks it.
+- **Something on Zephyros broke after a policy change:** remove `tag:remote` from Zephyros (Machines → zephyros → Edit ACL tags). It falls back into `autogroup:member` immediately; the policy can stay.
+- **Verify from Zephyros:** `timeout 5 bash -c 'exec 3<>/dev/tcp/<mnemosyne-ts-ip>/8384' && echo open || echo closed` must print `closed`, the same for `:443` must print `open`.
 
 ---
 
