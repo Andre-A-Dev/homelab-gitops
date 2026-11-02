@@ -1,6 +1,6 @@
 # Tailscale
 
-Tailscale connects all devices into an encrypted WireGuard mesh network without port forwarding or firewall changes. Mnemosyne acts as a subnet router -- all home network devices become reachable from anywhere via Tailscale, without needing Tailscale installed on each device.
+Tailscale connects all devices into an encrypted WireGuard mesh network without port forwarding or firewall changes. Mnemosyne acts as a subnet router for exactly two LAN addresses, its own and Boreas', so `.home` names (which Pi-hole resolves to LAN IPs) and the split DNS for `home` work from anywhere. The rest of the home LAN is deliberately not routed.
 
 ---
 
@@ -8,16 +8,17 @@ Tailscale connects all devices into an encrypted WireGuard mesh network without 
 
 ```
 Tailnet (100.x.x.x)
-├── Mnemosyne      ← Subnet Router for 192.168.1.0/24
+├── Mnemosyne      ← Subnet Router for 192.168.1.10/32 (itself) and 192.168.1.11/32 (Boreas)
 ├── Boreas
-├── Zephyros
+├── Zephyros       (tag:remote, restricted, see Security considerations)
 ├── Windows PC
 └── Android
 
-Reachable via Subnet Router (no Tailscale required on device):
-├── FritzBox       (192.168.1.1)
-├── Pi-hole        (192.168.1.11)
-└── All other LAN devices
+Reachable via Subnet Router by LAN IP:
+├── Mnemosyne      (192.168.1.10)  ← .home names resolve here
+└── Boreas         (192.168.1.11)  ← split DNS target for "home"
+
+Not routed: FritzBox, smart plugs, printer and every other LAN device.
 ```
 
 ```mermaid
@@ -28,12 +29,16 @@ graph LR
     end
     subgraph home["Home network -- 192.168.1.0/24"]
         Mnemosyne["Mnemosyne\nSubnet Router"]
-        Devices["LAN devices\n(FritzBox, ...)"]
+        Boreas["Boreas\nPi-hole"]
+        Devices["Other LAN devices\n(FritzBox, ...)"]
     end
     Android -- "encrypted tunnel" --> Mnemosyne
     Win -- "encrypted tunnel" --> Mnemosyne
-    Mnemosyne -- "normal IP routing" --> Devices
+    Mnemosyne -- "192.168.1.11/32" --> Boreas
+    Mnemosyne -. "not routed" .- Devices
 ```
+
+**Why two `/32` routes instead of the whole `/24`?** Only these two addresses are needed remotely. A `/24` route would expose the FritzBox and every device without a login to the whole Tailnet, and the remote site uses the same `192.168.1.0/24`: a client there that accepts the route would send its local LAN traffic into the tunnel.
 
 **Why not WireGuard directly on the FritzBox?** Tailscale establishes peer-to-peer tunnels -- traffic goes directly between devices without routing through a central hub. For video streaming use cases this matters significantly. The coordination server (Tailscale's infrastructure) only handles key exchange and NAT traversal; it never sees traffic.
 
@@ -45,7 +50,8 @@ graph LR
 |---|---|
 | Install method | apt (via Tailscale repository) |
 | Service | systemd (`tailscaled.service`) |
-| Subnet Router | `192.168.1.0/24` (advertised by Mnemosyne) |
+| Subnet Router | `192.168.1.10/32`, `192.168.1.11/32` (advertised by Mnemosyne) |
+| Split DNS | `home` → Boreas' LAN IP (`192.168.1.11`), reached via the `/32` route |
 | MagicDNS | Disabled -- Pi-hole handles DNS |
 | Free tier | Up to 100 devices, 3 users |
 
@@ -84,7 +90,7 @@ sysctl net.ipv4.ip_forward
 
 ```bash
 # Subnet router (Mnemosyne)
-sudo tailscale up --advertise-routes=192.168.1.0/24
+sudo tailscale up --advertise-routes=192.168.1.10/32,192.168.1.11/32
 
 # Regular node (Boreas, Zephyros)
 sudo tailscale up
@@ -92,42 +98,18 @@ sudo tailscale up
 
 Open the URL shown in the output, log in with your Tailscale account, approve the device.
 
-Then approve the subnet route in the admin console:
+Then approve the subnet routes in the admin console:
 
 ```
 https://login.tailscale.com/admin/machines
-→ Mnemosyne → Edit route settings → Approve 192.168.1.0/24
+→ Mnemosyne → Edit route settings → Approve both /32 routes
 ```
 
 Without approval in the admin console, `--advertise-routes` is just an announcement -- no packets are forwarded.
 
-### Make subnet routing persistent across reboots
+### Persistence across reboots
 
-`tailscaled` starts automatically, but the `tailscale up` flags are not re-applied after a reboot. Fix with a systemd oneshot service:
-
-```bash
-sudo nano /etc/systemd/system/tailscale-up.service
-```
-
-```ini
-[Unit]
-Description=Tailscale up with subnet routing
-After=tailscaled.service
-Requires=tailscaled.service
-
-[Service]
-Type=oneshot
-ExecStart=/usr/bin/tailscale up --advertise-routes=192.168.1.0/24
-RemainAfterExit=yes
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-sudo systemctl enable tailscale-up.service
-sudo systemctl start tailscale-up.service
-```
+Nothing to do: `tailscaled` stores the advertised routes in its state and applies them on start (journal after a reboot: `using backend prefs ... routes=[...]`). An older version of this page described a `tailscale-up.service` oneshot unit; it is not needed and not installed. Change the routes with `sudo tailscale set --advertise-routes=...`, check them with `tailscale debug prefs | grep -A3 AdvertiseRoutes`.
 
 ### Windows
 
@@ -166,14 +148,17 @@ Add a fallback nameserver (`1.1.1.1` or `9.9.9.9`) so DNS still works if Boreas 
 Without subnet router:          With subnet router:
 
 Tailnet                         Tailnet
-├── Mnemosyne  ✅               ├── Mnemosyne  ✅
+├── Mnemosyne  ✅               ├── Mnemosyne  ✅ (also by LAN IP)
 ├── Android    ✅               ├── Android    ✅
-└── FritzBox   ❌               └── FritzBox   ✅ (via Mnemosyne)
+├── Boreas LAN ❌               ├── Boreas LAN ✅ (via Mnemosyne)
+└── FritzBox   ❌               └── FritzBox   ❌ (not routed on purpose)
 ```
 
-Packet flow from Android to a LAN device (`192.168.1.x`):
+Android accepts subnet routes by default; Linux clients only with `--accept-routes`.
 
-1. Android's routing table: `192.168.1.0/24` is reachable via Mnemosyne in the Tailnet
+Packet flow from Android to Boreas' LAN IP (`192.168.1.11`, split DNS):
+
+1. Android's routing table: `192.168.1.11/32` is reachable via Mnemosyne in the Tailnet
 2. Packet is encrypted and sent peer-to-peer to Mnemosyne (WireGuard)
 3. Mnemosyne decrypts and forwards into the LAN (normal IP routing)
 4. LAN device receives the packet -- sees Mnemosyne's LAN IP as source
@@ -182,7 +167,7 @@ Packet flow from Android to a LAN device (`192.168.1.x`):
 
 ## Security considerations
 
-All own (untagged) devices in the Tailnet can reach all `192.168.1.x` devices via the subnet router -- including Pi-hole, Syncthing, and any other internal service. This is intentional for personal use.
+**Tailnet membership equals LAN trust.** Mnemosyne's Caddy (`lan_only`) treats every `100.64.0.0/10` address like the home LAN, so any untagged device in the Tailnet can open every `.home` site, including those without a login of their own. The network layer is already narrow: Mnemosyne advertises only two `/32` routes (itself and Boreas), not the whole LAN, so the FritzBox, smart plugs and the printer are not reachable via Tailscale. Neither Serve nor Funnel is configured. The remaining risk is who can join the Tailnet and which `.home` services lack authentication, not open ports.
 
 ### Policy: Zephyros is tagged and restricted
 
@@ -238,7 +223,7 @@ tailscale ping --verbose 100.x.x.x  # direct vs. DERP relay
 tailscale netcheck                  # network diagnostics
 journalctl -u tailscaled -f         # daemon logs
 sudo tailscale down                 # disconnect (without uninstalling)
-sudo tailscale up --advertise-routes=192.168.1.0/24   # reconnect
+sudo tailscale up --advertise-routes=192.168.1.10/32,192.168.1.11/32   # reconnect (repeat every non-default flag)
 tailscale set --hostname=mnemosyne  # rename this device
 ```
 
@@ -249,7 +234,7 @@ tailscale set --hostname=mnemosyne  # rename this device
 | Symptom | Cause | Fix |
 |---|---|---|
 | LAN device not reachable via Tailscale | Subnet route not approved | Admin console → Mnemosyne → Edit route settings → Approve |
-| Subnet route missing after reboot | `tailscale up` flags not persistent | Set up the systemd oneshot service (see above) |
+| Subnet route missing | Routes dropped by a `tailscale up` without `--advertise-routes` | `tailscale debug prefs \| grep -A3 AdvertiseRoutes`, then `sudo tailscale set --advertise-routes=...` |
 | High latency | No direct peer-to-peer tunnel, using DERP relay | `tailscale ping --verbose` -- check relay vs. direct |
 | DNS not resolving in Tailnet | MagicDNS conflict with Pi-hole | Disable MagicDNS, add Pi-hole as global nameserver |
 | `.home` domains not resolving remotely | Pi-hole not set as Tailnet DNS | Add Boreas' Tailscale IP as nameserver in admin console |

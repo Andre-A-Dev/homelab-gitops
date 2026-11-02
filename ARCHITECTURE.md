@@ -41,7 +41,7 @@ graph TD
 
     Internet["Internet / deSEC DynDNS"]
 
-    Mnemosyne -- "subnet router\n192.168.1.0/24" --> TS
+    Mnemosyne -- "subnet router\n.10/32 + .11/32" --> TS
     Zephyros -- "100.y.y.y" --> TS
     Hephaestus -. "local only" .- Mnemosyne
     FritzHome --> Mnemosyne
