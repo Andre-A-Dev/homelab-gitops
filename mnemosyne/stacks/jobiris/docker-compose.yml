@@ -10,14 +10,9 @@ services:
     command: python3 board.py
     env_file:
       - .env
-    environment:
-      JOBIRIS_COMPOSE_DIR: /app
     volumes:
       - /home/<user>/homelab-infra/mnemosyne/stacks/jobiris:/app
       - /mnt/vault/jobiris:/mnt/vault/jobiris
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /usr/bin/docker:/usr/bin/docker:ro
-      - /usr/libexec/docker/cli-plugins:/usr/libexec/docker/cli-plugins:ro
     networks:
       - caddy_proxy
 

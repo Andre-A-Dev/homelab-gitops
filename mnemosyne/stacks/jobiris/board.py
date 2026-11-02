@@ -35,7 +35,6 @@ from flask import Flask, jsonify, redirect, render_template, request, url_for
 DEFAULT_DB = Path("/mnt/vault/jobiris/seen_jobs.db")
 DB_PATH = Path(os.environ.get("JOBIRIS_DB", str(DEFAULT_DB)))
 PORT = int(os.environ.get("JOBIRIS_BOARD_PORT", "8042"))
-COMPOSE_PROJECT_DIR = os.environ.get("JOBIRIS_COMPOSE_DIR", "/app")
 
 # AI rating: Anthropic API key (optional – rating features are disabled if unset)
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -472,12 +471,10 @@ def get_metrics(conn: sqlite3.Connection) -> dict:
 
 def _execute_run(run_id: str, schedule: str, dry_run: bool) -> None:
     """Runs job-monitor.py in a background thread, appending output lines to
-    the run's entry in _runs. Sets 'done' to True when the process exits."""
+    the run's entry in _runs. Sets 'done' to True when the process exits.
+    Runs in this container: same image, .env and mounts as jobiris-monitor,
+    so the board needs no Docker socket (which meant root on the host)."""
     cmd = [
-        "docker", "compose",
-        "--project-directory", COMPOSE_PROJECT_DIR,
-        "--project-name", "jobiris",
-        "run", "--rm", "jobiris-monitor",
         "python3", "/app/job-monitor.py",
         "--schedule", schedule,
     ]

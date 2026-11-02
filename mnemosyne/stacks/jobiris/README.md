@@ -9,7 +9,9 @@ Runs as two Docker services from a shared image:
 - **jobiris-board**: long-running web UI (`board.py` + `templates/`),
   started via `docker compose up -d`
 - **jobiris-monitor**: one-shot `job-monitor.py`, triggered by systemd timers
-  via `docker compose run --rm`
+  via `docker compose run --rm`. The board's "Run" button starts the same
+  script as a subprocess inside the board container (same image, `.env` and
+  mounts), so the board needs no Docker socket.
 
 ---
 
@@ -147,10 +149,6 @@ Pi-hole DNS entry: `jobiris.home` → Mnemosyne's IP.
 ---
 
 ## API notes
-
-The board container mounts the Docker socket to trigger monitor runs from
-the UI. This grants root-equivalent access - acceptable for an internal
-`.home` service, but worth noting.
 
 Key quirks of the Jobsuche API v6 (reverse-engineered, undocumented):
 
