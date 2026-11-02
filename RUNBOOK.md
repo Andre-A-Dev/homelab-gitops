@@ -964,3 +964,24 @@ vclient -h 127.0.0.1:3002 -c "setBetriebArtM1 ABSCHALT"
 sleep 10
 vclient -h 127.0.0.1:3002 -c "setBetriebArtM1 H+WW"
 ```
+
+---
+
+## Cut a Release
+
+Milestone releases, `v1.MINOR.0`, same number in Gitea and the GitHub mirror.
+Notes live in `CHANGELOG.md`; the `release` skill drafts the section.
+
+```bash
+# Private repo, after "docs(changelog): Add vX.Y.0" is pushed
+git tag -a vX.Y.0 -m 'vX.Y.0 — <Title>' <changelog-commit>
+git push origin vX.Y.0
+# Gitea: Releases → New Release → existing tag, body = CHANGELOG section
+
+# Mirror, after the sync containing the changelog commit is pushed
+git log --format='%h %s' --grep='Add vX.Y.0' github/main
+git tag -a vX.Y.0 -m 'vX.Y.0 — <Title>' <mirror-commit>
+git push github vX.Y.0
+# GitHub: Releases → Draft a new release → existing tag,
+# body = section from the mirror's CHANGELOG.md
+```

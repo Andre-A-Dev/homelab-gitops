@@ -82,6 +82,8 @@ print. Read-only `GET`s for verification are fine.
   out of the mirror are listed in `scripts/config/.publicignore`
 - `wiki/` (synced to the Gitea wiki on push), `RUNBOOK.md`, `SERVICES.md`,
   `ARCHITECTURE.md` — English repo docs, see "Documentation"
+- `CHANGELOG.md` — release notes, one section per milestone tag; drafted by
+  the `release` skill
 - `.env` — Never read .env. Always use the .env.example as reference.
 
 ## Language
