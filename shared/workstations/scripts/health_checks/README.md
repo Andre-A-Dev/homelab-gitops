@@ -47,7 +47,7 @@ git add --chmod=+x aio_health.py gpu_health.py ram_health.py disk_health.py heal
 
 ### Weekly drive check
 
-The units live under `homelab-infra/shared/workstations/systemd/` and call `/usr/local/bin/disk-health`, so they work with any checkout path. Run from the repo root on each workstation:
+The units live under `homelab-infra/shared/workstations/systemd/` (private, not in the public mirror) and call `/usr/local/bin/disk-health`, so they work with any checkout path. Run from the repo root on each workstation:
 
 ```fish
 sudo ln -sf $PWD/shared/workstations/scripts/health_checks/disk_health.py /usr/local/bin/disk-health
