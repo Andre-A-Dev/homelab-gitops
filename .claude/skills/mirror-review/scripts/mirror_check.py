@@ -7,7 +7,8 @@ Read-only: no git command here changes the index, refs or history, and nothing
 talks to the network (a GitHub fetch would open a passphrase dialog).
 
     mirror_check.py preflight        remotes, upstream, tags, half-done rebases
-    mirror_check.py scan             sync dry-run, leak scan, sanitizer artifacts
+    mirror_check.py scan             sync dry-run, leak scan (files, messages,
+                                     tags), sanitizer artifacts
     mirror_check.py commits [--tree REF]
                                      unpushed commits: subject, files, modes
 
@@ -101,10 +102,18 @@ def preflight() -> None:
             say("WARN", "behind upstream: someone pushed elsewhere, or a fetch "
                         "came from the wrong remote")
 
-    tags = git("tag", "-l").split()
-    if tags:
-        say("FAIL", f"local tags {tags}: the mirror has none, these came from "
-                    "the private repo (git tag -d …)")
+    # Release tags sit on pushed mirror commits. A tag whose commit is not in
+    # the upstream history came from the private repo (or was set before push).
+    for tag in git("tag", "-l").split():
+        commit = git("rev-parse", f"{tag}^{{commit}}")
+        on_upstream = bool(up) and subprocess.run(
+            ["git", "merge-base", "--is-ancestor", commit, "@{u}"],
+            capture_output=True).returncode == 0
+        if on_upstream:
+            say("OK", f"tag {tag} on {commit[:7]} in {up}")
+        else:
+            say("FAIL", f"tag {tag} on {commit[:7]} is not in the upstream history: "
+                        "from the private repo, or set before push (git tag -d …)")
 
     gitdir = Path(git("rev-parse", "--git-dir")).resolve()
     for marker in ("rebase-merge", "rebase-apply", "MERGE_HEAD", "CHERRY_PICK_HEAD"):
@@ -212,12 +221,23 @@ def scan_messages(patterns: list[re.Pattern]) -> None:
             say("WARN", f"commit {sha} message has a Co-Authored-By line")
 
 
+def scan_tags(patterns: list[re.Pattern]) -> None:
+    # Annotated tag messages are published with the tag
+    refs = git("for-each-ref", "refs/tags", "--format=%(refname:short)%00%(contents)%01")
+    for entry in filter(None, (e.strip() for e in refs.split("\x01"))):
+        tag, body = entry.split("\0", 1)
+        for i, pat in enumerate(patterns):
+            if pat.search(body):
+                say("FAIL", f"tag {tag} message matches sanitizer rule #{i}")
+
+
 def scan() -> None:
     root = mirror_root()
     sync_dry_run(root)
     patterns = load_patterns()
     scan_files(root, patterns)
     scan_messages(patterns)
+    scan_tags(patterns)
 
 
 # ── commits ──────────────────────────────────────────────────────────────────
