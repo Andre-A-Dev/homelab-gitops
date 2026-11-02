@@ -1350,13 +1350,17 @@ else
         fi
       fi
     fi
-    # Zephyros' backup key may only write into its directory (rrsync -wo,
-    # zephyros/README.md), so Zephyros can no longer prune it. Same 30-day
-    # window its script used. Boreas still prunes its own directory.
-    if ! run find "${SOURCE_PATHS[pi-configs]}/zephyros" -mindepth 1 -maxdepth 1 \
-           -type d -name '20??-??-??' -mtime +30 -exec rm -rf {} +; then
-      fail "Pi configs — pruning Zephyros backups older than 30 days failed"
-    fi
+    # The Pis' backup keys may only write into their directory (rrsync -wo,
+    # see boreas/README.md, zephyros/README.md), so they can no longer prune
+    # it. host:retention in days, the windows their scripts used.
+    for PI_SPEC in boreas:14 zephyros:30; do
+      PI_HOST="${PI_SPEC%%:*}"
+      PI_KEEP_DAYS="${PI_SPEC##*:}"
+      if ! run find "${SOURCE_PATHS[pi-configs]}/$PI_HOST" -mindepth 1 -maxdepth 1 \
+             -type d -name '20??-??-??' -mtime +"$PI_KEEP_DAYS" -exec rm -rf {} +; then
+        fail "Pi configs — pruning $PI_HOST backups older than $PI_KEEP_DAYS days failed"
+      fi
+    done
   fi
 fi
 

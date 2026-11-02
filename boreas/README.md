@@ -90,6 +90,23 @@ sudo systemctl restart docker
 docker compose up -d --force-recreate
 ```
 
+### `scripts/backup-boreas.sh` — config backup to Mnemosyne
+
+Nightly from root's crontab, pushes Pi-hole, Unbound and misc configs to
+`/mnt/codex/backups/boreas/<date>/` on Mnemosyne. Mnemosyne's
+`backup-services.sh` prunes copies older than 14 days.
+
+The key may only write into that directory. Its line in Mnemosyne's
+`~/.ssh/authorized_keys` carries a forced command, so a compromised Boreas
+gets neither a shell nor the other backups on Mnemosyne:
+
+```
+restrict,from="192.168.1.11",command="/usr/bin/rrsync -wo /mnt/codex/backups/boreas" ssh-ed25519 AAAA... boreas-backup
+```
+
+Check from Boreas: `sudo ssh -i ~/.ssh/backup_key <user>@192.168.1.10 id`
+must be refused, then run the backup script once.
+
 ## Network
 
 ```
