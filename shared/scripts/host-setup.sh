@@ -104,6 +104,7 @@ case "$HOST" in
       "/var/log/webhook-handler.log|written by gitea-webhook-handler.sh as the login user"
       "/var/lib/node_exporter/textfile_collector|sudo mkdir -p /var/lib/node_exporter/textfile_collector"
       "/boot/firmware/overlays/tft35a.dtbo|overlay of the 3.5\" TFT driver"
+      "/etc/ssh/sshd_config.d/10-no-password.conf|RUNBOOK \"Disable SSH Password Login\""
     )
     GROUPS_NEEDED=(docker)
     BOOT_CONFIG=/boot/firmware/config.txt
@@ -164,6 +165,7 @@ case "$HOST" in
       "$HOME/pihole6_exporter_with_queries_time|exporter checkout the unit runs from, boreas/README.md"
       "/etc/msmtprc|credentials, boreas/README.md"
       "$HOME/.ssh/backup_key|key for backup-boreas.sh, boreas/README.md"
+      "/etc/ssh/sshd_config.d/10-no-password.conf|RUNBOOK \"Disable SSH Password Login\""
       "/etc/system-update.conf|shared/README.md, system-update.sh"
       "/var/log/system-update.log|shared/README.md, Installation"
       "/etc/apticron/apticron.local.conf|recipients, wiki/Update-Notifications.md"
