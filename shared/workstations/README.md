@@ -33,6 +33,15 @@ Idempotent. An existing file or a stale link at a target is moved to
 a pull that moves a linked file; until then `~/.ssh/config` may point
 nowhere, so the SSH aliases (`git.home`, `<host>-ro`) are missing.
 
+At the end it checks the tools for working on the repo and prints a
+`paru -S --needed ...` line for whatever is missing, required and optional
+separately. It never installs anything. Required: `REQUIRED_TOOLS` and
+`REQUIRED_PY_MODULES` (CI checks, `shellcheck`, `kubectl`, `flux`, the
+`-ro` SSH path); optional: `OPTIONAL_TOOLS` (`actionlint`, `kubeconform`).
+A missing tool does not change the exit code. `kubectl` still needs the
+`claude-ro` kubeconfig from RUNBOOK "Set Up Claude Code Read-Only SSH"; it
+holds a token and is never linked from the repo.
+
 KDE and EasyEffects write their settings through the links into the repo, so
 a change in their GUI shows up in `git diff`. That is why KDE configs stay in
 the host folder: a shared `kwinrc` would be rewritten by both workstations.
