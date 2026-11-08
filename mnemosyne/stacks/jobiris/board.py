@@ -72,6 +72,13 @@ STATUS_OPTIONS = [
 # Statuses that hide jobs from the default view
 HIDDEN_STATUSES = {"Absage erhalten", "Nicht relevant", "Archiviert"}
 
+# Jobs entered by hand: profile marker (same value as MANUAL_PROFILE in
+# job-monitor.py, which exempts them from auto-archive and pruning) and tag
+MANUAL_PROFILE = "manual"
+MANUAL_TAG = "Manuell"
+# BA job detail link; its refnr is reused so the monitor treats the job as known
+BA_DETAIL_URL_RE = r"arbeitsagentur\.de/jobsuche/jobdetail/([A-Za-z0-9-]+)"
+
 # Maps URL-friendly sort keys to actual column names (whitelist to avoid
 # building ORDER BY from unvalidated input).
 REMINDER_INTERESSANT_DAYS = int(os.environ.get("REMINDER_INTERESSANT_DAYS", "5"))
@@ -404,6 +411,7 @@ def get_connection() -> sqlite3.Connection:
         "applied_at":        "TEXT",
         "ai_score":          "INTEGER",
         "ai_summary":        "TEXT",
+        "description":       "TEXT",
     }.items():
         if col not in existing:
             conn.execute(f"ALTER TABLE seen_jobs ADD COLUMN {col} {definition}")
@@ -741,6 +749,110 @@ def update_status(refnr):
     ))
 
 
+def _form_int(name: str) -> int | None:
+    """Optional non-negative integer form field; raises ValueError on garbage."""
+    raw = request.form.get(name, "").strip().replace(".", "")
+    if not raw:
+        return None
+    value = int(raw)
+    if value < 0:
+        raise ValueError(name)
+    return value
+
+
+@app.route("/jobs/new", methods=["POST"])
+def add_job():
+    """Insert a job found outside the BA search (form in board.html).
+    Stored with profile MANUAL_PROFILE and tag MANUAL_TAG."""
+    import datetime as _dt, zoneinfo
+
+    form = request.form
+    titel = form.get("titel", "").strip()
+    url = form.get("url", "").strip()
+    status = form.get("status", "Interessant")
+    published_at = form.get("published_at", "").strip()
+    if not titel:
+        return "Titel fehlt", 400
+    if url and not _re.match(r"^https?://", url, _re.IGNORECASE):
+        return "URL muss mit http:// oder https:// beginnen", 400
+    if status not in STATUS_OPTIONS:
+        return "Invalid status", 400
+    if published_at and not _DATE_RE.match(published_at):
+        return "Ungültiges Datum", 400
+    try:
+        salary_from = _form_int("salary_from")
+        salary_to = _form_int("salary_to")
+        distance = _form_int("distance_km")
+        ho_pct = _form_int("ho_pct")
+    except ValueError:
+        return "Gehalt, Entfernung und Home-Office-Anteil: nur ganze Zahlen", 400
+
+    # Same display formats as job-monitor.py (_format_salary, _format_home_office)
+    if salary_from and salary_to:
+        salary = f"{salary_from:,}–{salary_to:,} EUR/Jahr".replace(",", ".")
+    elif salary_from:
+        salary = f"ab {salary_from:,} EUR/Jahr".replace(",", ".")
+    elif salary_to:
+        salary = f"bis {salary_to:,} EUR/Jahr".replace(",", ".")
+    else:
+        salary = None
+    if ho_pct is not None:
+        home_office = f"Home office: {ho_pct}%"
+    elif form.get("home_office") == "1":
+        home_office = "Home office möglich"
+    else:
+        home_office = None
+
+    m = _re.search(BA_DETAIL_URL_RE, url)
+    refnr = m.group(1) if m else f"manual-{uuid.uuid4().hex[:12]}"
+
+    try:
+        tz = zoneinfo.ZoneInfo(BOARD_TIMEZONE)
+    except Exception:
+        tz = _dt.timezone.utc
+    now_local = _dt.datetime.now(tz).isoformat()
+    # first_seen in UTC like job-monitor.py, so sorting stays consistent
+    now_utc = _dt.datetime.now(_dt.timezone.utc).isoformat()
+
+    conn = get_connection()
+    if conn.execute("SELECT 1 FROM seen_jobs WHERE refnr = ?", (refnr,)).fetchone():
+        conn.close()
+        return f"Stelle {refnr} ist schon im Board", 409
+    conn.execute(
+        """
+        INSERT INTO seen_jobs
+            (refnr, titel, arbeitgeber, ort, url,
+             distance_home_km, distance_home, published_at,
+             salary, salary_from, home_office,
+             notes, description, profile, tag,
+             status, status_changed_at, applied_at, first_seen)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            refnr, titel,
+            form.get("arbeitgeber", "").strip() or None,
+            form.get("ort", "").strip() or None,
+            url or None,
+            distance, f"{distance} km" if distance is not None else None,
+            published_at or None,
+            salary, salary_from, home_office,
+            form.get("notes", "").strip() or None,
+            form.get("description", "").strip() or None,
+            MANUAL_PROFILE, MANUAL_TAG,
+            status, now_local,
+            now_local if status == "Beworben" else None,
+            now_utc,
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+    next_url = form.get("next", "")
+    if next_url.startswith("/") and not next_url.startswith("//"):
+        return redirect(next_url)
+    return redirect(url_for("board"))
+
+
 @app.route("/notes/<refnr>", methods=["POST"])
 def update_notes(refnr):
     """Save free-text notes for a job. Called via fetch() from the board."""
@@ -961,8 +1073,11 @@ def _build_job_text(row: sqlite3.Row, detail: dict | None) -> str:
     if row["tag"]:
         parts.append(f"Search profile tag: {row['tag']}")
 
+    # A description pasted in by hand wins over the BA detail endpoint
+    if row["description"]:
+        parts.append(f"\n--- Job description ---\n{row['description'][:3000]}")
     # Append free-text fields from the detail endpoint when available
-    if detail:
+    elif detail:
         for key in ("stellenbeschreibung", "aufgaben", "qualifikationen",
                     "wir_bieten", "beschreibung"):
             value = detail.get(key, "")
@@ -1034,8 +1149,11 @@ def _run_rating(refnr: str) -> None:
         _set("error", summary="Job not found in database.")
         return
 
-    # Optionally enrich with full description from BA API
-    detail = _fetch_job_detail(refnr)
+    # Optionally enrich with full description from BA API. Skipped when a
+    # description was entered by hand or the refnr is a generated one.
+    detail = None
+    if not row["description"] and not refnr.startswith("manual-"):
+        detail = _fetch_job_detail(refnr)
 
     job_text     = _build_job_text(row, detail)
     system_prompt = _load_rating_profile()

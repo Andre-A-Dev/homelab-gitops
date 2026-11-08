@@ -139,6 +139,28 @@
     .btn:hover     { opacity: 0.85; }
     .btn-daily     { background: var(--accent); color: #fff; }
     .btn-weekly    { background: #3d7ab5;       color: #fff; }
+    .btn-add       { margin-left: auto; }
+
+    /* Add job dialog */
+    .add-dialog {
+      width: min(40rem, calc(100vw - 2rem)); padding: 1.2rem;
+      background: var(--bg-card); color: var(--fg);
+      border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow);
+    }
+    .add-dialog::backdrop { background: rgba(0,0,0,0.4); }
+    .add-dialog h2 { margin: 0 0 0.8rem; font-size: 1.1rem; }
+    .add-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.6rem 0.8rem; }
+    .add-grid .wide { grid-column: 1 / -1; }
+    .add-grid label { display: flex; flex-direction: column; gap: 0.2rem;
+                      font-size: 0.75rem; font-weight: 600; color: var(--muted); }
+    .add-grid label.check { flex-direction: row; align-items: center; gap: 0.4rem; }
+    .add-grid input:not([type=checkbox]), .add-grid select, .add-grid textarea {
+      padding: 0.4rem 0.5rem; border: 1px solid var(--border); border-radius: 4px;
+      background: var(--bg-card); color: var(--fg); font: inherit; font-size: 0.85rem;
+    }
+    .add-grid textarea { resize: vertical; }
+    .add-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
+    .description-full { white-space: pre-wrap; font-size: 0.82rem; margin: 0.3rem 0 0; }
 
     /* Table */
     table {
@@ -655,7 +677,44 @@
       <button class="btn btn-weekly" name="schedule" value="weekly">▶ Run weekly</button>
       <label><input type="checkbox" name="dry_run" value="1"> Dry run</label>
     </form>
+    <button type="button" class="btn btn-daily btn-add" id="add-job-btn">+ Stelle eintragen</button>
   </div>
+
+  <!-- Add a job found outside the BA search -->
+  <dialog class="add-dialog" id="add-dialog">
+    <form method="post" action="{{ url_for('add_job') }}">
+      <h2>Stelle eintragen</h2>
+      <input type="hidden" name="next" value="{{ request.full_path }}">
+      <div class="add-grid">
+        <label class="wide">Titel *<input name="titel" required maxlength="300"></label>
+        <label>Arbeitgeber<input name="arbeitgeber" list="dl-companies" maxlength="200"></label>
+        <label>Ort<input name="ort" list="dl-locations" maxlength="200"></label>
+        <label class="wide">URL<input name="url" type="url" placeholder="https://…"></label>
+        <label>Gehalt von (EUR/Jahr)<input name="salary_from" type="number" min="0" step="1"></label>
+        <label>Gehalt bis (EUR/Jahr)<input name="salary_to" type="number" min="0" step="1"></label>
+        <label>Entfernung (km)<input name="distance_km" type="number" min="0" step="1"></label>
+        <label>Veröffentlicht<input name="published_at" type="date"></label>
+        <label class="check"><input type="checkbox" name="home_office" value="1"> Home-Office möglich</label>
+        <label>Home-Office-Anteil (%)<input name="ho_pct" type="number" min="0" max="100" step="1"></label>
+        <label>Status
+          <select name="status">
+            {% for option in status_options if option != 'Archiviert' %}
+            <option value="{{ option }}" {{ 'selected' if option == 'Interessant' else '' }}>{{ option }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="wide">Notizen<textarea name="notes" rows="2"></textarea></label>
+        <label class="wide">Stellenbeschreibung (für das AI-Rating)
+          <textarea name="description" rows="6" placeholder="Text der Anzeige hier einfügen…"></textarea>
+        </label>
+      </div>
+      <div class="add-actions">
+        <button type="button" class="btn" id="add-cancel"
+                style="background:var(--bg-card);color:var(--fg);border:1px solid var(--border)">Abbrechen</button>
+        <button type="submit" class="btn btn-daily">Speichern</button>
+      </div>
+    </form>
+  </dialog>
 
   <!-- Views: saved filter sets as tabs -->
   <nav class="views" aria-label="Ansichten">
@@ -770,7 +829,9 @@
         <td data-label="Gefunden">{{ row['first_seen'][:10] }}</td>
         <td data-label="Veröffentlicht">{{ row['published_at'] or '' }}</td>
         <td data-label="Titel" class="title">
+          {% if row['url'] %}
           <a href="{{ row['url'] }}" target="_blank" rel="noopener">{{ row['titel'] }}</a>
+          {% else %}{{ row['titel'] }}{% endif %}
           {% if row['ignore_match'] %}
             <span class="ignore-badge" title="Soft ignore: {{ row['ignore_match'] }}">⚠ {{ row['ignore_match'] }}</span>
           {% endif %}
@@ -848,6 +909,14 @@
                 <span class="notes-saved" style="display:none">✓ Gespeichert</span>
               </div>
             </div>
+
+            {# Description entered by hand, only when present #}
+            {% if row['description'] %}
+            <details class="notes-block">
+              <summary class="notes-label">Stellenbeschreibung</summary>
+              <p class="description-full">{{ row['description'] }}</p>
+            </details>
+            {% endif %}
 
             {# AI summary – bottom, only when rated #}
             {% if row['ai_score'] and row['ai_summary'] %}
@@ -1381,6 +1450,13 @@
         saveNotes(e.target.dataset.refnr);
       }
     });
+
+    // ------------------------------------------------------------------ //
+    // Add job dialog                                                      //
+    // ------------------------------------------------------------------ //
+    const addDialog = document.getElementById('add-dialog');
+    document.getElementById('add-job-btn').addEventListener('click', () => addDialog.showModal());
+    document.getElementById('add-cancel').addEventListener('click', () => addDialog.close());
 
     document.addEventListener('keydown', e => {
       if (e.target.classList.contains('notes-input') && e.key === 'Enter' && e.ctrlKey) {

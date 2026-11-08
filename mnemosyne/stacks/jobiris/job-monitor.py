@@ -40,7 +40,12 @@ DEFAULT_CONFIG = Path(__file__).resolve().parent / "search-profiles.yaml"
 DEFAULT_DB = Path("/mnt/vault/jobiris/seen_jobs.db")
 DEFAULT_LOG_FILE = Path("/mnt/vault/jobiris/jobiris.log")
 
-MAX_ENTRIES = 1000  # board archive cap; oldest entries pruned beyond this
+MAX_ENTRIES = 1000  # board archive cap; oldest untriaged entries pruned beyond this
+# Statuses the cap may delete; triaged jobs (Interessant, Beworben, ...) are kept
+PRUNABLE_STATUSES = ("Neu", "Archiviert")
+# profile value of jobs entered by hand on the board (board.py); exempt from
+# auto_archive and prune_excess_entries
+MANUAL_PROFILE = "manual"
 REQUEST_TIMEOUT = 30
 REQUEST_DELAY = 1.0  # seconds between API calls, be polite to a public service
 PAGE_SIZE = 50
@@ -226,22 +231,27 @@ def mark_seen(conn: sqlite3.Connection, job: dict, profile_name: str) -> None:
 def prune_excess_entries(conn: sqlite3.Connection, max_entries: int = MAX_ENTRIES) -> int:
     """Keeps the board archive bounded: deletes the oldest entries (by
     first_seen) once the table exceeds max_entries. No time-based cutoff -
-    entries persist indefinitely until the count limit is hit."""
+    entries persist indefinitely until the count limit is hit. Only untriaged
+    API jobs (PRUNABLE_STATUSES) are deleted; triaged and manual jobs are
+    kept, so the table may stay above max_entries."""
     count = conn.execute("SELECT COUNT(*) FROM seen_jobs").fetchone()[0]
     if count <= max_entries:
         return 0
 
     excess = count - max_entries
-    conn.execute(
-        """
+    cur = conn.execute(
+        f"""
         DELETE FROM seen_jobs WHERE refnr IN (
-            SELECT refnr FROM seen_jobs ORDER BY first_seen ASC LIMIT ?
+            SELECT refnr FROM seen_jobs
+            WHERE status IN ({', '.join('?' * len(PRUNABLE_STATUSES))})
+              AND COALESCE(profile, '') != ?
+            ORDER BY first_seen ASC LIMIT ?
         )
         """,
-        (excess,),
+        (*PRUNABLE_STATUSES, MANUAL_PROFILE, excess),
     )
     conn.commit()
-    return excess
+    return cur.rowcount
 
 
 ARCHIVE_STATUS = "Archiviert"
@@ -249,19 +259,21 @@ ARCHIVE_STATUS = "Archiviert"
 
 def auto_archive(conn: sqlite3.Connection, config: dict, dry_run: bool) -> int:
     """Move untouched jobs (status 'Neu') older than auto_archive.after_days
-    (by first_seen) to 'Archiviert'. Jobs the user already triaged are never
-    touched. Returns the number of affected rows (would-be count on dry runs)."""
+    (by first_seen) to 'Archiviert'. Jobs the user already triaged and jobs
+    entered by hand (MANUAL_PROFILE) are never touched. Returns the number of affected rows (would-be count on dry runs)."""
     days = (config.get("auto_archive") or {}).get("after_days")
     if not days:
         return 0
     cutoff = (datetime.now(timezone.utc) - timedelta(days=int(days))).isoformat()
     if dry_run:
         return conn.execute(
-            "SELECT COUNT(*) FROM seen_jobs WHERE status = 'Neu' AND first_seen < ?", (cutoff,)
+            "SELECT COUNT(*) FROM seen_jobs WHERE status = 'Neu' AND first_seen < ? "
+            "AND COALESCE(profile, '') != ?", (cutoff, MANUAL_PROFILE)
         ).fetchone()[0]
     cur = conn.execute(
-        "UPDATE seen_jobs SET status = ?, status_changed_at = ? WHERE status = 'Neu' AND first_seen < ?",
-        (ARCHIVE_STATUS, datetime.now(timezone.utc).isoformat(), cutoff),
+        "UPDATE seen_jobs SET status = ?, status_changed_at = ? WHERE status = 'Neu' AND first_seen < ? "
+        "AND COALESCE(profile, '') != ?",
+        (ARCHIVE_STATUS, datetime.now(timezone.utc).isoformat(), cutoff, MANUAL_PROFILE),
     )
     conn.commit()
     return cur.rowcount
@@ -635,7 +647,7 @@ def run(config: dict, conn: sqlite3.Connection, schedule: str, dry_run: bool) ->
 
     pruned = prune_excess_entries(conn)
     if pruned:
-        log.info("Pruned %d oldest entr%s (keeping %d most recent).", pruned, "y" if pruned == 1 else "ies", MAX_ENTRIES)
+        log.info("Pruned %d oldest untriaged entr%s (cap %d).", pruned, "y" if pruned == 1 else "ies", MAX_ENTRIES)
 
     write_last_run_status(schedule, total_checked, total_new, total_errors, dry_run, archived)
     log.info("JobIris run finished.")

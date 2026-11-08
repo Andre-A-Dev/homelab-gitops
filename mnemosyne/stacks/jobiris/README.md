@@ -100,7 +100,9 @@ stacks/jobiris/
 - Search profiles: `search-profiles.yaml` (in repo, no secrets)
 - Dedup DB / board archive: `/mnt/vault/jobiris/seen_jobs.db` (SQLite)
 - Log file: `/mnt/vault/jobiris/jobiris.log` (rotating, 1 MB x 5)
-- Archive cap: no time-based expiry - oldest entries pruned beyond `MAX_ENTRIES` (default 1000)
+- Archive cap: no time-based expiry - beyond `MAX_ENTRIES` (default 1000) the
+  oldest untriaged entries (`Neu`, `Archiviert`) are pruned; triaged and
+  manually entered jobs are kept, so the table can stay above the cap
 
 ---
 
@@ -129,6 +131,13 @@ Web UI at `jobiris.home` with:
   ("Abgelehnt" hidden by default, kept in DB so it won't re-notify)
 - **Run trigger**: ▶ Run daily / ▶ Run weekly + dry-run checkbox,
   live output via JSON polling (works through any proxy)
+- **+ Stelle eintragen**: adds a job found outside the BA search (title
+  required; company, location, URL, salary, distance, home office, status,
+  notes, description). Stored with `profile = manual` and tag `Manuell`,
+  exempt from auto-archive and the archive cap. An `arbeitsagentur.de`
+  jobdetail URL reuses its refnr, so the monitor won't report the job again.
+  The optional description feeds the AI rating instead of the BA detail call.
+  Entries can't be edited or deleted from the board.
 
 Caddy site:
 
