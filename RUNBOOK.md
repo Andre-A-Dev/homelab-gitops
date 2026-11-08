@@ -334,7 +334,7 @@ docker cp caddy:/data/caddy/pki/authorities/local/root.crt ~/caddy-root.crt
 
 ## Set Up or Check a Server (host-setup.sh)
 
-Configured hosts: Hephaestus, Boreas. Other hosts exit with code 2 until they get a host branch in the script.
+Configured hosts: Hephaestus, Boreas, Zephyros, Daidalos. Other hosts exit with code 2 until they get a host branch in the script.
 
 ```bash
 # Empty host: its SSH public key added in Gitea as a deploy key on

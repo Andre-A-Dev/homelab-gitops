@@ -15,7 +15,7 @@ Files for the workstations only: [`workstations/README.md`](workstations/README.
 | `check-container-updates.sh` | Check running containers for image updates | Mnemosyne |
 | `gitea-webhook-handler.sh` | Pull repo changes and run host-specific actions | Boreas, Hephaestus, Zephyros, Daidalos |
 | `gitea-pull.sh` | Pull latest repo changes unattended (cron) | Boreas, Hephaestus, Zephyros, Daidalos |
-| `host-setup.sh` | Check what a server needs from the repo; `--apply` installs packages and links | Hephaestus, Boreas |
+| `host-setup.sh` | Check what a server needs from the repo; `--apply` installs packages and links | Hephaestus, Boreas, Zephyros, Daidalos |
 
 ---
 

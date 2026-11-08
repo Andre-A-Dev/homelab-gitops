@@ -179,8 +179,119 @@ case "$HOST" in
       "backup-boreas.sh|0 2 * * * /usr/local/bin/backup-boreas.sh"
     )
     ;;
+  zephyros)
+    APT_PACKAGES=(
+      git curl
+      skopeo                           # check-container-updates.sh
+      webhook                          # Gitea repo webhook
+      apticron msmtp msmtp-mta         # wiki/Update-Notifications.md; msmtp also mails for Pi-hole
+      unbound                          # wiki/Pi-hole-Unbound.md
+      rsync openssh-client             # backup-zephyros.sh
+      python3-prometheus-client python3-requests python3-psutil # pihole6-exporter
+    )
+    LINKS=(
+      "shared/scripts/system-update.sh|/usr/local/bin/system-update"
+      "shared/scripts/check-container-updates.sh|/usr/local/bin/check-container-updates"
+      "shared/scripts/check-container-updates.sh|/usr/local/bin/check-container-updates.sh"
+      "shared/scripts/gitea-pull.sh|$HOME/bin/gitea-pull.sh"
+      "shared/apticron/apticron.conf|/etc/apticron/apticron.conf"
+      "zephyros/scripts/backup-zephyros.sh|/usr/local/bin/backup-zephyros.sh"
+    )
+    COPIES=(
+      "zephyros/docker/daemon.json|/etc/docker/daemon.json"
+      "zephyros/systemd/pihole6-exporter.service.d/override.conf|/etc/systemd/system/pihole6-exporter.service.d/override.conf"
+    )
+    EXECUTABLES=(
+      "/usr/bin/docker|Docker apt repo (download.docker.com), docker-ce + docker-compose-plugin"
+      "/usr/libexec/docker/cli-plugins/docker-compose|docker-compose-plugin from the Docker apt repo"
+      "/usr/local/bin/pihole|Pi-hole installer, then restore its config, wiki/Pi-hole-Unbound.md"
+      "/usr/bin/tailscale|Tailscale apt repo (pkgs.tailscale.com), then tailscale up"
+    )
+    UNITS=(
+      "docker.service|enabled"
+      "tailscaled.service|enabled"
+      "webhook.service|enabled"
+      "pihole-FTL.service|enabled"
+      "unbound.service|enabled"
+      "pihole6-exporter.service|enabled"
+    )
+    FILES=(
+      "/etc/systemd/system/webhook.service|host-local unit, not in the repo"
+      "$REPO_ROOT/shared/webhook/hooks.json|from shared/webhook/hooks.json.example, with the HMAC secret"
+      "/etc/unbound/unbound.conf.d/pi-hole.conf|wiki/Pi-hole-Unbound.md"
+      "/etc/systemd/system/pihole6-exporter.service|host-local unit, not in the repo"
+      "/etc/pihole6-exporter.env|from boreas/pihole6-exporter/pihole6-exporter.env.example, PIHOLE_HOST on :8081"
+      "$HOME/pihole6_exporter_with_queries_time|exporter checkout the unit runs from, zephyros/README.md"
+      "/etc/msmtprc|credentials, zephyros/README.md"
+      "$HOME/.ssh/backup_key|key for backup-zephyros.sh, zephyros/README.md"
+      "$REPO_ROOT/zephyros/monitoring/.env|from zephyros/monitoring/.env.example (FRITZ_*)"
+      "$REPO_ROOT/zephyros/caddy/data/caddy/pki|Caddy's internal CA: restore it from the Mnemosyne backup, a new CA means re-trusting it on every client"
+      "/etc/ssh/sshd_config.d/10-no-password.conf|RUNBOOK \"Disable SSH Password Login\""
+      "/etc/system-update.conf|shared/README.md, system-update.sh"
+      "/var/log/system-update.log|shared/README.md, Installation"
+      "/etc/apticron/apticron.local.conf|recipients, wiki/Update-Notifications.md"
+      "/var/log/webhook-handler.log|written by gitea-webhook-handler.sh as the login user"
+      "/var/lib/node_exporter/textfile_collector|sudo mkdir -p /var/lib/node_exporter/textfile_collector"
+    )
+    GROUPS_NEEDED=(docker)
+    USER_CRON=(
+      "gitea-pull.sh|*/15 * * * * $HOME/bin/gitea-pull.sh"
+    )
+    ROOT_CRON=(
+      "backup-zephyros.sh|nightly /usr/local/bin/backup-zephyros.sh, zephyros/README.md"
+    )
+    ;;
+  daidalos)
+    # No Docker here; k3s, Flux and node-exporter details: daidalos/README.md.
+    APT_PACKAGES=(
+      git curl smartmontools
+      webhook                          # Gitea repo webhook
+      apticron msmtp msmtp-mta         # wiki/Update-Notifications.md
+      prometheus-node-exporter prometheus-node-exporter-collectors # --no-install-recommends: no ipmitool/openipmi
+      prometheus-smartctl-exporter
+      open-iscsi nfs-common            # Longhorn prerequisites, bootstrap.sh
+      intel-media-va-driver-non-free vainfo intel-gpu-tools # VAAPI, bootstrap.sh
+    )
+    LINKS=(
+      "shared/scripts/system-update.sh|/usr/local/bin/system-update"
+      "shared/scripts/gitea-pull.sh|$HOME/bin/gitea-pull.sh"
+      "shared/apticron/apticron.conf|/etc/apticron/apticron.conf"
+    )
+    COPIES=(
+      "daidalos/monitoring/prometheus-node-exporter|/etc/default/prometheus-node-exporter"
+    )
+    EXECUTABLES=(
+      "/usr/local/bin/k3s|daidalos/scripts/bootstrap.sh"
+      "/usr/local/bin/flux|Flux CLI binary, see daidalos/scripts/bootstrap.sh next steps"
+      "/usr/bin/tailscale|Tailscale apt repo (pkgs.tailscale.com), then tailscale up"
+    )
+    UNITS=(
+      "k3s.service|enabled"
+      "tailscaled.service|enabled"
+      "webhook.service|enabled"
+      "prometheus-node-exporter.service|enabled"
+      "prometheus-node-exporter-apt.timer|enabled"
+      "smartctl_exporter.service|enabled"
+    )
+    FILES=(
+      "/etc/systemd/system/webhook.service|host-local unit, not in the repo"
+      "$REPO_ROOT/shared/webhook/hooks.json|only the gitea-pull hook, daidalos/README.md"
+      "/etc/rancher/k3s/k3s.yaml|written by k3s, daidalos/scripts/bootstrap.sh"
+      "/etc/msmtprc|credentials, wiki/Update-Notifications.md"
+      "/etc/ssh/sshd_config.d/10-no-password.conf|RUNBOOK \"Disable SSH Password Login\""
+      "/etc/system-update.conf|TEXTFILE_DIR=/var/lib/prometheus/node-exporter, daidalos/README.md"
+      "/var/log/system-update.log|shared/README.md, Installation"
+      "/etc/apticron/apticron.local.conf|recipients, wiki/Update-Notifications.md"
+      "/var/log/webhook-handler.log|written by gitea-webhook-handler.sh as the login user"
+      "/var/lib/prometheus/node-exporter|created by prometheus-node-exporter"
+    )
+    USER_CRON=(
+      "gitea-pull.sh|*/15 * * * * $HOME/bin/gitea-pull.sh"
+      "hc-ping.com|Healthchecks ping, URL in Healthchecks.io"
+    )
+    ;;
   *)
-    echo "No host branch for '$HOST' in $0 yet (configured: hephaestus, boreas)." >&2
+    echo "No host branch for '$HOST' in $0 yet (configured: hephaestus, boreas, zephyros, daidalos)." >&2
     exit 2
     ;;
 esac
@@ -342,8 +453,17 @@ check_files() {
     path="${entry%%|*}"
     if [ -e "$path" ]; then
       say OK "file $path"
+    # A path below a root-only directory (Caddy's data/) is invisible to the
+    # login user; ask root if sudo is already cached. stderr dropped: "a
+    # password is required" is the expected no-cache case.
+    elif sudo -n true 2> /dev/null; then
+      if sudo -n test -e "$path"; then
+        say OK "file $path (root only)"
+      else
+        say MISSING "file $path" "${entry#*|}"
+      fi
     else
-      say MISSING "file $path" "${entry#*|}"
+      say MISSING "file $path" "${entry#*|} (if it sits in a root-only directory: run sudo -v first)"
     fi
   done
 }
