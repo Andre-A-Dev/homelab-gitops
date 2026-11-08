@@ -25,11 +25,12 @@ sudo cp /etc/pihole/pihole.toml "$BACKUP_DIR/pihole/" 2>> $LOG
 echo "Saving: Unbound..." >> $LOG
 sudo cp /etc/unbound/unbound.conf.d/pi-hole.conf "$BACKUP_DIR/unbound/" 2>> $LOG
 
-# Misc (msmtp, apticron, pihole6-exporter unit + env with the Pi-hole API password)
+# Misc (msmtp, apticron, pihole6-exporter unit + drop-in + env with the Pi-hole API password)
 echo "Saving: Misc..." >> $LOG
 sudo cp /etc/msmtprc "$BACKUP_DIR/misc/" 2>> $LOG
 sudo cp /etc/apticron/apticron.conf "$BACKUP_DIR/misc/" 2>> $LOG
 sudo cp /etc/systemd/system/pihole6-exporter.service "$BACKUP_DIR/misc/" 2>> $LOG
+sudo cp -r /etc/systemd/system/pihole6-exporter.service.d "$BACKUP_DIR/misc/" 2>> $LOG
 sudo cp /etc/pihole6-exporter.env "$BACKUP_DIR/misc/" 2>> $LOG
 
 # Caddy: the internal CA. Caddyfile and compose are in Git; the CA is not, and

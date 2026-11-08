@@ -78,6 +78,19 @@ non-default settings:
 
 To update: copy the live file from the host and commit it as a reference snapshot.
 
+### pihole6-exporter (host-local, not tracked)
+
+Same setup as on Boreas (`boreas/README.md`, section `pihole6-exporter/`):
+the third-party checkout `tarkilhk/pihole6_exporter_with_queries_time` at
+commit `66e8da2` in `/home/<user>/pihole6_exporter_with_queries_time`, Python
+dependencies from apt (`python3-prometheus-client`, `python3-requests`,
+`python3-psutil`), a host-local unit with drop-in, and `/etc/pihole6-exporter.env`
+from `boreas/pihole6-exporter/pihole6-exporter.env.example`.
+
+One difference: the Pi-hole API answers on `http://localhost:8081` here, since
+Caddy holds port 80. The env file's `PIHOLE_HOST` and the drop-in's
+`ExecStartPre` check both point there.
+
 ### `scripts/backup-zephyros.sh`
 
 Backs up Pi-hole, Unbound, Caddy, and misc configs to Mnemosyne via
@@ -103,7 +116,8 @@ Find the line with `ssh-keygen -lf ~/.ssh/authorized_keys` (fingerprint of
 
 What gets backed up: `/etc/pihole/pihole.toml`, `/etc/pihole/custom.list`,
 `/etc/unbound/unbound.conf.d/pi-hole.conf`, `/etc/msmtprc`, `/etc/apticron/apticron.conf`,
-`/etc/systemd/system/pihole6-exporter.service`, and the live Caddy stack.
+`/etc/systemd/system/pihole6-exporter.service` and its drop-in directory
+`pihole6-exporter.service.d/`, and the live Caddy stack.
 
 ### `docker/daemon.json` — container log rotation
 
