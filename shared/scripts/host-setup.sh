@@ -1,0 +1,371 @@
+#!/usr/bin/env bash
+# host-setup.sh — checks that a server has what this repo expects of it: apt
+# packages, links into the checkout, configs copied out of the repo, systemd
+# units, cron jobs and host-local files that never enter the repo. Meant for
+# an empty host after `git clone`, and as a drift check on a running one.
+#
+#   host-setup.sh            check only, no root needed; exit 1 if anything
+#                            is missing or differs
+#   host-setup.sh --apply    first install missing apt packages and create
+#                            missing links (sudo), then check
+#
+# --apply never replaces an existing file or link, never copies configs,
+# never enables units and never touches cron: those are reported together
+# with the command to fix them. Run as the login user from the checkout.
+# Hostname dispatch; a host without a branch below is not configured yet.
+set -euo pipefail
+
+if [ "$EUID" -eq 0 ]; then
+  echo "Run as your user, not root (HOME and the crontab would be root's)." >&2
+  exit 1
+fi
+
+APPLY=0
+case "${1:-}" in
+  "") ;;
+  --apply) APPLY=1 ;;
+  -h|--help) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  *) echo "Usage: $0 [--apply]" >&2; exit 1 ;;
+esac
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+# Every list uses "|" as separator, since hints contain ":".
+APT_PACKAGES=()     # package
+LINKS=()            # repo path|target            (--apply creates missing ones)
+COPIES=()           # repo path|target            (compared byte for byte)
+EXECUTABLES=()      # path|how to install         (not from the default apt repos)
+PY_MODULES=()       # module|pip package
+UNITS=()            # unit|enabled or disabled
+FILES=()            # path|hint                   (existence only, never read)
+GROUPS_NEEDED=()    # group of the login user
+BOOT_CONFIG=""
+BOOT_LINES=()       # exact line in $BOOT_CONFIG
+USER_CRON=()        # fixed string|crontab line to add
+ROOT_CRON=()        # fixed string|crontab line to add
+
+HOST=$(uname -n | tr '[:upper:]' '[:lower:]')
+case "$HOST" in
+  hephaestus)
+    APT_PACKAGES=(
+      git curl
+      docker.io docker-compose         # Debian packages, not docker-ce: Pi 3, 32-bit Raspbian
+      skopeo                           # check-container-updates.sh
+      webhook                          # Gitea repo webhook
+      apticron msmtp msmtp-mta         # wiki/Update-Notifications.md
+      bc                               # viessmann-exporter.sh
+      fbset wireless-tools raspi-utils-core   # hephaestus-display.sh: con2fbmap, iwconfig, vcgencmd
+      python3-flask python3-flask-cors # viessmann-api.py
+      python3-pil python3-pip          # hephaestus-oled.py
+      build-essential cmake libxml2-dev     # vcontrold build, wiki/Viessmann-Optolink.md
+    )
+    LINKS=(
+      "shared/scripts/system-update.sh|/usr/local/bin/system-update"
+      "shared/scripts/check-container-updates.sh|/usr/local/bin/check-container-updates.sh"
+      "shared/scripts/gitea-pull.sh|$HOME/bin/gitea-pull.sh"
+      "shared/apticron/apticron.conf|/etc/apticron/apticron.conf"
+      "hephaestus/scripts/viessmann-exporter.sh|/usr/local/bin/viessmann-exporter.sh"
+    )
+    COPIES=(
+      "hephaestus/scripts/hephaestus-display.sh|/usr/local/bin/hephaestus-display.sh"
+      "hephaestus/scripts/hephaestus-oled.py|/usr/local/bin/hephaestus-oled.py"
+      "hephaestus/vcontrold/vcontrold.xml|/etc/vcontrold/vcontrold.xml"
+      "hephaestus/vcontrold/vito.xml|/etc/vcontrold/vito.xml"
+      "hephaestus/docker/daemon.json|/etc/docker/daemon.json"
+      "hephaestus/systemd/vcontrold.service|/etc/systemd/system/vcontrold.service"
+      "hephaestus/systemd/viessmann-api.service|/etc/systemd/system/viessmann-api.service"
+      "hephaestus/systemd/hephaestus-display.service|/etc/systemd/system/hephaestus-display.service"
+      "hephaestus/systemd/hephaestus-oled.service|/etc/systemd/system/hephaestus-oled.service"
+    )
+    EXECUTABLES=(
+      "/usr/local/sbin/vcontrold|build from source, wiki/Viessmann-Optolink.md"
+      "/usr/local/bin/vclient|built together with vcontrold"
+      "/usr/bin/tailscale|Tailscale apt repo (pkgs.tailscale.com), then tailscale up"
+    )
+    PY_MODULES=(
+      "adafruit_ssd1306|adafruit-circuitpython-ssd1306"
+      "board|Adafruit-Blinka"
+    )
+    UNITS=(
+      "docker.service|enabled"
+      "tailscaled.service|enabled"
+      "webhook.service|enabled"
+      "vcontrold.service|enabled"
+      "hephaestus-display.service|enabled"
+      "hephaestus-oled.service|enabled"
+      "viessmann-api.service|disabled"   # write errors, see hephaestus/README.md
+    )
+    FILES=(
+      "/etc/systemd/system/webhook.service|host-local unit, not in the repo"
+      "$REPO_ROOT/shared/webhook/hooks.json|from shared/webhook/hooks.json.example, with the HMAC secret"
+      "/etc/system-update.conf|shared/README.md, system-update.sh"
+      "/var/log/system-update.log|shared/README.md, Installation"
+      "/etc/apticron/apticron.local.conf|recipients, wiki/Update-Notifications.md"
+      "/var/log/webhook-handler.log|written by gitea-webhook-handler.sh as the login user"
+      "/var/lib/node_exporter/textfile_collector|sudo mkdir -p /var/lib/node_exporter/textfile_collector"
+      "/boot/firmware/overlays/tft35a.dtbo|overlay of the 3.5\" TFT driver"
+    )
+    GROUPS_NEEDED=(docker)
+    BOOT_CONFIG=/boot/firmware/config.txt
+    BOOT_LINES=(
+      "dtparam=i2c_arm=on"               # OLED
+      "dtparam=spi=on"                   # TFT
+      "dtoverlay=tft35a:rotate=270"      # TFT
+    )
+    USER_CRON=(
+      "gitea-pull.sh|*/15 * * * * $HOME/bin/gitea-pull.sh"
+      "hc-ping.com|Healthchecks ping, URL in Healthchecks.io"
+    )
+    ROOT_CRON=(
+      "viessmann-exporter.sh|* * * * * /usr/local/bin/viessmann-exporter.sh"
+    )
+    ;;
+  *)
+    echo "No host branch for '$HOST' in $0 yet (configured: hephaestus)." >&2
+    exit 2
+    ;;
+esac
+
+PROBLEMS=0
+
+# say <STATUS> <text> [hint]
+say() {
+  printf '%-8s%s\n' "$1" "$2"
+  if [ -n "${3:-}" ]; then
+    printf '        -> %s\n' "$3"
+  fi
+  case "$1" in
+    MISSING|WRONG) PROBLEMS=$((PROBLEMS + 1)) ;;
+  esac
+}
+
+pkg_installed() {
+  dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q 'install ok installed' # intentional: an unknown package is "not installed"
+}
+
+missing_packages() {
+  local p
+  for p in "${APT_PACKAGES[@]}"; do
+    pkg_installed "$p" || echo "$p"
+  done
+}
+
+apply_packages() {
+  local missing
+  mapfile -t missing < <(missing_packages)
+  if [ "${#missing[@]}" -eq 0 ]; then
+    echo "apt: nothing to install"
+    return
+  fi
+  echo "apt: installing ${missing[*]}"
+  sudo apt-get update
+  sudo apt-get install -y --no-install-recommends "${missing[@]}"
+}
+
+# Creates absent links only. An existing file or a link elsewhere is left
+# alone and reported by check_links: it may be a deliberate local change.
+apply_links() {
+  local entry src dst
+  for entry in "${LINKS[@]}"; do
+    src="$REPO_ROOT/${entry%%|*}"
+    dst="${entry#*|}"
+    if [ -e "$dst" ] || [ -L "$dst" ]; then
+      continue
+    fi
+    echo "link: $dst -> $src"
+    if [ "${dst#"$HOME"/}" != "$dst" ]; then
+      mkdir -p "$(dirname "$dst")"
+      ln -s "$src" "$dst"
+    else
+      sudo mkdir -p "$(dirname "$dst")"
+      sudo ln -s "$src" "$dst"
+    fi
+  done
+}
+
+check_packages() {
+  local p
+  for p in "${APT_PACKAGES[@]}"; do
+    if pkg_installed "$p"; then
+      say OK "apt $p"
+    else
+      say MISSING "apt $p" "host-setup.sh --apply"
+    fi
+  done
+}
+
+check_links() {
+  local entry src dst
+  for entry in "${LINKS[@]}"; do
+    src="$REPO_ROOT/${entry%%|*}"
+    dst="${entry#*|}"
+    if [ ! -e "$src" ]; then
+      say WRONG "link $dst" "source missing in the repo: $src"
+    elif [ -L "$dst" ] && [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
+      say OK "link $dst"
+    elif [ -L "$dst" ]; then
+      say WRONG "link $dst points to $(readlink "$dst")" "should point to $src"
+    elif [ -e "$dst" ]; then
+      say WRONG "link $dst is a regular file, not a link" "compare, then: sudo ln -sf $src $dst"
+    else
+      say MISSING "link $dst" "host-setup.sh --apply"
+    fi
+  done
+}
+
+check_copies() {
+  local entry src dst
+  for entry in "${COPIES[@]}"; do
+    src="$REPO_ROOT/${entry%%|*}"
+    dst="${entry#*|}"
+    if [ ! -e "$dst" ]; then
+      say MISSING "copy $dst" "sudo cp $src $dst"
+    elif [ ! -r "$dst" ]; then
+      say SKIP "copy $dst (not readable)"
+    elif cmp -s "$src" "$dst"; then
+      say OK "copy $dst"
+    else
+      say WRONG "copy $dst differs from the repo" "diff $src $dst"
+    fi
+  done
+}
+
+check_executables() {
+  local entry path
+  for entry in "${EXECUTABLES[@]}"; do
+    path="${entry%%|*}"
+    if [ -x "$path" ]; then
+      say OK "binary $path"
+    else
+      say MISSING "binary $path" "${entry#*|}"
+    fi
+  done
+}
+
+check_py_modules() {
+  local entry mod
+  for entry in "${PY_MODULES[@]}"; do
+    mod="${entry%%|*}"
+    # intentional: the ImportError traceback is the expected "missing" case
+    if python3 -c "import $mod" > /dev/null 2>&1; then
+      say OK "python $mod"
+    else
+      say MISSING "python $mod" "pip package ${entry#*|}"
+    fi
+  done
+}
+
+check_units() {
+  local entry unit want state
+  for entry in "${UNITS[@]}"; do
+    unit="${entry%%|*}"
+    want="${entry#*|}"
+    # is-enabled exits non-zero for "disabled" too; the printed state counts
+    state=$(systemctl is-enabled "$unit" 2>&1 || true)
+    if [ "$state" = "$want" ]; then
+      say OK "unit $unit $state"
+    elif [ "$want" = enabled ]; then
+      say WRONG "unit $unit $state, expected enabled" "sudo systemctl enable --now $unit"
+    else
+      say WRONG "unit $unit $state, expected disabled" "sudo systemctl disable --now $unit"
+    fi
+  done
+}
+
+check_files() {
+  local entry path
+  for entry in "${FILES[@]}"; do
+    path="${entry%%|*}"
+    if [ -e "$path" ]; then
+      say OK "file $path"
+    else
+      say MISSING "file $path" "${entry#*|}"
+    fi
+  done
+}
+
+check_groups() {
+  local g
+  for g in "${GROUPS_NEEDED[@]}"; do
+    if id -nG | tr ' ' '\n' | grep -qx "$g"; then
+      say OK "group $g"
+    else
+      say MISSING "group $g" "sudo usermod -aG $g $USER, then log in again"
+    fi
+  done
+}
+
+check_boot() {
+  local line
+  [ -n "$BOOT_CONFIG" ] || return 0
+  if [ ! -e "$BOOT_CONFIG" ]; then
+    say MISSING "boot $BOOT_CONFIG"
+    return 0
+  fi
+  if [ ! -r "$BOOT_CONFIG" ]; then
+    say SKIP "boot $BOOT_CONFIG (not readable)"
+    return 0
+  fi
+  for line in "${BOOT_LINES[@]}"; do
+    if grep -qxF "$line" "$BOOT_CONFIG"; then
+      say OK "boot $line"
+    else
+      say MISSING "boot $line" "add to $BOOT_CONFIG, then reboot"
+    fi
+  done
+}
+
+# check_cron <label> <crontab text> <entry>...
+check_cron() {
+  local label="$1" tab="$2" entry
+  shift 2
+  for entry in "$@"; do
+    if printf '%s\n' "$tab" | grep -v '^[[:space:]]*#' | grep -qF "${entry%%|*}"; then
+      say OK "cron ($label) ${entry%%|*}"
+    else
+      say MISSING "cron ($label) ${entry%%|*}" "${entry#*|}"
+    fi
+  done
+}
+
+check_crontabs() {
+  local tab
+  if [ "${#USER_CRON[@]}" -gt 0 ]; then
+    # "no crontab for <user>" goes to stderr and means: nothing scheduled
+    tab=$(crontab -l 2>&1 || true)
+    check_cron "$USER" "$tab" "${USER_CRON[@]}"
+  fi
+  if [ "${#ROOT_CRON[@]}" -gt 0 ]; then
+    if tab=$(sudo -n crontab -l -u root 2>&1); then
+      check_cron root "$tab" "${ROOT_CRON[@]}"
+    else
+      say SKIP "cron (root): needs sudo" "sudo crontab -l -u root, or run sudo -v first"
+    fi
+  fi
+}
+
+echo "host-setup: $HOST, repo $REPO_ROOT"
+if [ "$APPLY" -eq 1 ]; then
+  apply_packages
+  apply_links
+fi
+echo
+
+check_packages
+check_links
+check_copies
+check_executables
+check_py_modules
+check_units
+check_files
+check_groups
+check_boot
+check_crontabs
+
+echo
+if [ "$PROBLEMS" -eq 0 ]; then
+  echo "All checks passed."
+else
+  echo "$PROBLEMS problem(s) found."
+  exit 1
+fi

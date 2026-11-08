@@ -15,6 +15,7 @@ Files for the workstations only: [`workstations/README.md`](workstations/README.
 | `check-container-updates.sh` | Check running containers for image updates | Mnemosyne |
 | `gitea-webhook-handler.sh` | Pull repo changes and run host-specific actions | Boreas, Hephaestus, Zephyros, Daidalos |
 | `gitea-pull.sh` | Pull latest repo changes unattended (cron) | Boreas, Hephaestus, Zephyros, Daidalos |
+| `host-setup.sh` | Check what a server needs from the repo; `--apply` installs packages and links | Hephaestus |
 
 ---
 
@@ -98,6 +99,36 @@ alongside the webhook handler, and on Daidalos for the same reason.
 
 Logs to syslog (`logger`) — only on error or actual changes, silent on
 "Already up to date".
+
+---
+
+## host-setup.sh
+
+Lists per host what a server needs from this repo and checks it: apt
+packages, links into the checkout, configs copied out of the repo, binaries
+built from source, pip modules, systemd units (enabled or deliberately
+disabled), host-local files that never enter the repo (existence only, never
+read), group membership, boot config lines and cron jobs. Use it on an empty
+host after `git clone`, and as a drift check on a running one.
+
+```bash
+host-setup.sh            # check only, no root; exit 1 on any MISSING/WRONG
+host-setup.sh --apply    # install missing apt packages, create missing links, then check
+```
+
+`--apply` stops there on purpose: it never replaces an existing file or link
+(it may be a local change worth keeping), never copies configs, enables units
+or edits cron. Those lines come with the command to fix them. Not covered
+at all: installing Docker itself, Pi-hole/Unbound, `tailscale up`,
+starting stacks.
+
+Runs as the login user from the checkout, not linked to `/usr/local/bin`.
+The root crontab needs `sudo`; without a cached `sudo -v` it shows as `SKIP`.
+Exit codes: `0` clean, `1` problems found or bad argument, `2` host not
+configured yet.
+
+A new host gets its own branch in the `case` with the lists filled from what
+the live host really has (read-only `-ro` checks), not from memory.
 
 ---
 

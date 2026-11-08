@@ -45,6 +45,9 @@ Vitotronic 200 KW2
 
 ## Setup
 
+`shared/scripts/host-setup.sh` checks everything below (and installs the apt
+packages and links with `--apply`), see `shared/README.md`.
+
 ### vcontrold
 
 Install from source or package, then deploy config:
@@ -61,7 +64,7 @@ Verify: `vclient -h 127.0.0.1:3002 -c getTempA` should return the outdoor temper
 ### Prometheus exporter (cron)
 
 ```bash
-sudo cp scripts/viessmann-exporter.sh /usr/local/bin/
+sudo ln -s ~/homelab-infra/hephaestus/scripts/viessmann-exporter.sh /usr/local/bin/viessmann-exporter.sh
 sudo mkdir -p /var/lib/node_exporter/textfile_collector
 # Add to root crontab:
 # * * * * * /usr/local/bin/viessmann-exporter.sh

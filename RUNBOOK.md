@@ -331,6 +331,23 @@ docker cp caddy:/data/caddy/pki/authorities/local/root.crt ~/caddy-root.crt
 
 ---
 
+## Set Up or Check a Server (host-setup.sh)
+
+Configured hosts: Hephaestus. Other hosts exit with code 2 until they get a host branch in the script.
+
+```bash
+# Empty host: Gitea SSH key in place, then
+sudo apt install git
+git clone <gitea-url> ~/homelab-infra
+
+~/homelab-infra/shared/scripts/host-setup.sh           # check only, exit 1 on any MISSING/WRONG
+~/homelab-infra/shared/scripts/host-setup.sh --apply   # apt packages + missing links, then check
+```
+
+Everything else (copied configs, units, cron, boot config, host-local secrets) is reported with the command to fix it. Run `sudo -v` first to include the root crontab. Details: [shared/README.md](shared/README.md#host-setupsh).
+
+---
+
 ## Set Up Claude Code Read-Only SSH
 
 Claude Code runs as the workstation user and could use its admin SSH keys. Instead it gets the user `claude-ro` on every host: own key per workstation, accepted only from that workstation's Tailscale IP, journal/log read access, `sudo` only for `docker ps` and `docker logs`. Admin keys get a passphrase and an agent confirm prompt.
