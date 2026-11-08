@@ -233,6 +233,7 @@ Not in the restore menu - the target is another host. `pi-configs.tar.gz` holds 
 mkdir -p /tmp/pi && tar -xzf /mnt/backup/<YYYY-MM-DD>/pi-configs.tar.gz -C /tmp/pi
 ls /tmp/pi/mnt/codex/backups/          # boreas/<date>/, zephyros/<date>/
 # copy the needed files to the Pi (scp), put them in place with sudo, then:
+#   sudo systemctl daemon-reload    # picks up a restored unit and drop-in
 #   sudo systemctl restart pihole-FTL unbound pihole6-exporter
 ```
 

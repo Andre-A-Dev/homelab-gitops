@@ -62,9 +62,11 @@ copy "Unbound" \
 # pihole6-exporter: the unit and its drop-in are not in the repo and the env
 # file holds the Pi-hole API password - without them, the exporter has to be
 # rebuilt by hand. No trailing slash: rsync copies the drop-in directory itself.
+# apticron: apticron.conf is a link into the repo; only the recipients in
+# apticron.local.conf are host-local.
 copy "msmtp, apticron, pihole6-exporter" \
   /etc/msmtprc \
-  /etc/apticron/apticron.conf \
+  /etc/apticron/apticron.local.conf \
   /etc/pihole6-exporter.env \
   /etc/systemd/system/pihole6-exporter.service \
   /etc/systemd/system/pihole6-exporter.service.d \

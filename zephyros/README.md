@@ -9,7 +9,7 @@ from that site.
 
 | Service | How | Port |
 |---|---|---|
-| Pi-hole v6 | native install | 53 / 80 (admin) |
+| Pi-hole v6 | native install | 53 / 8081 (admin) |
 | Unbound | native install | 5335 |
 | pihole6-exporter | systemd | 9666 |
 | Caddy | Docker | 443 |
@@ -114,10 +114,11 @@ Find the line with `ssh-keygen -lf ~/.ssh/authorized_keys` (fingerprint of
 `backup_key.pub`). Check from Zephyros: `sudo ssh -i ~/.ssh/backup_key
 <user>@100.x.x.x id` must be refused, then run the backup script once.
 
-What gets backed up: `/etc/pihole/pihole.toml`, `/etc/pihole/custom.list`,
-`/etc/unbound/unbound.conf.d/pi-hole.conf`, `/etc/msmtprc`, `/etc/apticron/apticron.conf`,
+What gets backed up: `/etc/pihole/pihole.toml`,
+`/etc/unbound/unbound.conf.d/pi-hole.conf`, `/etc/msmtprc`,
+`/etc/apticron/apticron.local.conf`, `/etc/pihole6-exporter.env`,
 `/etc/systemd/system/pihole6-exporter.service` and its drop-in directory
-`pihole6-exporter.service.d/`, and the live Caddy stack.
+`pihole6-exporter.service.d/`, and Caddy's internal CA (`caddy/data/caddy/pki`).
 
 ### `docker/daemon.json` — container log rotation
 
