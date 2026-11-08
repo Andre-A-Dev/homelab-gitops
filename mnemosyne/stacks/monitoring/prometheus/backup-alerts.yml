@@ -288,8 +288,11 @@ groups:
           summary: "restic backup failed — no new offsite copy"
           description: "Check: journalctl -u restic-offsite.service -n 100"
 
+      # Not restic_offsite_forget_ok == 0: forget only runs after a successful
+      # backup, so forget_ok is also 0 on exit 1 and 2. On 2026-11-06 this
+      # fired next to OffsiteBackupFailed claiming "the backup itself is fine".
       - alert: OffsiteRetentionFailed
-        expr: restic_offsite_forget_ok == 0
+        expr: restic_offsite_exit_code == 3
         for: 30m
         labels:
           severity: warning
