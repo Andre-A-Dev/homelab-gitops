@@ -13,9 +13,9 @@ echo "=== pump-alerts deploy: $(date) ===" >> "$LOG"
 
 # Pull or clone repo
 if [ -d "$REPO_DIR/.git" ]; then
-    cd "$REPO_DIR" && GIT_SSL_NO_VERIFY=true git pull >> "$LOG" 2>&1
+    cd "$REPO_DIR" && git pull >> "$LOG" 2>&1
 else
-    GIT_SSL_NO_VERIFY=true git clone "$REPO_URL" "$REPO_DIR" >> "$LOG" 2>&1
+    git clone "$REPO_URL" "$REPO_DIR" >> "$LOG" 2>&1
 fi
 
 # Validate before deploying — copy to temp location inside Prometheus container
