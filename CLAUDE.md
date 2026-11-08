@@ -217,6 +217,9 @@ Consequences:
   `ssh -G` silently prints defaults there (`~/.ssh/config` is hidden), hence
   `-F`. `git status` inside the sandbox lists empty placeholders (`.bashrc`,
   `.gitconfig`, `.mcp.json`, ...) as untracked; they don't exist on disk.
+  The file tools read only the repo and the vault subtree
+  (`blockReadsOutsideWorkingDirectories`); for any other path ask me for
+  `/add-dir`.
 - Changes touching more than one stack: show me the diff first.
 - Never modify the public-mirror tooling (`export_public.py`, `sync_public.py`,
   `audit_repo.py`) without flagging it — it gates what becomes public.

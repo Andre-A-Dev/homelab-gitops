@@ -9,6 +9,7 @@
   "agentPushNotifEnabled": true,
   "model": "opus",
   "permissions": {
+    "blockReadsOutsideWorkingDirectories": true,
     "deny": [
       "Read(~/.ssh/**)",
       "Read(~/.gnupg/**)",

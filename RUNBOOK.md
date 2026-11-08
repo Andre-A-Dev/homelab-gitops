@@ -487,9 +487,12 @@ Shared part: `shared/workstations/dotfiles/claude/settings.json`, linked to `~/.
 - `sandbox.filesystem.denyRead` hides `~` and `/run/user` (session D-Bus, ssh-agent socket). The working directory stays readable and writable; writes elsewhere in `~` go to a throwaway tmpfs. Never add an `allowRead` for a parent of the repo (such as `~/Projects`): bubblewrap then mounts the working directory read-only and every command fails with `Read-only file system`.
 - No network; `allowUnsandboxedCommands: false` removes the unsandboxed retry.
 - `excludedCommands`: `ssh <host>-ro` and the read-only `kubectl`/`flux` verbs, which the hosts and the `claude-ro` RBAC limit. Matching is on the whole line, so a pipe after them runs sandboxed and fails.
-- `permissions.deny`: the sandbox covers Bash only, so the Read and Edit tools get their own rules for keys, credentials and `~/.config`, `~/.local`.
+- `permissions.blockReadsOutsideWorkingDirectories`: the sandbox covers Bash only, so Claude's file tools (Read, Grep, Glob) get their own allowlist: the repo and the `additionalDirectories`, plus Claude Code's own files (memory, skills, tool output). Anything else needs `/add-dir` in the session. Removing the key takes a session restart.
+- `permissions.deny`: Edit rules for `~/.config`, `~/.local` and `~/.ssh`, plus Read rules for keys and credentials as a second layer.
 
-Per workstation (not versioned): the vault folder Claude may read goes into the repo's `.claude/settings.local.json` as `sandbox.filesystem.allowRead` (path in `CLAUDE.local.md`), next to the existing `additionalDirectories`.
+Per workstation (not versioned): the vault folder Claude may read goes into the repo's `.claude/settings.local.json` as `additionalDirectories` (file tools) and `sandbox.filesystem.allowRead` (Bash), path in `CLAUDE.local.md`. The file must stay untracked (it is gitignored): a tracked one counts as repository settings, whose `additionalDirectories` the read block ignores.
+
+The sandbox applies to every project. A checkout that reads this repo through scripts (the public mirror: `sync_public.py`, `/mirror-review`) needs it in its own `.claude/settings.local.json` as `sandbox.filesystem.allowRead`, read-only on purpose: `additionalDirectories` would also let that session write here.
 
 Project and local settings only count in a trusted workspace. After cloning or moving the repo, run `claude` once in it and accept the trust dialog.
 
