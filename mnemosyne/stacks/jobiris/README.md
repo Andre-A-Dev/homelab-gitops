@@ -127,8 +127,10 @@ Web UI at `jobiris.home` with:
 - **Sortable columns**: date, title, company, location, distance, salary, tag, status
 - **Dark mode**: toggle top-right, persisted in `localStorage`,
   respects `prefers-color-scheme` on first visit
-- **Status dropdown**: Neu / Interessant / Beworben / Abgelehnt per row
-  ("Abgelehnt" hidden by default, kept in DB so it won't re-notify)
+- **Status dropdown**: Neu / Interessant / Beworben / Feedback ausstehend /
+  Absage erhalten / Nicht relevant / Archiviert per row ("Archiviert" is set
+  by the monitor's auto-archive). Absage erhalten, Nicht relevant and
+  Archiviert are hidden by default but kept in the DB, so they won't re-notify
 - **Run trigger**: ▶ Run daily / ▶ Run weekly + dry-run checkbox,
   live output via JSON polling (works through any proxy)
 - **+ Stelle eintragen**: adds a job found outside the BA search (title

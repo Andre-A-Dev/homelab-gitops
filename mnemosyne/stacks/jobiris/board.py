@@ -1059,11 +1059,12 @@ def _load_rating_profile() -> str:
 def _build_job_text(row: sqlite3.Row, detail: dict | None) -> str:
     """Assemble a compact text representation of the job for the prompt.
     Uses whatever detail the BA API returns; falls back to the board fields."""
-    parts = [
-        f"Title: {row['titel']}",
-        f"Company: {row['arbeitgeber']}",
-        f"Location: {row['ort']}",
-    ]
+    parts = [f"Title: {row['titel']}"]
+    # Manual jobs may lack company or location; omit them instead of "None"
+    if row["arbeitgeber"]:
+        parts.append(f"Company: {row['arbeitgeber']}")
+    if row["ort"]:
+        parts.append(f"Location: {row['ort']}")
     if row["distance_home"]:
         parts.append(f"Distance from home: {row['distance_home']}")
     if row["salary"]:
