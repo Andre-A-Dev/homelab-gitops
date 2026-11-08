@@ -6,5 +6,6 @@
   },
   "tui": "fullscreen",
   "theme": "auto",
-  "agentPushNotifEnabled": true
+  "agentPushNotifEnabled": true,
+  "model": "opus"
 }
