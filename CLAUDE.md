@@ -184,6 +184,11 @@ Current flow:
   `git pull`. Zephyros applies its `caddy/` (validated first) and `monitoring/`
   stacks. Boreas and Hephaestus only restart specific systemd services; any
   other change there needs a manual step.
+- **Workstations (AstraeusNX, Proteus):** no handler. `shared/workstations/install.sh`
+  symlinks the dotfiles into the repo checkout, so on the workstation you run
+  on, saving a linked file is the deploy. The other workstation gets it with
+  its next `git pull`; a link that was added or moved needs `install.sh` on
+  every workstation. Compose stacks in `<node>/stacks/` are started by hand.
 - **Not deployed by anything:** `/etc/docker/daemon.json`, systemd unit files,
   `.env`.
 
@@ -196,6 +201,12 @@ Consequences:
 - Your job ends at a verified, uncommitted change plus a commit proposal. Never
   run `docker compose up/down/restart` against production unless I ask in this
   session.
+- The workstation you run on is a live system without the `claude-ro`
+  boundary. After editing a linked dotfile, check it at once (`ssh -G <alias>`
+  for `ssh_config`, `fish -n` for fish files): a broken `ssh_config` drops the
+  `-ro` aliases mid-session. Never run `install.sh` (except `--dry-run`),
+  `systemctl`, `sudo` or anything else that changes local state unless I ask
+  in this session.
 - Changes touching more than one stack: show me the diff first.
 - Never modify the public-mirror tooling (`export_public.py`, `sync_public.py`,
   `audit_repo.py`) without flagging it — it gates what becomes public.
@@ -284,6 +295,10 @@ List explicitly what could not be verified and why.
   `.env.example`. CI enforces this.
 - **Executable bit:** new scripts need `chmod +x`. Mention it in the commit
   proposal so I can confirm the mode in the diff.
+- **GUI writes through links:** KDE and EasyEffects save their settings
+  through the symlinks into `<host>/dotfiles/`. Diffs there that you didn't
+  make are mine: leave them alone and keep them out of your commit proposal
+  unless I say otherwise.
 - **Static IPs** are assigned centrally in the router, never on the device.
   Storage mounts use UUID-based fstab entries.
 - **System updates** are rolled out manually (`shared/scripts/system-update.sh`),
