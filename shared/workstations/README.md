@@ -23,6 +23,11 @@ KDE, EasyEffects on AstraeusNX) live in `<host>/dotfiles/` and are added by
 the `case` on the hostname. An unknown hostname aborts: add the host there
 first.
 
+It also links two repo commands into `~/.local/bin`: `sync-public`
+(`scripts/sync_public.py`) and `audit-repo` (`scripts/audit_repo.py`).
+CachyOS's fish config puts `~/.local/bin` on the `PATH` only if it exists, so
+they work in shells started after the first run.
+
 ```fish
 shared/workstations/install.sh --dry-run   # show what would be linked or backed up
 shared/workstations/install.sh

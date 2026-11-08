@@ -1,7 +1,9 @@
 # scripts
 
 Repo-level tools for maintaining and publishing this repository.
-Not intended for deployment on individual hosts.
+Not intended for deployment on individual hosts. On the workstations,
+`shared/workstations/install.sh` links `sync_public.py` and `audit_repo.py`
+into `~/.local/bin` as `sync-public` and `audit-repo`.
 
 ---
 
