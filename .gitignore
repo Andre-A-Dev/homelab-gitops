@@ -56,6 +56,7 @@ config.yaml
 *.db
 *.db-wal
 *.db-shm
+*.sqlite*
 
 # --- Claude Code ---------------------------------------------------------
 # CLAUDE.local.md is tracked in the private repo, which this line does not

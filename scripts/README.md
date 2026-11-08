@@ -41,6 +41,14 @@ Automatically runs `audit_repo.py` on the export before finishing.
 Aborts if the repo tracks symlinks: the copy would contain the link target's
 content, bypassing the blocklist. `sync_public.py` applies the same check.
 
+Before writing anything, both scripts run the content checks in
+`publiccheck.py` over every file they would publish and abort with exit
+code 1 on a finding: binaries outside an allowlist (`.png`, `.ico`, `.ttf`,
+`.woff2`), allowed binaries whose bytes match a sanitizer rule, database
+signatures (SQLite, KeePass, PostgreSQL, Redis), private keys, password
+hashes, known token formats and Kubernetes Secrets with data. SQLite files,
+key stores, SOPS files and common credential files are excluded by name.
+
 ```bash
 python export_public.py                         # export next to current repo
 python export_public.py --out /path/to/output  # explicit output path
