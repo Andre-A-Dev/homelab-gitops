@@ -26,7 +26,9 @@ first.
 It also links two repo commands into `~/.local/bin`: `sync-public`
 (`scripts/sync_public.py`) and `audit-repo` (`scripts/audit_repo.py`).
 CachyOS's fish config puts `~/.local/bin` on the `PATH` only if it exists, so
-they work in shells started after the first run.
+they work in shells started after the first run. In fish, the abbreviation
+`sync-public` (in `dotfiles/fish/config.fish`) expands to
+`sync-public ~/Projects/Github/homelab-gitops`, the mirror clone.
 
 ```fish
 shared/workstations/install.sh --dry-run   # show what would be linked or backed up
