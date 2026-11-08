@@ -195,10 +195,15 @@ check_packages() {
 }
 
 check_links() {
-  local entry src dst
+  local entry src dst sudo
   for entry in "${LINKS[@]}"; do
     src="$REPO_ROOT/${entry%%|*}"
     dst="${entry#*|}"
+    # same rule as apply_links: below $HOME the link belongs to the user
+    sudo="sudo "
+    if [ "${dst#"$HOME"/}" != "$dst" ]; then
+      sudo=""
+    fi
     if [ ! -e "$src" ]; then
       say WRONG "link $dst" "source missing in the repo: $src"
     elif [ -L "$dst" ] && [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
@@ -206,7 +211,7 @@ check_links() {
     elif [ -L "$dst" ]; then
       say WRONG "link $dst points to $(readlink "$dst")" "should point to $src"
     elif [ -e "$dst" ]; then
-      say WRONG "link $dst is a regular file, not a link" "compare, then: sudo ln -sf $src $dst"
+      say WRONG "link $dst is a regular file, not a link" "diff $dst $src, then: ${sudo}ln -sf $src $dst"
     else
       say MISSING "link $dst" "host-setup.sh --apply"
     fi
