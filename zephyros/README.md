@@ -70,7 +70,7 @@ non-default settings:
 | Setting | Value | Reason |
 |---|---|---|
 | `dns.upstreams` | `127.0.0.1#5335` | Local Unbound resolves recursively, no third-party upstream |
-| `dns.hosts` | 15 `.home` names → `192.168.1.11` | Zephyros' own LAN IP: Caddy here proxies them to Mnemosyne |
+| `dns.hosts` | every site in `caddy/Caddyfile` → `192.168.1.11` | Zephyros' own LAN IP: Caddy here proxies them to Mnemosyne. A new or re-enabled site needs its record here too |
 | `dns.interface` | `eth0` | Explicit bind to wired interface |
 | `webserver.port` | `8081o` only | Caddy holds 80/443 and proxies the admin UI; Pi-hole runs plain HTTP |
 | `dns.specialDomains.mozillaCanary` | `true` | Blocks Firefox DoH bypass |
