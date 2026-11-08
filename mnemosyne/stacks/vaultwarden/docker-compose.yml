@@ -8,6 +8,9 @@ services:
       - WEBSOCKET_ENABLED=true
       - SIGNUPS_ALLOWED=false
       - LOG_LEVEL=warn
+      # Browser extension >= 2026.9 only fills HTTP basic auth prompts
+      # (galatea.home) when the server enables this flag.
+      - EXPERIMENTAL_CLIENT_FEATURE_FLAGS=enable-basic-auth-response
     volumes:
       - /mnt/vault/vaultwarden/data:/data
     networks:
