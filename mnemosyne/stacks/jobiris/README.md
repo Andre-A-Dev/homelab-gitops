@@ -38,14 +38,12 @@ sudo systemctl enable --now jobiris-monitor-daily.timer
 sudo systemctl enable --now jobiris-monitor-weekly.timer
 ```
 
-`requirements.txt` changes require `docker compose up -d --build`.
-All other files (`job-monitor.py`, `board.py`, `templates/`, `search-profiles.yaml`)
-take effect immediately - they are mounted as a volume at `/app`.
-Restart the board after changing `board.py` or templates:
-
-```bash
-docker compose restart jobiris-board
-```
+The code is mounted as a volume at `/app`; `job-monitor.py` and
+`search-profiles.yaml` are read fresh on every monitor run. After a push, the
+Mnemosyne deploy handler rebuilds the image and recreates `jobiris-board` for
+any changed file in this directory (it is the build context), so `board.py`,
+templates and `requirements.txt` changes need no manual step. Check with
+`journalctl -u webhook | grep result=` (`applied="jobiris"`).
 
 ---
 
@@ -111,7 +109,7 @@ stacks/jobiris/
 | What | Where | Rebuild? |
 |---|---|---|
 | Search terms, radii, profiles | `search-profiles.yaml` | No |
-| Board design / layout | `templates/board.html`, `templates/run.html` | No (restart only) |
+| Board design / layout | `templates/board.html`, `templates/run.html` | No (deploy handler recreates the board) |
 | ntfy topic/token | `.env` | No |
 | Schedule | `jobiris-monitor-*.timer` (`OnCalendar`) | No |
 | Archive cap | `MAX_ENTRIES` in `job-monitor.py` | No |
