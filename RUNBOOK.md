@@ -431,6 +431,45 @@ Admin work afterwards: `ssh -t daidalos sudo k3s kubectl ...`, Flux via `ssh -t 
 
 ---
 
+## Harden a Workstation for Claude Code
+
+On the workstations Claude Code runs as the login user and has to write the repo, so a second read-only user does not fit. Instead: no passwordless root path for the login user, and Bash inside the Claude Code sandbox (bubblewrap). Prerequisite: the read-only SSH setup above (passphrase plus agent confirm on every admin key).
+
+### No root-equivalent groups
+
+`docker` (any `docker run -v /:/host`) and `disk` (raw block devices) are root without a password. The login user is in neither; Docker on a workstation runs via `sudo docker ...`. The repo checks need no daemon: `docker compose config` is client-only, `promtool`/`amtool` are native (`install.sh` reports them).
+
+```fish
+sudo pacman -S --needed bubblewrap socat prometheus alertmanager   # installs no enabled services
+sudo gpasswd -d (id -un) docker
+sudo gpasswd -d (id -un) disk
+```
+
+Then **reboot**. Logging out is not enough: Plasma starts apps as systemd user units, and a user manager that survives the logout hands the old groups to every new window. Verify:
+
+```fish
+id -nG                                 # neither docker nor disk
+docker ps; and echo "PROBLEM"          # must fail (permission denied or no daemon)
+head -c1 /dev/nvme0n1 >/dev/null; and echo "PROBLEM"   # must fail: Permission denied
+```
+
+### Sandbox
+
+Shared part: `shared/workstations/dotfiles/claude/settings.json`, linked to `~/.claude/settings.json` on every workstation, so an edit is live at once.
+
+- `sandbox.filesystem.denyRead` hides `~` and `/run/user` (session D-Bus, ssh-agent socket). The working directory stays readable and writable; writes elsewhere in `~` go to a throwaway tmpfs. Never add an `allowRead` for a parent of the repo (such as `~/Projects`): bubblewrap then mounts the working directory read-only and every command fails with `Read-only file system`.
+- No network; `allowUnsandboxedCommands: false` removes the unsandboxed retry.
+- `excludedCommands`: `ssh <host>-ro` and the read-only `kubectl`/`flux` verbs, which the hosts and the `claude-ro` RBAC limit. Matching is on the whole line, so a pipe after them runs sandboxed and fails.
+- `permissions.deny`: the sandbox covers Bash only, so the Read and Edit tools get their own rules for keys, credentials and `~/.config`, `~/.local`.
+
+Per workstation (not versioned): the vault folder Claude may read goes into the repo's `.claude/settings.local.json` as `sandbox.filesystem.allowRead` (path in `CLAUDE.local.md`), next to the existing `additionalDirectories`.
+
+Project and local settings only count in a trusted workspace. After cloning or moving the repo, run `claude` once in it and accept the trust dialog.
+
+Verify in a new session: `/sandbox` shows the sandbox enabled, then let Claude run `test -r ~/.ssh/id_ed25519` (must fail), `curl -sI https://example.com` (must fail), `ssh mnemosyne-ro hostname` and `kubectl get ns` (must work), and a `test -d` on the vault folder (must work).
+
+---
+
 ## Disable SSH Password Login
 
 Every client needs a working key first (workstations, phone). Check that no password logins remain:

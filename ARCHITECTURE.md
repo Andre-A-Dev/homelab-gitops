@@ -136,6 +136,14 @@ This pattern mirrors the approach used in professional environments: committed c
 
 ---
 
+## Claude Code Access: Read-Only Users on Hosts, Sandbox on Workstations
+
+Claude Code works on this repo from the workstations. On the servers it only needs to read, so it gets its own user `claude-ro` (SSH) and ServiceAccount (Daidalos) that the host itself limits. Admin keys carry a passphrase and an agent confirm prompt, so pushes (= deploys) and admin SSH need a human click.
+
+On the workstations Claude has to write the repo, and the editor extension starts it as the login user. A second local user would mean shared repo permissions, broken dotfile symlinks and the editor running as another user, for a boundary that the login user's root-equivalent groups (`docker`, `disk`) undid anyway. Instead the login user has no passwordless root path, and Claude's Bash runs in the Claude Code sandbox (bubblewrap): home directory hidden, no network, no session D-Bus. The few commands that must leave it (`ssh <host>-ro`, read-only `kubectl`/`flux`) are exactly the ones the servers limit. Trade-off: Docker on a workstation needs `sudo`, and Claude's own Read/Edit tools sit outside the sandbox, covered by permission rules only. Setup: RUNBOOK "Harden a Workstation for Claude Code".
+
+---
+
 ## Monitoring: Prometheus + Grafana Over Netdata
 
 Netdata was the initial monitoring solution. It was replaced for two reasons.

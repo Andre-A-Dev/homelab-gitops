@@ -7,5 +7,40 @@
   "tui": "fullscreen",
   "theme": "auto",
   "agentPushNotifEnabled": true,
-  "model": "opus"
+  "model": "opus",
+  "permissions": {
+    "deny": [
+      "Read(~/.ssh/**)",
+      "Read(~/.gnupg/**)",
+      "Read(~/.claude/.credentials.json)",
+      "Read(~/.local/share/kwalletd/**)",
+      "Read(~/.mozilla/**)",
+      "Read(~/.thunderbird/**)",
+      "Read(~/.config/Bitwarden/**)",
+      "Edit(~/.config/**)",
+      "Edit(~/.local/**)",
+      "Edit(~/.ssh/**)"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "allowUnsandboxedCommands": false,
+    "filesystem": {
+      "denyRead": ["~/", "/run/user"]
+    },
+    "excludedCommands": [
+      "ssh mnemosyne-ro *",
+      "ssh boreas-ro *",
+      "ssh hephaestus-ro *",
+      "ssh daidalos-ro *",
+      "ssh zephyros-ro *",
+      "kubectl get *",
+      "kubectl describe *",
+      "kubectl logs *",
+      "flux get *",
+      "flux logs *",
+      "flux tree *"
+    ]
+  }
 }

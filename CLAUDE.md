@@ -202,11 +202,21 @@ Consequences:
   run `docker compose up/down/restart` against production unless I ask in this
   session.
 - The workstation you run on is a live system without the `claude-ro`
-  boundary. After editing a linked dotfile, check it at once (`ssh -G <alias>`
-  for `ssh_config`, `fish -n` for fish files): a broken `ssh_config` drops the
-  `-ro` aliases mid-session. Never run `install.sh` (except `--dry-run`),
+  boundary. After editing a linked dotfile, check it at once (`ssh -F
+  shared/workstations/dotfiles/ssh_config -G <alias>` for `ssh_config`,
+  `fish -n` for fish files): a broken `ssh_config` drops the `-ro` aliases
+  mid-session. Never run `install.sh` (except `--dry-run`),
   `systemctl`, `sudo` or anything else that changes local state unless I ask
   in this session.
+- Bash runs in the Claude Code sandbox (RUNBOOK "Harden a Workstation for
+  Claude Code"): no network, home directory hidden except the repo and the
+  vault subtree, writes to
+  `~` land in a throwaway tmpfs. Only `ssh <host>-ro` and the read-only
+  `kubectl`/`flux` verbs run outside, and only as a single command: a pipe or
+  `&&` puts the whole line back in the sandbox, where they fail. Plain
+  `ssh -G` silently prints defaults there (`~/.ssh/config` is hidden), hence
+  `-F`. `git status` inside the sandbox lists empty placeholders (`.bashrc`,
+  `.gitconfig`, `.mcp.json`, ...) as untracked; they don't exist on disk.
 - Changes touching more than one stack: show me the diff first.
 - Never modify the public-mirror tooling (`export_public.py`, `sync_public.py`,
   `audit_repo.py`) without flagging it — it gates what becomes public.
