@@ -177,10 +177,16 @@ changes to the repo.
 
 ### `pump-alerts-deploy.sh`
 
-Pulls the `pump_alerts` Gitea repo, validates the alert rules with
-`promtool check rules` inside the running Prometheus container, then deploys
-and hot-reloads Prometheus only if validation passes. Triggered by a Gitea
-webhook — not run manually.
+Clones the `pump_alerts` Gitea repo (fresh shallow clone into a temp dir per
+run), validates the alert rules with `promtool check rules` inside the
+running Prometheus container, then deploys and hot-reloads Prometheus only if
+validation passes. Triggered by a Gitea webhook — not run manually. Output
+goes to `journalctl -u webhook`.
+
+Reads `PUMP_GITEA_TOKEN` (Gitea access token, scope `read:repository`) from
+`~/stacks/monitoring/.env`. The key is not in that stack's `.env.example`:
+Compose does not use it, and the drift check rejects unused keys. The token
+is sent as an HTTP header through the environment, never in the clone URL.
 
 ---
 
