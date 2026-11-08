@@ -40,7 +40,7 @@ DEFAULT_CONFIG = Path(__file__).resolve().parent / "search-profiles.yaml"
 DEFAULT_DB = Path("/mnt/vault/jobiris/seen_jobs.db")
 DEFAULT_LOG_FILE = Path("/mnt/vault/jobiris/jobiris.log")
 
-MAX_ENTRIES = 1000  # board archive cap; oldest untriaged entries pruned beyond this
+MAX_ENTRIES = 1000  # cap on untriaged API jobs; the oldest are pruned beyond this
 # Statuses the cap may delete; triaged jobs (Interessant, Beworben, ...) are kept
 PRUNABLE_STATUSES = ("Neu", "Archiviert")
 # profile value of jobs entered by hand on the board (board.py); exempt from
@@ -229,12 +229,18 @@ def mark_seen(conn: sqlite3.Connection, job: dict, profile_name: str) -> None:
 
 
 def prune_excess_entries(conn: sqlite3.Connection, max_entries: int = MAX_ENTRIES) -> int:
-    """Keeps the board archive bounded: deletes the oldest entries (by
-    first_seen) once the table exceeds max_entries. No time-based cutoff -
-    entries persist indefinitely until the count limit is hit. Only untriaged
-    API jobs (PRUNABLE_STATUSES) are deleted; triaged and manual jobs are
-    kept, so the table may stay above max_entries."""
-    count = conn.execute("SELECT COUNT(*) FROM seen_jobs").fetchone()[0]
+    """Keeps the board archive bounded: once there are more than max_entries
+    untriaged API jobs (PRUNABLE_STATUSES, not manual), deletes the oldest of
+    them (by first_seen). No time-based cutoff. Triaged and manual jobs are
+    kept and not counted: counting them would shrink the room for untriaged
+    jobs until a run deletes the jobs it just notified about, and the next
+    run would report them again."""
+    prunable = (
+        f"status IN ({', '.join('?' * len(PRUNABLE_STATUSES))}) "
+        "AND COALESCE(profile, '') != ?"
+    )
+    params = (*PRUNABLE_STATUSES, MANUAL_PROFILE)
+    count = conn.execute(f"SELECT COUNT(*) FROM seen_jobs WHERE {prunable}", params).fetchone()[0]
     if count <= max_entries:
         return 0
 
@@ -242,13 +248,11 @@ def prune_excess_entries(conn: sqlite3.Connection, max_entries: int = MAX_ENTRIE
     cur = conn.execute(
         f"""
         DELETE FROM seen_jobs WHERE refnr IN (
-            SELECT refnr FROM seen_jobs
-            WHERE status IN ({', '.join('?' * len(PRUNABLE_STATUSES))})
-              AND COALESCE(profile, '') != ?
+            SELECT refnr FROM seen_jobs WHERE {prunable}
             ORDER BY first_seen ASC LIMIT ?
         )
         """,
-        (*PRUNABLE_STATUSES, MANUAL_PROFILE, excess),
+        (*params, excess),
     )
     conn.commit()
     return cur.rowcount

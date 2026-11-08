@@ -98,9 +98,10 @@ stacks/jobiris/
 - Search profiles: `search-profiles.yaml` (in repo, no secrets)
 - Dedup DB / board archive: `/mnt/vault/jobiris/seen_jobs.db` (SQLite)
 - Log file: `/mnt/vault/jobiris/jobiris.log` (rotating, 1 MB x 5)
-- Archive cap: no time-based expiry - beyond `MAX_ENTRIES` (default 1000) the
-  oldest untriaged entries (`Neu`, `Archiviert`) are pruned; triaged and
-  manually entered jobs are kept, so the table can stay above the cap
+- Archive cap: no time-based expiry - `MAX_ENTRIES` (default 1000) caps the
+  untriaged API jobs (`Neu`, `Archiviert`); beyond it the oldest of them are
+  pruned. Triaged and manually entered jobs are kept and don't count toward
+  the cap, so the table grows by them
 
 ---
 
