@@ -427,6 +427,33 @@ rm ~/.kube/config
 mv $kc ~/.kube/config
 ```
 
+Workstation without a local admin kubeconfig (fresh install): fetch CA and token through the admin SSH path instead. The token sits in a 600 file on Daidalos only until the `rm`.
+
+```fish
+mkdir -p ~/.kube
+set -l kc ~/.kube/claude-ro.yaml
+set -l tmp (mktemp -d)
+ssh -t daidalos 'umask 077; sudo k3s kubectl -n kube-system get secret claude-ro-token -o jsonpath="{.data.ca\.crt} {.data.token}" > ~/claude-ro-token.txt'
+scp daidalos:claude-ro-token.txt $tmp/
+ssh daidalos rm claude-ro-token.txt
+set -l parts (string split ' ' < $tmp/claude-ro-token.txt)
+echo $parts[1] | base64 -d > $tmp/ca.crt
+kubectl --kubeconfig $kc config set-cluster daidalos --server=https://<daidalos-ip>:6443 --certificate-authority=$tmp/ca.crt --embed-certs
+kubectl --kubeconfig $kc config set-credentials claude-ro --token=(echo $parts[2] | base64 -d)
+kubectl --kubeconfig $kc config set-context claude-ro@daidalos --cluster=daidalos --user=claude-ro
+kubectl --kubeconfig $kc config use-context claude-ro@daidalos
+chmod 600 $kc
+rm -r $tmp
+
+kubectl --kubeconfig $kc auth can-i delete pods -A   # must be "no"
+kubectl --kubeconfig $kc get ns                      # must list namespaces
+mv $kc ~/.kube/config
+```
+
+`<daidalos-ip>` is the LAN address: the node IP is in the k3s serving certificate, the Tailscale IP only with a matching `--tls-san`.
+
+Check inside Claude Code: `kubectl get ns` lists namespaces (excluded from the sandbox), while `kubectl auth can-i ...` falls back to `localhost:8080` (sandboxed, `~/.kube` hidden).
+
 Admin work afterwards: `ssh -t daidalos sudo k3s kubectl ...`, Flux via `ssh -t daidalos sudo flux --kubeconfig /etc/rancher/k3s/k3s.yaml ...`. Rotate the token: `ssh -t daidalos sudo k3s kubectl -n kube-system delete secret claude-ro-token`, Flux recreates it with a new token on its next reconcile, then rebuild the kubeconfig on every workstation. Revoke entirely: remove `clusters/daidalos/claude-ro/` and push.
 
 ---
