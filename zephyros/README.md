@@ -69,14 +69,17 @@ non-default settings:
 
 | Setting | Value | Reason |
 |---|---|---|
-| `dns.upstreams` | `1.1.1.1`, `1.0.0.1` | Cloudflare upstream (Unbound used for local resolution only) |
+| `dns.upstreams` | `127.0.0.1#5335` | Local Unbound resolves recursively, no third-party upstream |
+| `dns.hosts` | 15 `.home` names → `192.168.1.11` | Zephyros' own LAN IP: Caddy here proxies them to Mnemosyne |
 | `dns.interface` | `eth0` | Explicit bind to wired interface |
-| `webserver.port` | `80o` only | HTTPS handled by Caddy; Pi-hole admin runs plain HTTP |
+| `webserver.port` | `8081o` only | Caddy holds 80/443 and proxies the admin UI; Pi-hole runs plain HTTP |
 | `dns.specialDomains.mozillaCanary` | `true` | Blocks Firefox DoH bypass |
 | `dns.specialDomains.iCloudPrivateRelay` | `true` | Blocks iCloud Private Relay bypass |
 | `dns.specialDomains.designatedResolver` | `true` | Blocks DDR discovery (RFC 9462) |
 
-To update: copy the live file from the host and commit it as a reference snapshot.
+To update: copy the live file from the host, set `webserver.api.pwhash` and
+`app_pwhash` to `""`, and commit it as a reference snapshot. The hashes stay
+out of the repo; the real file comes back from `scripts/backup-zephyros.sh`.
 
 ### `systemd/` — pihole6-exporter drop-in
 
