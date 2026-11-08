@@ -120,8 +120,66 @@ case "$HOST" in
       "viessmann-exporter.sh|* * * * * /usr/local/bin/viessmann-exporter.sh"
     )
     ;;
+  boreas)
+    APT_PACKAGES=(
+      git curl
+      docker.io docker-compose         # Debian packages, not docker-ce: Pi 3, 32-bit Raspbian
+      skopeo                           # check-container-updates.sh
+      webhook                          # Gitea repo webhook
+      apticron msmtp msmtp-mta         # wiki/Update-Notifications.md; msmtp also mails for Pi-hole
+      unbound                          # wiki/Pi-hole-Unbound.md
+      rsync openssh-client             # backup-boreas.sh
+    )
+    LINKS=(
+      "shared/scripts/system-update.sh|/usr/local/bin/system-update"
+      "shared/scripts/check-container-updates.sh|/usr/local/bin/check-container-updates"
+      "shared/scripts/check-container-updates.sh|/usr/local/bin/check-container-updates.sh"
+      "shared/scripts/gitea-pull.sh|$HOME/bin/gitea-pull.sh"
+      "shared/apticron/apticron.conf|/etc/apticron/apticron.conf"
+      "boreas/scripts/backup-boreas.sh|/usr/local/bin/backup-boreas.sh"
+    )
+    COPIES=(
+      "boreas/docker/daemon.json|/etc/docker/daemon.json"
+    )
+    EXECUTABLES=(
+      "/usr/local/bin/pihole|Pi-hole installer, then restore its config, wiki/Pi-hole-Unbound.md"
+      "/usr/bin/tailscale|Tailscale apt repo (pkgs.tailscale.com), then tailscale up"
+    )
+    UNITS=(
+      "docker.service|enabled"
+      "tailscaled.service|enabled"
+      "webhook.service|enabled"
+      "pihole-FTL.service|enabled"
+      "unbound.service|enabled"
+      "pihole6-exporter.service|enabled"
+    )
+    FILES=(
+      "/etc/systemd/system/webhook.service|host-local unit, not in the repo"
+      "$REPO_ROOT/shared/webhook/hooks.json|from shared/webhook/hooks.json.example, with the HMAC secret"
+      "/etc/unbound/unbound.conf.d/pi-hole.conf|wiki/Pi-hole-Unbound.md"
+      "/etc/systemd/system/pihole6-exporter.service|host-local unit, not in the repo"
+      "/etc/systemd/system/pihole6-exporter.service.d/override.conf|host-local drop-in (waits for the Pi-hole API), not in the repo"
+      "/etc/pihole6-exporter.env|from boreas/pihole6-exporter/pihole6-exporter.env.example"
+      "$HOME/pihole6_exporter_with_queries_time|exporter checkout the unit runs from, origin not documented"
+      "/etc/msmtprc|credentials, boreas/README.md"
+      "$HOME/.ssh/backup_key|key for backup-boreas.sh, boreas/README.md"
+      "/etc/system-update.conf|shared/README.md, system-update.sh"
+      "/var/log/system-update.log|shared/README.md, Installation"
+      "/etc/apticron/apticron.local.conf|recipients, wiki/Update-Notifications.md"
+      "/var/log/webhook-handler.log|written by gitea-webhook-handler.sh as the login user"
+      "/var/lib/node_exporter/textfile_collector|sudo mkdir -p /var/lib/node_exporter/textfile_collector"
+    )
+    GROUPS_NEEDED=(docker)
+    USER_CRON=(
+      "gitea-pull.sh|*/15 * * * * $HOME/bin/gitea-pull.sh"
+      "hc-ping.com|Healthchecks ping, URL in Healthchecks.io"
+    )
+    ROOT_CRON=(
+      "backup-boreas.sh|0 2 * * * /usr/local/bin/backup-boreas.sh"
+    )
+    ;;
   *)
-    echo "No host branch for '$HOST' in $0 yet (configured: hephaestus)." >&2
+    echo "No host branch for '$HOST' in $0 yet (configured: hephaestus, boreas)." >&2
     exit 2
     ;;
 esac
