@@ -11,7 +11,7 @@ set -euo pipefail
 mirror=$1
 upstream=$2
 plan_dir=$(cd "$3" && pwd)
-private=${MIRROR_PRIVATE_REPO:-$HOME/Projects/gitea/homelab-infra}
+private=${MIRROR_PRIVATE_REPO:-$HOME/Projects/Gitea/homelab-infra}
 sync=$private/scripts/sync_public.py
 ignore=$private/scripts/config/.publicignore
 

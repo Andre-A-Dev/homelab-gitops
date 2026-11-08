@@ -12,7 +12,7 @@ Your job: make sure nothing private or broken goes public, and turn the sync
 into commits that read like the private history.
 
 The private repo is at `$MIRROR_PRIVATE_REPO`, default
-`~/Projects/gitea/homelab-infra`; `preflight` prints the path it resolved.
+`~/Projects/Gitea/homelab-infra`; `preflight` prints the path it resolved.
 Below, `<private>` stands for that printed path: the variable is usually
 unset, so don't paste it into a command. Read its `CLAUDE.md`, `CLAUDE.local.md` and
 `.claude/rules/*.md` first: they hold the general rules (you never commit,

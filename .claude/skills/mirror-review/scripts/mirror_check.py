@@ -12,7 +12,7 @@ talks to the network (a GitHub fetch would open a passphrase dialog).
     mirror_check.py commits [--tree REF]
                                      unpushed commits: subject, files, modes
 
-Private repo: $MIRROR_PRIVATE_REPO, default ~/Projects/gitea/homelab-infra.
+Private repo: $MIRROR_PRIVATE_REPO, default ~/Projects/Gitea/homelab-infra.
 The leak patterns are the left-hand side of REPLACEMENTS in the private
 scripts/sync_public.py, imported at runtime, so no private value is written
 into this public file.
@@ -27,7 +27,7 @@ import sys
 from pathlib import Path
 
 PRIVATE = Path(os.environ.get("MIRROR_PRIVATE_REPO",
-                              "~/Projects/gitea/homelab-infra")).expanduser()
+                              "~/Projects/Gitea/homelab-infra")).expanduser()
 BINARY_EXT = {".png", ".jpg", ".jpeg", ".gif", ".ico", ".zip", ".tar", ".gz",
               ".db", ".sqlite", ".bin", ".pdf", ".ttf", ".woff", ".woff2"}
 # A placeholder followed by a prefix length only appears when the sanitizer
