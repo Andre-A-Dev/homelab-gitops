@@ -227,7 +227,7 @@ cd ~/stacks/<affected-stack> && docker compose up -d
 
 ### Pi configs (Boreas, Zephyros)
 
-Not in the restore menu - the target is another host. `pi-configs.tar.gz` holds the newest backup each Pi pushed to `/mnt/codex/backups/<host>/<date>/` (Pi-hole config incl. `gravity.db`, Unbound, msmtp, apticron, pihole6-exporter unit and env; Zephyros also its Caddy CA). Without the query log `pihole-FTL.db`.
+Not in the restore menu - the target is another host. `pi-configs.tar.gz` holds the newest backup each Pi pushed to `/mnt/codex/backups/<host>/<date>/` (Pi-hole config incl. `gravity.db`, Unbound, msmtp, apticron, pihole6-exporter unit, drop-in and env; Zephyros also its Caddy CA). Without the query log `pihole-FTL.db`.
 
 ```bash
 mkdir -p /tmp/pi && tar -xzf /mnt/backup/<YYYY-MM-DD>/pi-configs.tar.gz -C /tmp/pi

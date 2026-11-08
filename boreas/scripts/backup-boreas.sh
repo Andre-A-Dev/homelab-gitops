@@ -59,13 +59,15 @@ copy "Unbound" \
   /etc/unbound/unbound.conf.d/ \
   "$BACKUP_HOST:$DATE/unbound/"
 
-# pihole6-exporter: the unit is not in the repo and the env file holds the
-# Pi-hole API password - without both, the exporter has to be rebuilt by hand.
+# pihole6-exporter: the unit and its drop-in are not in the repo and the env
+# file holds the Pi-hole API password - without them, the exporter has to be
+# rebuilt by hand. No trailing slash: rsync copies the drop-in directory itself.
 copy "msmtp, apticron, pihole6-exporter" \
   /etc/msmtprc \
   /etc/apticron/apticron.conf \
   /etc/pihole6-exporter.env \
   /etc/systemd/system/pihole6-exporter.service \
+  /etc/systemd/system/pihole6-exporter.service.d \
   "$BACKUP_HOST:$DATE/misc/"
 
 if [ "$FAILED" -ne 0 ]; then

@@ -56,7 +56,7 @@ The systemd unit `/etc/systemd/system/pihole6-exporter.service` runs
 `metrics_exporter/pihole6_metrics_exporter.py` from that checkout and reads the
 env file; a drop-in `pihole6-exporter.service.d/override.conf` holds the start
 until the Pi-hole API answers. Both are host-local. `scripts/backup-boreas.sh`
-copies the unit and the env file to Mnemosyne. No webhook restarts the
+copies the unit, the drop-in and the env file to Mnemosyne. No webhook restarts the
 exporter: after changing the checkout or the unit, run
 `sudo systemctl daemon-reload && sudo systemctl restart pihole6-exporter`.
 
