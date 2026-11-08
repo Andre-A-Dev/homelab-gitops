@@ -120,6 +120,10 @@ A separate MariaDB or PostgreSQL instance for Gitea adds another service to main
 
 A Gitea Act Runner handles validation on every push. The runner runs on Mnemosyne in a Docker container with the Caddy root CA mounted so it can clone from `git.home`. Gitea Free does not support repository secrets — the clone token is passed via the runner's `.env` file. The existing webhook handler remains in charge of deployments; Actions is used exclusively for validation (YAML lint, Prometheus rule checks, Grafana JSON, shellcheck, `.env.example` completeness).
 
+**Servers pull with read-only deploy keys**
+
+Every server pulls `homelab-infra` over SSH with a deploy key without write access, never with a key on the user account. An account key can push to every repository of the account, and on the Pis a push is a deploy that no CI gates. A compromised server can read the repo, but cannot change what the other hosts run. Only the workstations, where changes are made, carry account keys.
+
 ---
 
 ## Secrets Management

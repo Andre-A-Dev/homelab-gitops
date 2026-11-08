@@ -337,7 +337,8 @@ docker cp caddy:/data/caddy/pki/authorities/local/root.crt ~/caddy-root.crt
 Configured hosts: Hephaestus, Boreas. Other hosts exit with code 2 until they get a host branch in the script.
 
 ```bash
-# Empty host: Gitea SSH key in place, then
+# Empty host: its SSH public key added in Gitea as a deploy key on
+# homelab-infra, write access off (never on the user account), then
 sudo apt install git
 git clone <gitea-url> ~/homelab-infra
 

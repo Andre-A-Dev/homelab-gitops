@@ -51,7 +51,7 @@ boot).
 
 | Role | Reference | What the role brings (verify against the gaps output) |
 |---|---|---|
-| Pi server | `hephaestus` (smallest) or `boreas` | repo checkout, webhook handler + 15-min `gitea-pull` cron, apticron symlink, `system-update` + `/etc/system-update.conf`, node exporter, `setup-claude-ro.sh`, `10-no-password.conf`, emergency key, place in `update-hosts.sh` order |
+| Pi server | `hephaestus` (smallest) or `boreas` | repo checkout via a read-only Gitea deploy key (never an account key), webhook handler + 15-min `gitea-pull` cron, apticron symlink, `system-update` + `/etc/system-update.conf`, node exporter, `setup-claude-ro.sh`, `10-no-password.conf`, emergency key, place in `update-hosts.sh` order |
 | Kubernetes node | `daidalos` | `daidalos/scripts/bootstrap.sh`, `daidalos/README.md`, `.claude/rules/kubernetes.md` |
 | CachyOS workstation | `Proteus` | RUNBOOK "Set Up Claude Code Read-Only SSH" (workstation part), Caddy root CA, claude-ro kubeconfig, node exporter target with `ephemeral: "true"`, rack display, dashboard |
 | Pi-based workstation | `Proteus` | like a workstation; monitoring is optional and set up by hand |
@@ -116,7 +116,8 @@ the hostname `case` of `shared/workstations/install.sh`.
    - Its admin key lines in `~/.ssh/authorized_keys` of `<user>` on every
      host, by key comment (pattern as in RUNBOOK "Emergency SSH Key"). Not
      checkable with `claude-ro`: the user verifies.
-   - Gitea and GitHub SSH keys and tokens of that machine; the Tailscale
+   - Gitea and GitHub SSH keys and tokens of that machine (servers: the
+     deploy key on `homelab-infra`; workstations: the account key); the Tailscale
      device (frees its IP, so no later device inherits a `from=` match).
    - The claude-ro kubeconfig token is shared by all workstations: rotate it
      (RUNBOOK "Kubernetes (Daidalos)") if the device leaves the household
