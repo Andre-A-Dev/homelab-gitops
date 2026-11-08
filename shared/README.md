@@ -82,7 +82,7 @@ Dispatches by hostname:
 |---|---|
 | Boreas | Pull only; every change under `boreas/` is manual |
 | Hephaestus | Restarts `vcontrold` if its service file changed |
-| Zephyros | Reloads Caddy if `Caddyfile` changed |
+| Zephyros | `caddy/` changed: validates the Caddyfile, then recreates Caddy; `monitoring/` changed: `docker compose up -d` |
 | Daidalos | Pull only (symlinked shared files); Kubernetes manifests go through Flux |
 
 Called by `adnanh/webhook` on port 9000. Logs to `/var/log/webhook-handler.log`.
