@@ -492,7 +492,19 @@ Shared part: `shared/workstations/dotfiles/claude/settings.json`, linked to `~/.
 
 Per workstation (not versioned): the vault folder Claude may read goes into the repo's `.claude/settings.local.json` as `additionalDirectories` (file tools) and `sandbox.filesystem.allowRead` (Bash), path in `CLAUDE.local.md`. The file must stay untracked (it is gitignored): a tracked one counts as repository settings, whose `additionalDirectories` the read block ignores.
 
-The sandbox applies to every project. A checkout that reads this repo through scripts (the public mirror: `sync_public.py`, `/mirror-review`) needs it in its own `.claude/settings.local.json` as `sandbox.filesystem.allowRead`, read-only on purpose: `additionalDirectories` would also let that session write here.
+The sandbox applies to every project. A checkout that reads this repo (the public mirror: `sync_public.py`, `/mirror-review`) needs it in its own gitignored `.claude/settings.local.json`, read-only:
+
+```json
+{
+  "permissions": {
+    "additionalDirectories": ["/home/<user>/Projects/Gitea/homelab-infra"],
+    "deny": ["Edit(//home/<user>/Projects/Gitea/homelab-infra/**)"]
+  },
+  "sandbox": { "filesystem": { "denyWrite": ["~/Projects/Gitea/homelab-infra"] } }
+}
+```
+
+`additionalDirectories` makes it readable for Bash and the file tools, but also writable, so the `Edit` rule blocks the file tools and `denyWrite` blocks every Bash process (`Read-only file system`), including interpreters whose write target the `Edit` rule can't see.
 
 Project and local settings only count in a trusted workspace. After cloning or moving the repo, run `claude` once in it and accept the trust dialog.
 
