@@ -33,15 +33,8 @@ echo "$CHANGED" | while read -r f; do log "  $f"; done
 case "$HOST" in
 
   boreas)
-    if echo "$CHANGED" | grep -q '^boreas/'; then
-        if echo "$CHANGED" | grep -q 'pihole6-exporter.service'; then
-            log "INFO: Reloading pihole6-exporter"
-            sudo systemctl daemon-reload
-            sudo systemctl restart pihole6-exporter \
-              && log "INFO: pihole6-exporter restarted" \
-              || log "ERROR: pihole6-exporter restart failed"
-        fi
-    fi
+    # Nothing to apply: the pihole6-exporter unit is host-local, not in the
+    # repo (boreas/README.md). Every change under boreas/ is a manual step.
     ;;
 
   hephaestus)

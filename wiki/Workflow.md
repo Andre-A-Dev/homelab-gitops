@@ -74,7 +74,7 @@ A Gitea repo webhook calls the listener on each Pi, which runs `shared/scripts/g
 | Host | After the pull |
 |---|---|
 | Zephyros | `zephyros/caddy/`: validates the Caddyfile in a one-off container, then `--force-recreate`. `zephyros/monitoring/`: `docker compose up -d`. |
-| Boreas | Restarts `pihole6-exporter` when its unit changed. Anything else is manual. |
+| Boreas | Pull only. Every change under `boreas/` is manual. |
 | Hephaestus | Restarts `vcontrold` when its unit changed. Anything else is manual. |
 | Daidalos | Pull only: its shared files are symlinks into the checkout. `clusters/daidalos/` is reconciled by Flux, independent of this webhook. |
 

@@ -14,7 +14,7 @@ and monitoring satellite. The name is tracked in Prometheus as `boreas`.
 | Caddy | Docker (standby) | 443 |
 
 Pi-hole and Unbound are installed natively — nothing in this directory manages
-them. This repo only tracks the exporters, Caddy config, and msmtp config.
+them. This repo only tracks the exporters and Caddy config.
 
 ## What is tracked here
 
@@ -41,7 +41,26 @@ cp pihole6-exporter/pihole6-exporter.env.example /etc/pihole6-exporter.env
 # fill in PIHOLE_HOST, PIHOLE_PASSWORD, PIHOLE_PORT
 ```
 
-The systemd unit (installed separately) reads this env file. Prometheus scrapes
+The exporter itself is third-party code and not in this repo: a checkout of
+[tarkilhk/pihole6_exporter_with_queries_time](https://github.com/tarkilhk/pihole6_exporter_with_queries_time)
+in `/home/<user>/pihole6_exporter_with_queries_time`, running commit `66e8da2`
+(2026-09-06). Its Python dependencies come from apt (`python3-prometheus-client`,
+`python3-requests`, `python3-psutil`; `shared/scripts/host-setup.sh` checks them).
+
+```bash
+git clone https://github.com/tarkilhk/pihole6_exporter_with_queries_time.git ~/pihole6_exporter_with_queries_time
+git -C ~/pihole6_exporter_with_queries_time checkout 66e8da2
+```
+
+The systemd unit `/etc/systemd/system/pihole6-exporter.service` runs
+`metrics_exporter/pihole6_metrics_exporter.py` from that checkout and reads the
+env file; a drop-in `pihole6-exporter.service.d/override.conf` holds the start
+until the Pi-hole API answers. Both are host-local. `scripts/backup-boreas.sh`
+copies the unit and the env file to Mnemosyne. No webhook restarts the
+exporter: after changing the checkout or the unit, run
+`sudo systemctl daemon-reload && sudo systemctl restart pihole6-exporter`.
+
+Prometheus scrapes
 `:9666` with a 30 s interval and 25 s timeout (set in Mnemosyne's
 `prometheus.yml`).
 
@@ -62,18 +81,13 @@ Prerequisites before activating (documented in the Caddyfile header):
 3. Enable Tailscale subnet router on Boreas (`192.168.1.0/24`)
 4. Change the remote FritzBox subnet to `192.168.179.0/24` to avoid collision
 
-### `msmtprc` — email relay
+### msmtp — email relay (host-local)
 
-msmtp config for outgoing mail from Pi-hole (alerts, weekly digests). Uses
-Gmail SMTP on port 587. The actual credentials live in `/etc/msmtprc` on the
-host (not committed).
-
-```bash
-# Deploy:
-sudo cp msmtprc /etc/msmtprc
-sudo chmod 600 /etc/msmtprc
-# Fill in the password field
-```
+msmtp sends outgoing mail from Pi-hole (alerts, weekly digests) and apticron
+via Gmail SMTP on port 587. `/etc/msmtprc` holds the credentials, so it is not
+in the repo (`.gitignore` excludes every `msmtprc`). Template and setup steps:
+`wiki/Update-Notifications.md`, section "msmtp -- SMTP relay".
+`scripts/backup-boreas.sh` copies `/etc/msmtprc` to Mnemosyne.
 
 ### `docker/daemon.json` — container log rotation
 

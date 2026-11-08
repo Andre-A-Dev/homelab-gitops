@@ -93,8 +93,8 @@ ssh <host>-ro 'journalctl -t gitea-pull --since "-1h" --no-pager -o short-iso'
   proves the pull. `ERROR:` lines in that block are findings.
 - `gitea-pull` errors before a later successful pull are transient (Gitea or
   Tailscale briefly unreachable): mention only if the latest attempt failed.
-- The handler acts only on: Boreas `pihole6-exporter.service`, Hephaestus
-  `vcontrold.service`, Zephyros `caddy/` (validated first) and `monitoring/`.
+- The handler acts only on: Hephaestus `vcontrold.service`, Zephyros
+  `caddy/` (validated first) and `monitoring/`. Boreas is pull only.
   Every other changed file on these hosts is a manual step; name it.
 - Zephyros containers: `ssh zephyros-ro 'sudo -n docker ps --format "{{.Names}}\t{{.Status}}"'`.
 - `claude-ro` cannot read the repo checkout on these hosts.

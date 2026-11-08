@@ -80,7 +80,7 @@ Dispatches by hostname:
 
 | Host | Action |
 |---|---|
-| Boreas | Restarts `pihole6-exporter` if its service file changed |
+| Boreas | Pull only; every change under `boreas/` is manual |
 | Hephaestus | Restarts `vcontrold` if its service file changed |
 | Zephyros | Reloads Caddy if `Caddyfile` changed |
 | Daidalos | Pull only (symlinked shared files); Kubernetes manifests go through Flux |

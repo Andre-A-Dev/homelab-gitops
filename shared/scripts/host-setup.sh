@@ -129,6 +129,7 @@ case "$HOST" in
       apticron msmtp msmtp-mta         # wiki/Update-Notifications.md; msmtp also mails for Pi-hole
       unbound                          # wiki/Pi-hole-Unbound.md
       rsync openssh-client             # backup-boreas.sh
+      python3-prometheus-client python3-requests python3-psutil # pihole6-exporter
     )
     LINKS=(
       "shared/scripts/system-update.sh|/usr/local/bin/system-update"
@@ -160,7 +161,7 @@ case "$HOST" in
       "/etc/systemd/system/pihole6-exporter.service|host-local unit, not in the repo"
       "/etc/systemd/system/pihole6-exporter.service.d/override.conf|host-local drop-in (waits for the Pi-hole API), not in the repo"
       "/etc/pihole6-exporter.env|from boreas/pihole6-exporter/pihole6-exporter.env.example"
-      "$HOME/pihole6_exporter_with_queries_time|exporter checkout the unit runs from, origin not documented"
+      "$HOME/pihole6_exporter_with_queries_time|exporter checkout the unit runs from, boreas/README.md"
       "/etc/msmtprc|credentials, boreas/README.md"
       "$HOME/.ssh/backup_key|key for backup-boreas.sh, boreas/README.md"
       "/etc/system-update.conf|shared/README.md, system-update.sh"
