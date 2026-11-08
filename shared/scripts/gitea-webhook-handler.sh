@@ -13,9 +13,19 @@ log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') [$HOST] $*" | tee -a "$LOG_FILE"
 }
 
-log "INFO: Webhook received — starting pull"
+# No argument: called by the webhook. "cron": called by gitea-pull.sh.
+if [ "${1:-}" = "cron" ]; then
+    log "INFO: Cron fallback — starting pull"
+else
+    log "INFO: Webhook received — starting pull"
+fi
 
 cd "$REPO_DIR"
+
+# Webhook and cron fallback can fire at the same time: serialize them, so a
+# change is pulled and applied once.
+exec 9> "$REPO_DIR/.git/webhook-handler.lock"
+flock 9
 
 BEFORE=$(git rev-parse HEAD)
 git pull --rebase >> "$LOG_FILE" 2>&1

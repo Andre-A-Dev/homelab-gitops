@@ -90,7 +90,9 @@ ssh <host>-ro 'journalctl -t gitea-pull --since "-1h" --no-pager -o short-iso'
 ```
 
 - The last webhook block lists the changed files of the push: their presence
-  proves the pull. `ERROR:` lines in that block are findings.
+  proves the pull. `ERROR:` lines in that block are findings. A
+  `Cron fallback` block instead means the webhook missed the push and the
+  15-minute cron pulled and applied it.
 - `gitea-pull` errors before a later successful pull are transient (Gitea or
   Tailscale briefly unreachable): mention only if the latest attempt failed.
 - The handler acts only on: Hephaestus `vcontrold.service`, Zephyros

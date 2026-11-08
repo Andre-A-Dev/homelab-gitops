@@ -85,7 +85,9 @@ Dispatches by hostname:
 | Zephyros | `caddy/` changed: validates the Caddyfile, then recreates Caddy; `monitoring/` changed: `docker compose up -d` |
 | Daidalos | Pull only (symlinked shared files); Kubernetes manifests go through Flux |
 
-Called by `adnanh/webhook` on port 9000. Logs to `/var/log/webhook-handler.log`.
+Called by `adnanh/webhook` on port 9000, and by `gitea-pull.sh` (argument
+`cron`) when cron finds commits the webhook missed. Logs to
+`/var/log/webhook-handler.log`.
 
 > Mnemosyne uses its own handler at `mnemosyne/scripts/gitea-webhook-handler.sh`.
 
@@ -93,12 +95,16 @@ Called by `adnanh/webhook` on port 9000. Logs to `/var/log/webhook-handler.log`.
 
 ## gitea-pull.sh
 
-Pulls the latest `homelab-infra` changes from Gitea via `git pull --rebase`.
-Runs unattended via cron on Boreas, Hephaestus, and Zephyros as a fallback
-alongside the webhook handler, and on Daidalos for the same reason.
+Cron fallback for the webhook (every 15 minutes) on Boreas, Hephaestus,
+Zephyros and Daidalos, for pushes whose webhook did not arrive (host
+offline, Tailscale down). Runs `git fetch`; when upstream has new commits it
+runs `gitea-webhook-handler.sh cron`, so a change pulled by cron is applied
+like one pulled by the webhook. A `flock` in the handler keeps a webhook and
+a cron run from applying the same change twice.
 
-Logs to syslog (`logger`) — only on error or actual changes, silent on
-"Already up to date".
+Logs to syslog (`logger`, tag `gitea-pull`) — only on error or when it ran the
+handler, silent when up to date. The handler's own lines go to
+`/var/log/webhook-handler.log` as a `Cron fallback` block.
 
 ---
 

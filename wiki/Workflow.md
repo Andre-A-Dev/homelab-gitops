@@ -69,7 +69,7 @@ journalctl -u webhook --since today | grep result=
 
 ## Boreas, Hephaestus, Zephyros
 
-A Gitea repo webhook calls the listener on each Pi, which runs `shared/scripts/gitea-webhook-handler.sh`. A cron job (`gitea-pull.sh`, every 15 minutes) pulls as a fallback. These hosts are not gated by CI.
+A Gitea repo webhook calls the listener on each Pi, which runs `shared/scripts/gitea-webhook-handler.sh`. A cron job (`gitea-pull.sh`, every 15 minutes) is the fallback: when upstream has commits the webhook missed, it runs the same handler, so they are applied too. These hosts are not gated by CI.
 
 | Host | After the pull |
 |---|---|
