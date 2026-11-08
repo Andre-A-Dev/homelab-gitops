@@ -33,8 +33,9 @@ echo "$CHANGED" | while read -r f; do log "  $f"; done
 case "$HOST" in
 
   boreas)
-    # Nothing to apply: the pihole6-exporter unit is host-local, not in the
-    # repo (boreas/README.md). Every change under boreas/ is a manual step.
+    # Nothing to apply: the pihole6-exporter unit is host-local and its
+    # drop-in (boreas/systemd/) is copied by hand (boreas/README.md). Every
+    # change under boreas/ is a manual step.
     ;;
 
   hephaestus)

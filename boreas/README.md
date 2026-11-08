@@ -54,11 +54,24 @@ git -C ~/pihole6_exporter_with_queries_time checkout 66e8da2
 
 The systemd unit `/etc/systemd/system/pihole6-exporter.service` runs
 `metrics_exporter/pihole6_metrics_exporter.py` from that checkout and reads the
-env file; a drop-in `pihole6-exporter.service.d/override.conf` holds the start
-until the Pi-hole API answers. Both are host-local. `scripts/backup-boreas.sh`
-copies the unit, the drop-in and the env file to Mnemosyne. No webhook restarts the
-exporter: after changing the checkout or the unit, run
-`sudo systemctl daemon-reload && sudo systemctl restart pihole6-exporter`.
+env file. It is host-local: `User=` and `WorkingDirectory=` name the login
+user. Its drop-in is tracked in
+`systemd/pihole6-exporter.service.d/override.conf`: it starts the exporter
+only after `pihole-FTL` and holds the start until the Pi-hole API answers, so
+the exporter does not log in too early and stay on 401.
+`shared/scripts/host-setup.sh` compares the deployed copy with the repo.
+`scripts/backup-boreas.sh` copies the unit, the drop-in and the env file to
+Mnemosyne.
+
+No webhook deploys or restarts any of it. After changing the drop-in:
+
+```bash
+sudo mkdir -p /etc/systemd/system/pihole6-exporter.service.d
+sudo cp systemd/pihole6-exporter.service.d/override.conf /etc/systemd/system/pihole6-exporter.service.d/
+sudo systemctl daemon-reload && sudo systemctl restart pihole6-exporter
+```
+
+After changing the checkout or the unit, only the last line.
 
 Prometheus scrapes
 `:9666` with a 30 s interval and 25 s timeout (set in Mnemosyne's

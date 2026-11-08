@@ -25,7 +25,9 @@ sudo cp /etc/pihole/pihole.toml "$BACKUP_DIR/pihole/" 2>> $LOG
 echo "Saving: Unbound..." >> $LOG
 sudo cp /etc/unbound/unbound.conf.d/pi-hole.conf "$BACKUP_DIR/unbound/" 2>> $LOG
 
-# Misc (msmtp, apticron, pihole6-exporter unit + drop-in + env with the Pi-hole API password)
+# Misc (msmtp, apticron, pihole6-exporter unit + drop-in + env with the Pi-hole API password).
+# The drop-in is in the repo (zephyros/systemd/) but deployed as a copy, so the
+# backup keeps what actually runs.
 echo "Saving: Misc..." >> $LOG
 sudo cp /etc/msmtprc "$BACKUP_DIR/misc/" 2>> $LOG
 # apticron.conf is a link into the repo; only the recipients are host-local

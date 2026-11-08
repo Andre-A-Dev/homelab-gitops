@@ -78,18 +78,21 @@ non-default settings:
 
 To update: copy the live file from the host and commit it as a reference snapshot.
 
-### pihole6-exporter (host-local, not tracked)
+### `systemd/` — pihole6-exporter drop-in
 
-Same setup as on Boreas (`boreas/README.md`, section `pihole6-exporter/`):
-the third-party checkout `tarkilhk/pihole6_exporter_with_queries_time` at
-commit `66e8da2` in `/home/<user>/pihole6_exporter_with_queries_time`, Python
-dependencies from apt (`python3-prometheus-client`, `python3-requests`,
-`python3-psutil`), a host-local unit with drop-in, and `/etc/pihole6-exporter.env`
-from `boreas/pihole6-exporter/pihole6-exporter.env.example`.
+Same exporter setup as on Boreas (`boreas/README.md`, section
+`pihole6-exporter/`): the third-party checkout
+`tarkilhk/pihole6_exporter_with_queries_time` at commit `66e8da2` in
+`/home/<user>/pihole6_exporter_with_queries_time`, Python dependencies from
+apt (`python3-prometheus-client`, `python3-requests`, `python3-psutil`), a
+host-local unit, and `/etc/pihole6-exporter.env` from
+`boreas/pihole6-exporter/pihole6-exporter.env.example`.
 
-One difference: the Pi-hole API answers on `http://localhost:8081` here, since
-Caddy holds port 80. The env file's `PIHOLE_HOST` and the drop-in's
-`ExecStartPre` check both point there.
+The drop-in is tracked in `systemd/pihole6-exporter.service.d/override.conf`
+and deployed by hand, the same way as on Boreas (nothing here checks the
+deployed copy against the repo). One difference: the Pi-hole API answers on
+`http://localhost:8081` here, since Caddy holds port 80. The env file's
+`PIHOLE_HOST` and the drop-in's `ExecStartPre` check both point there.
 
 ### `scripts/backup-zephyros.sh`
 

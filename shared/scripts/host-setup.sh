@@ -141,6 +141,7 @@ case "$HOST" in
     )
     COPIES=(
       "boreas/docker/daemon.json|/etc/docker/daemon.json"
+      "boreas/systemd/pihole6-exporter.service.d/override.conf|/etc/systemd/system/pihole6-exporter.service.d/override.conf"
     )
     EXECUTABLES=(
       "/usr/local/bin/pihole|Pi-hole installer, then restore its config, wiki/Pi-hole-Unbound.md"
@@ -159,7 +160,6 @@ case "$HOST" in
       "$REPO_ROOT/shared/webhook/hooks.json|from shared/webhook/hooks.json.example, with the HMAC secret"
       "/etc/unbound/unbound.conf.d/pi-hole.conf|wiki/Pi-hole-Unbound.md"
       "/etc/systemd/system/pihole6-exporter.service|host-local unit, not in the repo"
-      "/etc/systemd/system/pihole6-exporter.service.d/override.conf|host-local drop-in (waits for the Pi-hole API), not in the repo"
       "/etc/pihole6-exporter.env|from boreas/pihole6-exporter/pihole6-exporter.env.example"
       "$HOME/pihole6_exporter_with_queries_time|exporter checkout the unit runs from, boreas/README.md"
       "/etc/msmtprc|credentials, boreas/README.md"
