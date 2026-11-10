@@ -181,7 +181,10 @@ Clones the `pump_alerts` Gitea repo (fresh shallow clone into a temp dir per
 run), validates the alert rules with `promtool check rules` inside the
 running Prometheus container, then deploys and hot-reloads Prometheus only if
 validation passes. Triggered by a Gitea webhook — not run manually. Output
-goes to `journalctl -u webhook`.
+goes to `journalctl -u webhook`. The webhook answers Gitea before the script
+runs, so a failed step (clone, copy, validation, reload) also posts to the
+pump warning ntfy topic (`NTFY_PUMP_WARNING`): it is the household's only
+sign that a push to `pump_alerts` did not take effect.
 
 Reads `PUMP_GITEA_TOKEN` (Gitea access token, scope `read:repository`) from
 `~/stacks/monitoring/.env`. The key is not in that stack's `.env.example`:
