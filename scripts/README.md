@@ -15,6 +15,7 @@ into `~/.local/bin` as `sync-public` and `audit-repo`.
 | `export_public.py` | Python | Export a sanitized public copy of the repo |
 | `audit_repo.py` | Python | Scan repo for secrets before publishing |
 | `update-hosts.sh` | Bash | Guided `system-update` run over all servers, with a Markdown report |
+| `ci/` | Python, sh | CI checks (`check_configs.py`, `check_env_drift.py`) and the ntfy notifier, run by the Gitea and the GitHub CI; runnable locally |
 
 ---
 

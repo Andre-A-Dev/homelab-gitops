@@ -6,112 +6,53 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
+    # The checks are the same scripts the private Gitea CI runs before every
+    # deploy (scripts/ci/). This file used to carry its own inline copies; they
+    # drifted, and a `find | while` loop set its failure flag in a subshell, so
+    # broken dashboards, .env.example drift and shellcheck findings all passed.
+    #
+    # Not run here: promtool/amtool (the Gitea CI copies them out of the images
+    # running on the host) and the executable-bit and stderr checks.
+    #
+    # Every check runs even if an earlier one failed (`!cancelled()`), and
+    # any failed step fails the job.
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Install tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq jq shellcheck python3 python3-yaml curl
+          sudo apt-get install -y -qq shellcheck python3-yaml
 
-      - name: Validate Docker Compose files
-        run: |
-          FAILED=0
-          find mnemosyne/stacks -name "docker-compose.yml" | while read f; do
-            echo "Checking: $f"
-            python3 - "$f" << 'PY'
-          import yaml, sys
-          try:
-              yaml.safe_load(open(sys.argv[1]))
-              print("  ✓", sys.argv[1])
-          except yaml.YAMLError as e:
-              print("  ✗", sys.argv[1], str(e))
-              sys.exit(1)
-          PY
-            [ $? -eq 0 ] || FAILED=1
-          done
-          [ "$FAILED" = "0" ] || exit 1
+      - name: Validate compose, alert rules and dashboards
+        if: ${{ !cancelled() }}
+        run: python3 scripts/ci/check_configs.py
 
-      - name: Validate Prometheus alert rules
-        run: |
-          FAILED=0
-          find mnemosyne/stacks/monitoring -name "*.yml" \
-            | xargs grep -l "^groups:" 2>/dev/null \
-            | while read f; do
-              echo "Checking: $f"
-              python3 - "$f" << 'PY'
-          import yaml, sys
-          try:
-              data = yaml.safe_load(open(sys.argv[1]))
-              assert "groups" in data, "missing top-level groups key"
-              for g in data["groups"]:
-                  assert "name" in g, f"group missing name: {g}"
-                  assert "rules" in g, f"group missing rules: {g}"
-              print("  ✓", sys.argv[1])
-          except Exception as e:
-              print("  ✗", sys.argv[1], str(e))
-              sys.exit(1)
-          PY
-              [ $? -eq 0 ] || FAILED=1
-            done
-          [ "$FAILED" = "0" ] || exit 1
-
-      - name: Validate Grafana dashboard JSON
-        run: |
-          FAILED=0
-          find mnemosyne/stacks/monitoring/grafana/dashboards -name "*.json" 2>/dev/null \
-            | while read f; do
-              echo "Checking: $f"
-              jq empty "$f" && echo "  ✓ $f" || { echo "  ✗ $f"; FAILED=1; }
-            done
-          [ "$FAILED" = "0" ] || exit 1
-
-      - name: Validate .env.example completeness
-        run: |
-          FAILED=0
-          find mnemosyne/stacks -name "docker-compose.yml" | while read compose; do
-            stack_dir=$(dirname "$compose")
-            env_example="$stack_dir/.env.example"
-            [ -f "$env_example" ] || continue
-            vars=$(sed -nE 's/.*\$\{?([A-Z_][A-Z0-9_]*)\}?.*/\1/p' "$compose" | sort -u)
-            missing=""
-            for var in $vars; do
-              case "$var" in
-                PWD|HOME|USER|HOSTNAME|PATH|COMPOSE_PROJECT_NAME) continue ;;
-              esac
-              grep -q "^${var}=" "$env_example" || missing="$missing $var"
-            done
-            if [ -n "$missing" ]; then
-              echo "  ✗ $stack_dir — missing in .env.example:$missing"
-              FAILED=1
-            else
-              echo "  ✓ $stack_dir"
-            fi
-          done
-          [ "$FAILED" = "0" ] || exit 1
+      - name: Check env drift
+        if: ${{ !cancelled() }}
+        run: python3 scripts/ci/check_env_drift.py
 
       - name: Lint shell scripts
+        if: ${{ !cancelled() }}
         run: |
-          FAILED=0
-          find mnemosyne/scripts -name "*.sh" | while read f; do
-            echo "Checking: $f"
-            shellcheck "$f" && echo "  ✓ $f" || { echo "  ✗ $f"; FAILED=1; }
-          done
-          [ "$FAILED" = "0" ] || exit 1
+          # xargs exits 123 if any shellcheck run failed; that fails the step.
+          find . -name '*.sh' -not -path './.git/*' -print0 \
+            | xargs -0 -r shellcheck --severity=warning --external-sources --color=never
+          shellcheck --severity=warning --color=never shared/apticron/apticron.conf
 
       - name: Notify on failure
         if: failure()
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_VALIDATE_TOPIC }}
-        run: |
-          curl -s \
-            -H "Title: Homelab CI failed" \
-            -H "Priority: high" \
-            -H "Tags: warning" \
-            -d "Branch: ${GITHUB_REF_NAME} — Commit: ${GITHUB_SHA:0:7}" \
-            "https://ntfy.sh/${NTFY_TOPIC}"
+        run: ./scripts/ci/notify.sh failure "Homelab CI failed"

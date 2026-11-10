@@ -79,9 +79,10 @@ print. Read-only `GET`s for verification are fine.
 - `shared/compose-profiles.yml` — profile vocabulary and per-host activation
 - `shared/apticron/apticron.conf` — symlinked to `/etc/apticron/apticron.conf`
   on all Pis; recipients stay host-local in `/etc/apticron/apticron.local.conf`
-- `.gitea/workflows/` — CI (validation, env drift, linting)
-- `.gitea/scripts/` — the CI check scripts (`check_configs.py`,
-  `check_env_drift.py`), runnable locally
+- `.gitea/workflows/` — CI (validation, env drift, linting, deploy)
+- `.github/workflows/` — CI of the public mirror, same check scripts
+- `scripts/ci/` — the CI check scripts (`check_configs.py`,
+  `check_env_drift.py`, `notify.sh`), shared by both CIs, runnable locally
 - `scripts/` — repo tooling, including the public-mirror tooling; paths kept
   out of the mirror are listed in `scripts/config/.publicignore`
 - `wiki/` (synced to the Gitea wiki on push), `RUNBOOK.md`, `SERVICES.md`,
@@ -255,8 +256,8 @@ checks you can run yourself. "Done" means verified, not written.
 
 **Before proposing a commit (static, local):**
 
-- CI checks, always: `python3 .gitea/scripts/check_configs.py` (compose,
-  alert rules, dashboards) and `python3 .gitea/scripts/check_env_drift.py`
+- CI checks, always: `python3 scripts/ci/check_configs.py` (compose,
+  alert rules, dashboards) and `python3 scripts/ci/check_env_drift.py`
 - Compose: `docker compose -f <file> config --quiet`
 - Shell: `shellcheck <script>`; run it with `--help` or a dry-run flag if it
   has one

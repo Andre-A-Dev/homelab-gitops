@@ -25,7 +25,7 @@
 # YAML pitfall: never name a profile on/off/yes/no/true/false/y/n - PyYAML
 # reads those as booleans. CI rejects them.
 #
-# Read by: .gitea/scripts/check_configs.py, mnemosyne/scripts/drift_check.py
+# Read by: scripts/ci/check_configs.py, mnemosyne/scripts/drift_check.py
 # =============================================================================
 
 profiles:

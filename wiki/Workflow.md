@@ -100,13 +100,15 @@ Runs on every push to `main` and on pull requests. `deploy` runs for pushes only
 Every check runs with `continue-on-error`, so one failing area cannot hide the others; the `Collect results` step fails the job. Both scripts run locally before pushing:
 
 ```bash
-python3 .gitea/scripts/check_configs.py
-python3 .gitea/scripts/check_env_drift.py
+python3 scripts/ci/check_configs.py
+python3 scripts/ci/check_env_drift.py
 ```
+
+The public GitHub mirror runs the same two scripts plus shellcheck in `.github/workflows/validate.yml`; promcheck, the executable-bit and the stderr check run only in the Gitea CI.
 
 ### Env drift check
 
-Part of the `validate` job since 2026-10-23 (before that its own workflow, `env-drift.yml`, which ran beside validation and never blocked a deploy). It compares each stack's `.env.example` against the variables referenced in `docker-compose.yml`:
+Part of the `validate` job since 2026-10-23 (before that its own workflow, `env-drift.yml`, which ran beside validation and never blocked a deploy). It compares each stack's `.env.example` against the variables referenced in `docker-compose.yml`, for every compose stack in the repo (until 2026-11 only `mnemosyne/stacks/`):
 
 - **missing keys** -- referenced in compose but not documented in `.env.example`
 - **dead keys** -- documented in `.env.example` but not referenced in compose (skipped for stacks using `env_file:`)

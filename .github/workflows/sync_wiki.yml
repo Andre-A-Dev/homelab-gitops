@@ -10,6 +10,11 @@ on:
       - SERVICES.md
   workflow_dispatch:    # allows manual trigger from GitHub Actions UI
 
+# Two quick pushes would otherwise race on `git push` to the wiki repo.
+concurrency:
+  group: sync-wiki
+  cancel-in-progress: false
+
 jobs:
   sync:
     runs-on: ubuntu-latest
