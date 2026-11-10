@@ -994,6 +994,8 @@ sudo rm -f /mnt/codex/gitea/runner/.runner
 docker compose up -d
 docker compose logs -f --tail 20
 # Watch for: "runner registered successfully"
+# Registration writes .runner (the runner's credential) as 644
+sudo chmod 600 /mnt/codex/gitea/runner/.runner
 ```
 
 ### Re-run a failed workflow
