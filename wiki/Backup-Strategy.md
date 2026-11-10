@@ -42,7 +42,7 @@ Copy 2 does not survive fire, theft or a power surge at the Pi. Only copy 3 does
 
 **Databases are dumped, never tarred live.** Running `tar` on a live database directory produces corrupt backups. Nextcloud runs in maintenance mode during its dump, with a `trap ... EXIT` so maintenance mode is always disabled even if the script crashes. Photo and video data is archived uncompressed (`.tar`) -- it does not benefit from gzip.
 
-**Deliberately not backed up** (`DRIFT_IGNORE` in the script): Prometheus TSDB, Loki, Alloy state, Alertmanager state and Carousel job artefacts -- all regenerable. **Wakapi** (SQLite with coding statistics) is a deliberately accepted loss (decided 2026-08-30).
+**Deliberately not backed up** (`DRIFT_IGNORE` in the script): Prometheus TSDB, Loki, Alloy state, Alertmanager state, Carousel job artefacts and the deployed pump rules (`/mnt/codex/prometheus-rules`, rendered from the `pump_alerts` repo) -- all regenerable. **Wakapi** (SQLite with coding statistics) is a deliberately accepted loss (decided 2026-08-30).
 
 Database passwords are not stored in the script. It reads them from the stacks' `.env` files at run time.
 

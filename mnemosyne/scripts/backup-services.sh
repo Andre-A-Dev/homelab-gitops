@@ -83,6 +83,9 @@ DRIFT_IGNORE=(
                                # section below for the full reasoning
   "/mnt/codex/loki"            # log storage; regenerates as logs come in
   "/mnt/codex/alloy"           # collector state; rebuilt on start
+  "/mnt/codex/prometheus-rules" # pump rules rendered from the pump_alerts
+                               # Gitea repo (covered by the gitea backup);
+                               # restore by running pump-alerts-deploy.sh
   "/mnt/codex/alertmanager"    # silences and notification state; rebuilt from
                                # the config, and a lost silence expires anyway
   "/mnt/codex/carousel/jobs"   # regenerable job artefacts
