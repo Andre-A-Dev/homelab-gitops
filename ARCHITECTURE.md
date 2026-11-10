@@ -179,7 +179,7 @@ A custom Python exporter (`prusa-exporter`) polls the Prusa MK4S (Pygmalion) via
 
 **Alertmanager**
 
-Prometheus routes firing alerts to Alertmanager (`alertmanager.home`, port `9093`), which forwards them to ntfy topics. Separate topics are configured per severity (critical / warning) and per alert group (Mnemosyne infrastructure, Viessmann heating pump). Alertmanager runs in the same `monitoring` stack as Prometheus; its configuration is templated at startup so ntfy topic names stay out of the committed file.
+Prometheus routes firing alerts to Alertmanager (`alertmanager.home`, port `9093`), which forwards them to ntfy topics. Separate topics are configured per severity (critical / warning) and per alert group (Mnemosyne infrastructure, cellar drainage pump, household appliances). Alertmanager runs in the same `monitoring` stack as Prometheus; its configuration is templated at startup so ntfy topic names stay out of the committed file.
 
 **Scrape topology**
 

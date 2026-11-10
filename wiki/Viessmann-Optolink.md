@@ -194,7 +194,7 @@ Cronjob (every minute):
 
 Prometheus scrapes Node Exporter on Hephaestus at 60s intervals -- matching the ~30s exporter runtime with a safety margin.
 
-Alert rules for the heating circuit pump (`pump-alerts.yml` in the monitoring stack) fire when `getPumpeStatusM1` reports the pump as inactive during heating mode. Alerts route through Alertmanager to a dedicated ntfy topic separate from general infrastructure alerts.
+The heating circuit pump has no alert rules: `getPumpeStatusM1` is exported as `viessmann_pump_heating_active` and only charted in the heating dashboard. `pump-alerts.yml` belongs to the cellar drainage pump on a Shelly plug, see [[Monitoring]].
 
 ---
 
