@@ -10,7 +10,6 @@ GITEA_TOKEN=$(grep PUMP_GITEA_TOKEN "$ENV_FILE" | cut -d= -f2)
 NTFY_TOPIC=$(grep '^NTFY_PUMP_WARNING=' "$ENV_FILE" | cut -d= -f2)
 REPO_URL="https://git.home/<user>/pump_alerts"
 OUTFILE="/home/<user>/stacks/monitoring/prometheus/pump-alerts.yml"
-TMPFILE="/tmp/pump-alerts-check.yml"
 
 # Fresh shallow clone per run: no stale checkout to deploy from when a pull
 # fails, and nothing left on disk afterwards.
@@ -46,8 +45,8 @@ fi
 
 # Validate before deploying — copy to temp location inside Prometheus container.
 # A failed docker cp would leave the previous run's file there for promtool.
-cp "$REPO_DIR/alerts.yml" "$TMPFILE"
-if ! docker cp "$TMPFILE" prometheus:/tmp/pump-alerts-check.yml 2>&1; then
+# Copied straight from the mktemp clone: no fixed, predictable path on the host.
+if ! docker cp "$REPO_DIR/alerts.yml" prometheus:/tmp/pump-alerts-check.yml 2>&1; then
     fail "DOCKER CP FAILED — aborting deploy, keeping current pump-alerts.yml" \
          "The home server could not check the new alerts.yml. Please tell the person who looks after the home server."
 fi
