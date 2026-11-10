@@ -135,7 +135,7 @@ The runner runs in host mode (labels `mnemosyne:host`, `docker:host`, `arm64:hos
 cd ~/stacks/gitea-runner
 docker compose down
 sudo rm -f /mnt/codex/gitea/runner/.runner
-# Generate a new token: Gitea → Site Administration → Runners → Create Runner
+# Generate a new token: Homelab_Infra → Settings → Actions → Runners → Create Runner
 nano ~/stacks/gitea-runner/.env
 docker compose up -d
 docker logs gitea-act-runner -f
@@ -143,6 +143,8 @@ docker logs gitea-act-runner -f
 ```
 
 The registration token is single-use. After the first start the runner stores its auth state in `.runner`. If that file is deleted, a new token must be generated.
+
+Take the token from the repository settings, never from Site Administration. The token fixes the runner's scope: a site-wide token registers a *Global* runner that picks up jobs from every repository on the instance. With host mode and the Docker socket, that gives anyone who can push a workflow to any repository root on Mnemosyne. Gitea → Site Administration → Runners must list it as type *Repository*. A new token alone changes nothing while `.runner` exists: the runner keeps its old registration.
 
 ---
 

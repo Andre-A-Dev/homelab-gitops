@@ -986,7 +986,11 @@ docker compose logs -f --tail 30
 ```bash
 cd ~/stacks/gitea-runner
 docker compose down
-# Update GITEA_RUNNER_REGISTRATION_TOKEN in .env
+# Without this the runner keeps its old registration and ignores the token
+sudo rm -f /mnt/codex/gitea/runner/.runner
+# Update GITEA_RUNNER_REGISTRATION_TOKEN in .env with a token from
+# Homelab_Infra → Settings → Actions → Runners, never from Site Administration
+# (repository scope, see wiki/Workflow.md "Re-register the runner")
 docker compose up -d
 docker compose logs -f --tail 20
 # Watch for: "runner registered successfully"
