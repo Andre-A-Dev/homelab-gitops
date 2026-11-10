@@ -117,6 +117,10 @@ receivers:
     webhook_configs:
       - url: 'https://hc-ping.com/HC_MNEMOSYNE_UUID'
         send_resolved: false
+      # Separate check for the household: notifies the pump topic under a
+      # name they understand, so a dead Prometheus does not mean silence.
+      - url: 'https://hc-ping.com/HC_PUMP_UUID'
+        send_resolved: false
 
   - name: pump-critical
     webhook_configs:

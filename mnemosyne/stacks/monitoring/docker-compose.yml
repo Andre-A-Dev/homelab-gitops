@@ -56,6 +56,7 @@ services:
       - /mnt/codex/alertmanager:/alertmanager
     environment:
       - HC_MNEMOSYNE=${HC_MNEMOSYNE:?HC_MNEMOSYNE missing in .env}
+      - HC_PUMP=${HC_PUMP:?HC_PUMP missing in .env}
       - NTFY_PUMP_CRITICAL=${NTFY_PUMP_CRITICAL}
       - NTFY_PUMP_WARNING=${NTFY_PUMP_WARNING}
       - NTFY_MNEMOSYNE_CRITICAL=${NTFY_MNEMOSYNE_CRITICAL}
@@ -67,6 +68,7 @@ services:
       - |
         sed \
           -e "s|HC_MNEMOSYNE_UUID|${HC_MNEMOSYNE}|g" \
+          -e "s|HC_PUMP_UUID|${HC_PUMP}|g" \
           -e "s|NTFY_PUMP_CRITICAL_TOPIC|${NTFY_PUMP_CRITICAL}|g" \
           -e "s|NTFY_PUMP_WARNING_TOPIC|${NTFY_PUMP_WARNING}|g" \
           -e "s|NTFY_MNEMOSYNE_CRITICAL_TOPIC|${NTFY_MNEMOSYNE_CRITICAL}|g" \
