@@ -19,7 +19,10 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
-      - ./prometheus/pump-alerts.yml:/etc/prometheus/pump-alerts.yml:ro
+      # Rules deployed from outside this repo (pump-alerts-deploy.sh). Directory
+      # mount: a missing file leaves Prometheus running without those rules
+      # instead of Docker creating a directory and Prometheus failing to start.
+      - /mnt/codex/prometheus-rules:/etc/prometheus/external:ro
       - ./prometheus/appliance-alerts.yml:/etc/prometheus/appliance-alerts.yml:ro
       - ./prometheus/backup-alerts.yml:/etc/prometheus/backup-alerts.yml
       - /mnt/codex/prometheus:/prometheus

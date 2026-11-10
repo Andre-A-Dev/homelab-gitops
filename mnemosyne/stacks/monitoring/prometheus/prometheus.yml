@@ -9,7 +9,7 @@ alerting:
 
 rule_files:
 - "alerts.yml"
-- "pump-alerts.yml"
+- "external/*.yml"
 - "appliance-alerts.yml"
 - "backup-alerts.yml"
 

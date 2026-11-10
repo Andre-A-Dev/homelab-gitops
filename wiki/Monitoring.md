@@ -209,13 +209,17 @@ The script fetches all dashboards via the Grafana API (reads `GF_SECURITY_ADMIN_
 ### Pump alerts (`pump-alerts.yml`)
 
 Monitors the cellar drainage pump via a Shelly smart plug (`device="Pumpe-Keller"`).
+The rules live in the separate `pump_alerts` repo and are deployed by
+`pump-alerts-deploy.sh` to `/mnt/codex/prometheus-rules/` (loaded as
+`external/*.yml`), not from this repo. State on 2026-11-08:
 
 | Alert | Condition | Severity |
 |---|---|---|
 | `PumpBlocked` | Power draw > 350 W for 5 min | critical |
-| `PumpInactive` | Power draw < 1 W for 2 h | warning |
+| `PumpSwitchedOff` | Plug switched off for 5 min | critical |
 | `PumpPlugOffline` | Shelly device unreachable for 5 min | critical |
-| `PumpLowDailyConsumption` | Max draw < 10 W in last 20 h (after 20:00) | warning |
+| `PumpInactive` | Power draw < 1 W for 2 h | warning |
+| `PumpMonitoringDown` | No pump data for 10 min | warning |
 
 ---
 

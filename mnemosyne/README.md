@@ -89,7 +89,8 @@ from `stacks/monitoring/.env`. Run manually before committing dashboard changes.
 
 **`pump-alerts-deploy.sh`** — pulls the `pump_alerts` Gitea repo, validates the
 alert rules with `promtool check rules` inside the running Prometheus container,
-and reloads Prometheus only if validation passes. Triggered by a Gitea webhook.
+writes them to `/mnt/codex/prometheus-rules/` and reloads Prometheus only if
+validation passes. Triggered by a Gitea webhook.
 
 ## `systemd/`
 

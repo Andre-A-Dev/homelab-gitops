@@ -82,10 +82,14 @@ the weekly backup.
 ### Alert rule files
 
 - `prometheus/alerts.yml` — committed, covers all standard alerts (node, Pi-hole, backup, services, etc.)
-- `prometheus/pump-alerts.yml` — **managed externally**. Deployed by
+- `pump-alerts.yml` — **managed externally, not in this repo**. Deployed by
   `mnemosyne/scripts/pump-alerts-deploy.sh` from a separate private Gitea repo
-  (`pump_alerts`). Editing this file directly will be overwritten on the next
-  webhook trigger.
+  (`pump_alerts`) to `/mnt/codex/prometheus-rules/`, mounted as
+  `/etc/prometheus/external/` and loaded via `rule_files: external/*.yml`.
+  Kept outside the checkout so the deploy does not dirty the server's working
+  tree. If the directory is empty (fresh host, restore), Prometheus runs
+  without pump rules until the next deploy; run `pump-alerts-deploy.sh` once
+  by hand.
 
 ## Grafana
 

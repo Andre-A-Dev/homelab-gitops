@@ -9,7 +9,9 @@ ENV_FILE="/home/<user>/stacks/monitoring/.env"
 GITEA_TOKEN=$(grep PUMP_GITEA_TOKEN "$ENV_FILE" | cut -d= -f2)
 NTFY_TOPIC=$(grep '^NTFY_PUMP_WARNING=' "$ENV_FILE" | cut -d= -f2)
 REPO_URL="https://git.home/<user>/pump_alerts"
-OUTFILE="/home/<user>/stacks/monitoring/prometheus/pump-alerts.yml"
+# Outside the homelab-infra checkout: a deployed file there made the server's
+# working tree dirty. Mounted into Prometheus as /etc/prometheus/external/.
+OUTFILE="/mnt/codex/prometheus-rules/pump-alerts.yml"
 
 # Fresh shallow clone per run: no stale checkout to deploy from when a pull
 # fails, and nothing left on disk afterwards.

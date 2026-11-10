@@ -202,6 +202,11 @@ Notable per-service behavior:
   the homelab-infra working tree.
 - **Skipped snapshots** — if a service has no archive on the selected date, the
   script follows the `.SKIPPED` marker to the last real archive automatically.
+- **Pump alert rules** — not in any archive: they live in the `pump_alerts`
+  repo and are deployed to `/mnt/codex/prometheus-rules/`. On a fresh or
+  restored host Prometheus starts without them (no pump alerts, not even
+  `PumpMonitoringDown`). Deploy them once by hand:
+  `sudo install -d -o <user> -g <user> -m 755 /mnt/codex/prometheus-rules && /usr/local/bin/pump-alerts-deploy.sh`
 
 ### Restore a single service
 
