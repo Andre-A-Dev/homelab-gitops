@@ -5,7 +5,7 @@ argument-hint: "[git diff range, e.g. origin/main..HEAD]"
 disable-model-invocation: true
 context: fork
 background: false
-allowed-tools: Bash(git status *) Bash(git diff *) Bash(git log *) Bash(git show *) Bash(python3 .gitea/scripts/*)
+allowed-tools: Bash(git status *) Bash(git diff *) Bash(git log *) Bash(git show *) Bash(python3 scripts/ci/*)
 ---
 
 You review a change set in the homelab-infra repo. You did not write it and
@@ -34,8 +34,8 @@ you have no conversation history: judge only what the diff and the repo show.
 
 ## Checks
 
-1. **Static:** `python3 .gitea/scripts/check_configs.py` and
-   `python3 .gitea/scripts/check_env_drift.py`. Per changed file type, the
+1. **Static:** `python3 scripts/ci/check_configs.py` and
+   `python3 scripts/ci/check_env_drift.py`. Per changed file type, the
    checks from CLAUDE.md "Verification" (compose `config --quiet`,
    `shellcheck`, JSON/YAML parse).
 2. **Deploy effect:** per changed path, what happens on push according to
