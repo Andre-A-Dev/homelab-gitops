@@ -109,8 +109,8 @@ groups:
         annotations:
           summary: "Backup verification has not run in over 30 hours"
           description: >-
-            An unverified backup is an assumption, not a backup. Check the
-            backup-verify.yml workflow schedule (cron 0 4 UTC = 06:00 CEST).
+            An unverified backup is an assumption, not a backup. Check
+            verify-backup.timer on Mnemosyne (daily 04:00 local time).
 
       # verify-backup.sh cross-checks itself against VALID_SERVICES in
       # backup-services.sh. On 2026-08-30 a patch built from a stale copy

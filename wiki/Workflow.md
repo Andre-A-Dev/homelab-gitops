@@ -125,7 +125,6 @@ The runner runs in host mode (labels `mnemosyne:host`, `docker:host`, `arm64:hos
 
 /mnt/codex/gitea/runner/
 ├── .runner            ← auth state after registration (auto-generated)
-├── id_ed25519         ← SSH key for the backup-verify workflow
 └── ca.crt             ← Caddy root CA (needed to clone from git.home over HTTPS)
 ```
 
