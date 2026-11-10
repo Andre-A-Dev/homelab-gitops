@@ -957,12 +957,17 @@ docker compose logs alertmanager --tail 30
 
 `https://alertmanager.home` is read-only (writes get `403`): Alertmanager has
 no login, and anyone in the LAN/Tailnet could otherwise silence alerts. For
-the UI with write access, tunnel to the loopback port from a workstation:
+the UI with write access, tunnel to the loopback port from a workstation.
+The fish function does it and opens the browser once the tunnel is up:
 
-```bash
-ssh -N -L 9093:127.0.0.1:9093 mnemosyne
-# then open http://localhost:9093 → Silences → New Silence
+```fish
+alertmanager-tunnel                # at home
+alertmanager-tunnel mnemosyne-ts   # away, via Tailscale
+# http://localhost:19093 → Silences → New Silence; Ctrl+C closes the tunnel
 ```
+
+By hand: `ssh -N -L 19093:127.0.0.1:9093 mnemosyne`, then open
+`http://localhost:19093`.
 
 Never silence `Watchdog`: Healthchecks.io raises the external alarm 5–15 min later.
 

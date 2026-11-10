@@ -5,6 +5,7 @@ All files are linked into place by [`../install.sh`](../README.md#installsh).
 | Path | Purpose |
 |---|---|
 | [`ssh_config`](ssh_config) | SSH client config covering all homelab hosts (private, not in the public mirror) |
+| [`fish/functions/alertmanager-tunnel.fish`](fish/functions/alertmanager-tunnel.fish) | `alertmanager-tunnel [host]`: SSH tunnel to Alertmanager (`http://localhost:19093`) for silences, since `alertmanager.home` is read-only. Host defaults to `mnemosyne`, away from home `mnemosyne-ts` |
 | [`environment.d/ssh-agent.conf`](environment.d/ssh-agent.conf) | Session-wide `ssh-agent` socket + ksshaskpass, see RUNBOOK "Set Up Claude Code Read-Only SSH" |
 | [`claude/CLAUDE.md`](claude/CLAUDE.md) | Claude Code user instructions for all projects, linked to `~/.claude/CLAUDE.md` |
 | [`claude/settings.json`](claude/settings.json) | Claude Code user settings, linked to `~/.claude/settings.json` |
