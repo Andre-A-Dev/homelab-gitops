@@ -117,6 +117,12 @@ prometheus.home {
 alertmanager.home {
   tls internal
   import lan_only
+  # Read-only: Alertmanager has no login, so anyone in the LAN/Tailnet could
+  # otherwise silence alerts (pump alerts, the Watchdog). Prometheus and
+  # Grafana reach alertmanager:9093 directly, not through this proxy. Silences
+  # via SSH tunnel or amtool, see RUNBOOK "Silence an alert".
+  @write not method GET HEAD
+  respond @write "Read-only, use an SSH tunnel to silence" 403
   reverse_proxy alertmanager:9093
 }
 

@@ -51,7 +51,7 @@ Never use `docker compose restart` (does not re-read `env_file`) or
 | `kosync.home` | `kosync:3000` | |
 | `grafana.home` | `grafana:3000` | |
 | `prometheus.home` | `prometheus:9090` | Write requests to `/-/*` (lifecycle API: `/-/quit`, `/-/reload`) get `403` |
-| `alertmanager.home` | `alertmanager:9093` | |
+| `alertmanager.home` | `alertmanager:9093` | Read-only: anything but `GET`/`HEAD` gets `403` (no login of its own; blocks silences). Silence via SSH tunnel or `amtool` (RUNBOOK) |
 | `viessmann.home` | `http://192.168.1.13:8081` | **Disabled** (commented out). Bearer token injected via `{env.VIESSMANN_API_TOKEN}` (from `.env`) |
 | `blog.yourdomain.dedyn.io` | `ghost:2368` | **Disabled** (commented out) — service under the `inactive` profile. Public; Let's Encrypt |
 | `ghostproxy.home` | `ghostproxy:5000` | **Disabled** (commented out) — stack under the `inactive` profile |

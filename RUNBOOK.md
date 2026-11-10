@@ -955,11 +955,24 @@ docker compose logs alertmanager --tail 30
 
 ### Silence an alert (via UI)
 
-Open `https://alertmanager.home` → **Silences** → **New Silence**. Set matcher, duration, and comment.
+`https://alertmanager.home` is read-only (writes get `403`): Alertmanager has
+no login, and anyone in the LAN/Tailnet could otherwise silence alerts. For
+the UI with write access, tunnel to the loopback port from a workstation:
+
+```bash
+ssh -N -L 9093:127.0.0.1:9093 mnemosyne
+# then open http://localhost:9093 → Silences → New Silence
+```
+
+Never silence `Watchdog`: Healthchecks.io raises the external alarm 5–15 min later.
 
 ### Silence an alert (via CLI)
 
 ```bash
+# Create a silence (on Mnemosyne)
+docker exec alertmanager amtool silence add alertname=<name> \
+  --duration=2h --comment="<why>" --alertmanager.url=http://localhost:9093
+
 # List active silences
 curl -s http://localhost:9093/api/v2/silences | python3 -m json.tool
 
