@@ -68,7 +68,7 @@ print. Read-only `GET`s for verification are fine.
 - `mnemosyne/webhook/` — deploy webhook configuration
 - `<node>/` — per-node config and scripts (e.g. `hephaestus/`)
 - `astraeus_nx/` — AstraeusNX on CachyOS, the primary OS of the workstation;
-  `astraeus/` — the Windows boot of the same machine (separate SSD)
+  `astraeus_win/` — the Windows boot of the same machine (separate SSD)
 - `clusters/daidalos/` — Kubernetes manifests, reconciled by Flux
 - `shared/scripts/` — multi-host scripts, symlinked to `/usr/local/bin/`,
   hostname-based dispatch

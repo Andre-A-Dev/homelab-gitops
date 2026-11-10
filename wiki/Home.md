@@ -63,7 +63,7 @@ homelab-infra/
 ├── zephyros/           # Pi-hole exporter, Caddy reverse proxy
 ├── hephaestus/         # vcontrold, Viessmann exporter, Flask API
 ├── daidalos/           # k3s node: bootstrap, node-exporter flags (manifests: clusters/)
-├── astraeus/           # Windows diagnostics scripts
+├── astraeus_win/       # Windows diagnostics scripts
 ├── astraeus_nx/        # CachyOS dotfiles, SSH config
 ├── clusters/           # k3s/Flux GitOps learning environment (daidalos) -- separate from the Compose stacks above
 └── wiki/               # Documentation

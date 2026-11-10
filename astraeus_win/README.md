@@ -1,4 +1,4 @@
-# astraeus
+# astraeus_win
 
 x86_64 workstation (Windows 11), primary development machine. One of two SSDs
 in the same physical machine — the other boots CachyOS and is tracked under

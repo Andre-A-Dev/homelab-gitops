@@ -63,7 +63,7 @@ homelab-infra/
 ├── hephaestus/                     # vcontrold, Viessmann exporter + API, status display, node-exporter
 ├── daidalos/                       # Host bootstrap (Debian 13 + k3s), node-exporter config
 ├── astraeus_nx/                    # CachyOS workstation: Ollama, hardware health checks
-├── astraeus/                       # Windows: diagnostics script
+├── astraeus_win/                   # Windows: diagnostics script
 └── scripts/                        # Repo tooling: public mirror export, secret audit, repo tree
 ```
 
@@ -149,7 +149,7 @@ Caddy on Mnemosyne also proxies the Pi-hole admin UIs (`pihole.home`, `pihole-ze
 |---|---|
 | `astraeus_nx/stacks/ollama/` | Local LLM runtime |
 | `shared/workstations/scripts/health_checks/` | Hardware health checks (disk, RAM, GPU, AIO); the disk check also runs on Proteus |
-| `astraeus/scripts/win_diag/` | Windows diagnostics script for the Windows boot |
+| `astraeus_win/scripts/win_diag/` | Windows diagnostics script for the Windows boot |
 
 AstraeusNX runs Node Exporter on CachyOS and the Windows Exporter (port `9182`) when booted into Windows, both scraped by Prometheus on Mnemosyne.
 

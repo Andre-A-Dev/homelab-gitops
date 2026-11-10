@@ -1,8 +1,8 @@
 # astraeus_nx
 
-Same physical machine as `astraeus/`, second SSD booting CachyOS (Arch-based
+Same physical machine as `astraeus_win/`, second SSD booting CachyOS (Arch-based
 Linux). CachyOS is the primary environment and the development machine for
-this repo; Windows 11 (`astraeus/`) is only booted for a few exceptions.
+this repo; Windows 11 (`astraeus_win/`) is only booted for a few exceptions.
 
 ## Caddy CA certificate
 
