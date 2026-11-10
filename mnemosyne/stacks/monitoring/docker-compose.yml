@@ -32,7 +32,9 @@ services:
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
-      - "--storage.tsdb.retention.time=30d"
+      - "--storage.tsdb.retention.time=365d"
+      # Safety net: /mnt/codex is shared with other stacks. ~60 GB/year expected.
+      - "--storage.tsdb.retention.size=100GB"
       - "--web.enable-lifecycle"
     networks:
       - monitoring
