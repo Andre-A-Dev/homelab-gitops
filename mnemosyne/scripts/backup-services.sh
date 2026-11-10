@@ -27,7 +27,8 @@ LOG="/var/log/backup-services.log"
 # Tracks the last successful backup timestamp per service.
 # Stored on the local filesystem (not the external SSD) so it's always available.
 # Used to skip backups when no files have changed since the last run.
-# Note: the backup SSD is exFAT — no hardlinks or symlinks available.
+# Note: the markers date from the exFAT backup SSD (no hardlinks or symlinks);
+# the backup drive has been an ext4 HDD since the 2026-08 migration.
 # Skipped steps write a .SKIPPED marker file containing the date of the last
 # real archive so verify-backup.sh can look it up.
 TIMESTAMP_DIR="/var/lib/backup-timestamps"
@@ -496,7 +497,7 @@ last_real_backup_date() {
 
 # Marks a step as skipped — no changes detected since the last backup.
 # Writes a .SKIPPED marker so verify-backup.sh knows where to find the last
-# real archive (required because exFAT does not support hardlinks or symlinks).
+# real archive (introduced on the exFAT backup SSD, which had no hardlinks or symlinks).
 skip() {
   local elapsed=$(( $(date +%s) - STEP_START_TIME ))
   local label="$1"
@@ -656,7 +657,7 @@ echo -e "${BOLD}╚════════════════════�
 # Check backup drive is mounted
 if ! mountpoint -q "$BACKUP_DIR"; then
   echo -e "${RED}${BOLD}  ERROR: $BACKUP_DIR is not mounted.${RESET}"
-  echo -e "${RED}  Is the WD My Passport connected?${RESET}"
+  echo -e "${RED}  Is the backup HDD connected?${RESET}"
   echo "  ERROR: $BACKUP_DIR is not mounted." >> "$LOG"
   exit 1
 fi

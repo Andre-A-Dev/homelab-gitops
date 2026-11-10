@@ -30,8 +30,8 @@ These three scripts share the same flag conventions and form a single workflow.
 
 ### `backup-services.sh`
 
-Nightly backup of all services to `/mnt/backup/<YYYY-MM-DD>/` (WD My Passport,
-exFAT). Run from cron at 02:00.
+Nightly backup of all services to `/mnt/backup/<YYYY-MM-DD>/` (3.6 TB WD Red
+HDD via USB, ext4). Run by `backup-services.timer` at 02:00.
 
 ```
 --force              Ignore change detection — back up all services
@@ -47,8 +47,8 @@ Services: `vaultwarden`, `caddy`, `calibre`, `calibre-web`, `kosync`,
 `syncthing`, `aegis`, `gitea`, `nextcloud`, `grafana`, `prometheus`, `stacks`
 
 Change detection uses `find -newer <timestamp>`. Unchanged services are skipped
-and leave a `.SKIPPED` marker pointing to the last real archive — required
-because exFAT does not support hardlinks or symlinks. Nextcloud enters
+and leave a `.SKIPPED` marker pointing to the last real archive — introduced
+on the former exFAT backup SSD, which had no hardlinks or symlinks. Nextcloud enters
 maintenance mode for the duration of its backup and is archived with
 `tar --sort=name` so the resulting tarball deduplicates cleanly across restic
 snapshots. Writes `backup.prom` on every run (including failures) so

@@ -319,7 +319,7 @@ echo ""
 
 # Verify the backup drive is accessible before doing anything else
 if ! mountpoint -q "$BACKUP_DIR"; then
-  echo -e "${RED}ERROR: $BACKUP_DIR is not mounted. Is the WD My Passport connected?${RESET}"
+  echo -e "${RED}ERROR: $BACKUP_DIR is not mounted. Is the backup HDD connected?${RESET}"
   exit 1
 fi
 

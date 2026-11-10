@@ -10,11 +10,12 @@ is the backup destination for the satellite nodes (Zephyros).
 |---|---|---|---|
 | `/` | NVMe SSD (HAT) | ext4 | OS, Docker and containerd data (`/var/lib/docker`, `/var/lib/containerd`) |
 | `/mnt/codex` | Samsung SSD | ext4 | Gitea, Nextcloud, Calibre, Syncthing, Aegis, KOSync data |
-| `/mnt/backup` | WD My Passport | exFAT | 14-day rolling service backups |
+| `/mnt/backup` | WD Red 3.6 TB HDD (USB) | ext4 | 14-day rolling service backups |
 | `/mnt/vault` | — | ext4 | Vaultwarden data, Caddy TLS certificates |
 
-exFAT on the backup drive means **no hardlinks or symlinks**. The backup scripts
-work around this with `.SKIPPED` marker files (see below).
+Skipped services leave `.SKIPPED` marker files instead of archives (see below).
+The markers date from the former exFAT backup SSD, which had no hardlinks or
+symlinks.
 
 ## Deployment
 

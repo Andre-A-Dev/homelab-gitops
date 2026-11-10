@@ -238,7 +238,7 @@ Grafana dashboard JSON exports are kept under `mnemosyne/stacks/monitoring/grafa
 
 ## Backup
 
-`backup-services.sh` runs daily at 02:00 on Mnemosyne (systemd timer) and writes all Docker volumes and host-mounted data paths to a WD My Passport USB SSD at `/mnt/backup`. On success it triggers `restic-offsite.service`, which pushes the backup to a Hetzner Storage Box as an encrypted, deduplicated restic repository; a 06:00 timer acts as fallback. `verify-backup` checks the local archives at 04:00, `restic-maintenance` prunes and checks the offsite repository weekly.
+`backup-services.sh` runs daily at 02:00 on Mnemosyne (systemd timer) and writes all Docker volumes and host-mounted data paths to a 3.6 TB WD Red HDD (USB) at `/mnt/backup`. On success it triggers `restic-offsite.service`, which pushes the backup to a Hetzner Storage Box as an encrypted, deduplicated restic repository; a 06:00 timer acts as fallback. `verify-backup` checks the local archives at 04:00, `restic-maintenance` prunes and checks the offsite repository weekly.
 
 Run manually with `sudo /usr/local/bin/backup-services.sh`; `--no-offsite` skips the restic trigger. Restore procedures: [`RUNBOOK.md`](RUNBOOK.md).
 
