@@ -15,7 +15,8 @@
 #   4. Disable swap (Kubernetes requirement)
 #   5. Intel VAAPI drivers (QuickSync for Immich ML/transcode)
 #   6. open-iscsi + nfs-common (Longhorn prerequisites)
-#   7. k3s server WITHOUT traefik/servicelb (we bring ingress-nginx + MetalLB)
+#   7. k3s server WITHOUT traefik/servicelb (ingress comes via Flux, Gateway
+#      API; not ingress-nginx, which upstream retired in March 2026)
 #   8. kubectl access for $TARGET_USER (no sudo needed for kubectl)
 #   9. Raspberry Pi OS style prompt + ls colors for $TARGET_USER
 #

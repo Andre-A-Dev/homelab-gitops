@@ -100,15 +100,19 @@ After `bootstrap.sh`, in this order:
 
 | Disk | Use |
 |---|---|
-| `sdb` Intel SSD 256 GB | system: `/boot/efi`, `/`, swap partition `sdb3` |
-| `sda` Toshiba HDD 1 TB | unused, old partitions, not mounted; SMART-monitored |
+| Intel SSD 256 GB (`SSDSCKKF256G8H`, SATA M.2) | system: `/boot/efi`, `/`, swap on partition 3 |
+| Toshiba HDD 1 TB (`MQ02ABD100H`) | unused, old partitions, not mounted; SMART-monitored |
+
+The kernel names swap between boots (SSD was `sdb` in October, `sda` in
+November 2026). Refer to disks by model, UUID or `/dev/disk/by-id/`, never by
+`sdX`.
 
 No Longhorn yet, see `.claude/rules/kubernetes.md`.
 
 ## Known deviations (2026-10-24)
 
 - **Swap is on.** `bootstrap.sh` comments the swap line out of fstab, but
-  `sdb3` carries the GPT swap partition type, so `systemd-gpt-auto-generator`
+  the SSD's partition 3 carries the GPT swap partition type, so `systemd-gpt-auto-generator`
   activates it on every boot anyway (unit `dev-disk-by\x2ddiskseq-2\x2dpart3.swap`
   from `/run/systemd/generator.late/`). k3s runs anyway.
 - **SSH: key-only since 2026-10-29.** `sshd_config` sets `PermitRootLogin no`;
