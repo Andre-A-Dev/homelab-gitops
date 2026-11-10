@@ -20,11 +20,11 @@ tooling in `scripts/` exist only in the private repo.
 | AstraeusNX                   | x86_64 workstation                                         | Development machine, x86-only tooling    |
 | Daidalos                     | Dell OptiPlex 7070 Micro, i5-9500T (6C), 16 GB, 256 GB SSD | First Kubernetes node (learning cluster) |
 | Proteus                      | Acer Switch Alpha 12 (N16P3)                               | Secondary workstation, mobile, CachyOS   |
-| TBA                          | Framework 12 pro                                           | Planned replacement for Proteus; Ordered |
+| TBA                          | Framework 13 pro                                           | Planned replacement for Proteus; Ordered |
 | TBA                          | ClockworkPi uConsole                                       | Planned Cyberdeck; Ordered               |
 
 Edits happen on the workstations: AstraeusNX (primary), Proteus and the
-planned Framework 12. Never edit versioned files directly on a server.
+planned Framework 13. Never edit versioned files directly on a server.
 
 Devices (not deploy targets, but monitored and controlled from the stacks):
 
