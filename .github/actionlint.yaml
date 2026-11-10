@@ -1,0 +1,7 @@
+# actionlint config, found automatically when actionlint runs inside the repo.
+# Covers .github/workflows/ (GitHub CI) and, passed explicitly,
+# .gitea/workflows/ (local check before pushing).
+self-hosted-runner:
+  labels:
+    # Gitea Actions runner on Mnemosyne (.gitea/workflows/)
+    - mnemosyne

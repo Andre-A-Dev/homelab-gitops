@@ -31,6 +31,10 @@ jobs:
 
       - name: Copy all markdown files from wiki/ to wiki repo
         run: |
+          # The repo is the source of truth: pages renamed or deleted there
+          # would otherwise stay in the wiki forever. Pages created only in the
+          # wiki UI are dropped too; the wiki's own git history keeps them.
+          rm -f wiki-repo/*.md
           cp wiki/*.md       wiki-repo/
           cp ARCHITECTURE.md wiki-repo/Architecture.md
           cp RUNBOOK.md      wiki-repo/Runbook.md

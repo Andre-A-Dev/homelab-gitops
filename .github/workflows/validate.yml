@@ -1,9 +1,9 @@
 name: Validate configs
 
+# Push only: the mirror is written by sync_public.py from the private repo, so
+# a pull request here could never flow back.
 on:
   push:
-    branches: [main]
-  pull_request:
     branches: [main]
 
 permissions:
@@ -20,7 +20,7 @@ jobs:
     # broken dashboards, .env.example drift and shellcheck findings all passed.
     #
     # Not run here: promtool/amtool (the Gitea CI copies them out of the images
-    # running on the host) and the executable-bit and stderr checks.
+    # running on the host) and the stderr check.
     #
     # Every check runs even if an earlier one failed (`!cancelled()`), and
     # any failed step fails the job.
@@ -50,6 +50,28 @@ jobs:
           find . -name '*.sh' -not -path './.git/*' -print0 \
             | xargs -0 -r shellcheck --severity=warning --external-sources --color=never
           shellcheck --severity=warning --color=never shared/apticron/apticron.conf
+
+      - name: Assert scripts are executable in the index
+        if: ${{ !cancelled() }}
+        run: |
+          # Same check as in the Gitea CI: a script committed as 100644 works
+          # where it was written and fails with 203/EXEC on every fresh clone.
+          NON_EXEC=$(git ls-files -s -- '*.sh' | awk '$1 != "100755" {print $4}')
+          if [ -n "$NON_EXEC" ]; then
+            echo "x Shell scripts committed without the executable bit:"
+            echo "$NON_EXEC" | sed 's/^/    /'
+            exit 1
+          fi
+          echo "  + all $(git ls-files -- '*.sh' | wc -l) shell scripts are mode 100755"
+
+      - name: Lint workflows
+        if: ${{ !cancelled() }}
+        run: |
+          # Reads .github/actionlint.yaml. SHELLCHECK_OPTS matches the shellcheck
+          # step: style and info findings in run: blocks are not gated.
+          docker run --rm -v "$PWD:/repo" --workdir /repo \
+            -e SHELLCHECK_OPTS=--severity=warning \
+            rhysd/actionlint:1.7.12 -color
 
       - name: Notify on failure
         if: failure()

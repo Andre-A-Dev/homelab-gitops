@@ -261,6 +261,9 @@ checks you can run yourself. "Done" means verified, not written.
 - Compose: `docker compose -f <file> config --quiet`
 - Shell: `shellcheck <script>`; run it with `--help` or a dry-run flag if it
   has one
+- Workflows: `SHELLCHECK_OPTS=--severity=warning actionlint
+  .gitea/workflows/*.yml .github/workflows/*.yml` (reads
+  `.github/actionlint.yaml`; the GitHub CI lints only `.github/`)
 - Python: run the module or its tests
 - JSON/YAML (dashboards, Prometheus config): parse it, e.g.
   `python3 -m json.tool <file>`

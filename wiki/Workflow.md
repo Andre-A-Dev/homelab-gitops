@@ -104,7 +104,13 @@ python3 scripts/ci/check_configs.py
 python3 scripts/ci/check_env_drift.py
 ```
 
-The public GitHub mirror runs the same two scripts plus shellcheck in `.github/workflows/validate.yml`; promcheck, the executable-bit and the stderr check run only in the Gitea CI.
+The public GitHub mirror runs the same two scripts plus shellcheck, the executable-bit check and actionlint (`.github/workflows/` only) in `.github/workflows/validate.yml`; promcheck and the stderr check run only in the Gitea CI. Workflow changes in `.gitea/workflows/` are linted locally:
+
+```bash
+SHELLCHECK_OPTS=--severity=warning actionlint .gitea/workflows/*.yml .github/workflows/*.yml
+```
+
+Both wiki syncs (`sync_wiki.yml`) replace every top-level page in the wiki with the repo's copy: pages renamed or deleted in the repo disappear from the wiki, and so do pages created only in the wiki UI.
 
 ### Env drift check
 
