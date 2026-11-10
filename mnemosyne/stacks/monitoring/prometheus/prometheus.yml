@@ -2,6 +2,16 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+# Replaces the deprecated --storage.tsdb.retention.* flags (config wins over
+# them). Without this block Prometheus falls back to 15d and deletes older
+# data. Set both fields: a field missing here is 0 (unlimited).
+# Size cap: /mnt/codex is shared with other stacks. ~60 GB/year expected.
+storage:
+  tsdb:
+    retention:
+      time: 365d
+      size: 100GB
+
 alerting:
   alertmanagers:
   - static_configs:
