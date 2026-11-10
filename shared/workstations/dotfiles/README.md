@@ -9,6 +9,7 @@ All files are linked into place by [`../install.sh`](../README.md#installsh).
 | [`environment.d/ssh-agent.conf`](environment.d/ssh-agent.conf) | Session-wide `ssh-agent` socket + ksshaskpass, see RUNBOOK "Set Up Claude Code Read-Only SSH" |
 | [`claude/CLAUDE.md`](claude/CLAUDE.md) | Claude Code user instructions for all projects, linked to `~/.claude/CLAUDE.md` |
 | [`claude/settings.json`](claude/settings.json) | Claude Code user settings, linked to `~/.claude/settings.json` |
+| [`autostart/`](autostart/) | XDG autostart entries for Syncthing Tray and ntfyDesktop, linked into `~/.config/autostart/` |
 
 ## SSH config
 

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Ntfy Desktop
+Comment=Receive ntfy notifications
+Icon=moe.emmaexe.ntfyDesktop
+TryExec=ntfyDesktop
+Exec=ntfyDesktop
+Terminal=false
