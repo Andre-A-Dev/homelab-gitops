@@ -311,7 +311,7 @@ groups:
       # nightly runs. The meaningful unit is "how many backups still fit".
       #
       # One nightly run writes roughly 73 GB (Nextcloud ~29 + Immich ~44);
-      # a full 7-day retention window is around 510 GB.
+      # a full 14-day retention window (16 dated dirs) is around 1.2 TB.
       - alert: BackupDiskFillingUp
         expr: backup_disk_free_gb < 500
         for: 1h
@@ -321,8 +321,8 @@ groups:
         annotations:
           summary: "Backup HDD down to {{ $value }}G free"
           description: >-
-            Roughly one retention cycle left. Weeks of runway — prune retention
-            or add capacity before it becomes urgent.
+            Roughly six nightly runs left. Lower RETENTION_DAYS or add
+            capacity before it becomes urgent.
 
       - alert: BackupDiskCritical
         expr: backup_disk_free_gb < 200

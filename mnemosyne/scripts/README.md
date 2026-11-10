@@ -40,7 +40,7 @@ exFAT). Run from cron at 02:00.
 --overwrite          Replace today's backup if it already exists
 --no-cleanup         Skip retention pruning
 --no-offsite         Skip triggering the restic offsite service after backup
---retention=<days>   Override default 7-day retention
+--retention=<days>   Override default 14-day retention
 ```
 
 Services: `vaultwarden`, `caddy`, `calibre`, `calibre-web`, `kosync`,

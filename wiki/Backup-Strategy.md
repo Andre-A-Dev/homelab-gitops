@@ -73,7 +73,7 @@ Scenario C needs three things that must exist **outside** Mnemosyne: the reposit
 
 ### Layer 1 -- Local backup (daily, 02:00)
 
-`backup-services.timer` runs `backup-services.sh`, which archives all service data into a dated directory under `/mnt/backup`. Directories older than 7 days are deleted at the start of each run.
+`backup-services.timer` runs `backup-services.sh`, which archives all service data into a dated directory under `/mnt/backup`. Directories older than 14 days are deleted at the start of each run.
 
 Safeguards built into the script:
 

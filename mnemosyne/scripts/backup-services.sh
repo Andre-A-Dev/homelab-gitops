@@ -4,7 +4,7 @@
 BACKUP_DIR="/mnt/backup"
 
 DATE=$(date +%Y-%m-%d)
-RETENTION_DAYS=7                  # Reduced from 14 — 7 days is enough for a homelab
+RETENTION_DAYS=14                 # ~16 dated dirs x ~77 GB ≈ 1.2 TB on the 3.6 TB HDD
 # Abort before starting if less than this many GB are free. One nightly run
 # writes roughly 73 GB (Nextcloud ~29 + Immich ~44), so the old value of 40 was
 # smaller than a single run: the preflight would pass and the backup would then

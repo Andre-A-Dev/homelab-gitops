@@ -10,7 +10,7 @@ is the backup destination for the satellite nodes (Zephyros).
 |---|---|---|---|
 | `/` | NVMe SSD (HAT) | ext4 | OS, Docker and containerd data (`/var/lib/docker`, `/var/lib/containerd`) |
 | `/mnt/codex` | Samsung SSD | ext4 | Gitea, Nextcloud, Calibre, Syncthing, Aegis, KOSync data |
-| `/mnt/backup` | WD My Passport | exFAT | 7-day rolling service backups |
+| `/mnt/backup` | WD My Passport | exFAT | 14-day rolling service backups |
 | `/mnt/vault` | — | ext4 | Vaultwarden data, Caddy TLS certificates |
 
 exFAT on the backup drive means **no hardlinks or symlinks**. The backup scripts
@@ -41,7 +41,7 @@ These three scripts form a single workflow and share the same flag style.
 | `--dry-run` | Show what would run, write nothing |
 | `--only=<service>` | Back up a single service (vaultwarden, caddy, calibre, calibre-web, kosync, syncthing, aegis, gitea, nextcloud, grafana, prometheus, stacks) |
 | `--overwrite` | Replace today's backup if it already exists |
-| `--retention=<days>` | Override the default 7-day retention |
+| `--retention=<days>` | Override the default 14-day retention |
 | `--no-cleanup` | Skip the retention pruning step |
 
 Change detection uses `find -newer <timestamp>` on the source directory.

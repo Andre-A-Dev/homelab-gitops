@@ -49,8 +49,8 @@ CRIT_THRESHOLD=85
 # runs. What matters is "how many more backups fit", not "how full is it".
 #
 # One nightly run writes roughly 73 GB (Nextcloud ~29 GB + Immich ~44 GB),
-# and a full 7-day retention window is around 510 GB.
-BACKUP_WARN_FREE_GB=500    # ~1 retention cycle left — weeks of runway, act calmly
+# and a full 14-day retention window (16 dated dirs) is around 1.2 TB.
+BACKUP_WARN_FREE_GB=500    # ~6 nightly runs left — act calmly
 BACKUP_CRIT_FREE_GB=200    # ~3 nightly runs left — the next one may not fit
 
 # Minimum number of members an archive must contain to count as real content.
