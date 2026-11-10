@@ -1,8 +1,10 @@
 groups:
 
 # -- Meta: dead man's switch --------------------------------------------------
-# Always-firing alert. Alertmanager forwards it to Healthchecks.io every
-# minute; if the pings stop, Healthchecks.io alerts externally.
+# Always-firing alert. Alertmanager forwards it to Healthchecks.io about
+# every 2 minutes (group_interval and repeat_interval 1m: the flush after
+# exactly 1m is just short of repeat_interval and skips); if the pings
+# stop, Healthchecks.io alerts externally.
 # Never silence or inhibit this alert.
 - name: meta
   rules:
