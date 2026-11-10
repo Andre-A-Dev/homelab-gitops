@@ -20,6 +20,12 @@ scrape_configs:
   static_configs:
   - targets: [ "localhost:9090" ]
 
+# -- Alertmanager ------------------------------------------------------------
+# Delivery to ntfy and Healthchecks (AlertmanagerNotificationsFailing).
+- job_name: "alertmanager"
+  static_configs:
+  - targets: [ "alertmanager:9093" ]
+
 # -- Node Exporter -----------------------------------------------------------
 - job_name: "node-exporter"
   static_configs:

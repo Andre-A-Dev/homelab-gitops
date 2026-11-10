@@ -14,6 +14,18 @@ groups:
       summary: "Dead man's switch - always firing by design"
       description: "Verifies the alerting pipeline end-to-end. If this alert is NOT firing, alerting is broken."
 
+  # Alertmanager could not deliver to a receiver (ntfy topic, Healthchecks).
+  # The metric has no receiver label: which topic failed is only in the
+  # Alertmanager log. Fires on a single failure - a lost pump notification
+  # is a finding. Cannot report a total ntfy.sh outage (it goes via ntfy too).
+  - alert: AlertmanagerNotificationsFailing
+    expr: increase(alertmanager_notifications_failed_total[15m]) > 0
+    labels:
+      severity: warning
+    annotations:
+      summary: "Alertmanager: {{ $labels.integration }} notifications failing ({{ $labels.reason }})"
+      description: "Alertmanager failed to deliver {{ $labels.integration }} notifications in the last 15 minutes. Check docker logs alertmanager for the receiver."
+
 # -- System Alerts -----------------------------------------------------------
 # Servers: mnemosyne, boreas, hephaestus, zephyros — always-on, fully alerted.
 # Workstations: AstraeusNX, Proteus, Astraeus — labelled
