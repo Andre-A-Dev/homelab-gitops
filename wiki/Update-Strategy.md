@@ -55,6 +55,7 @@ One window for everything, so all restarts happen together. **Not between 02:00 
 2. System packages on all Pis, in a fixed order (see [System updates](#system-updates)).
 3. Containers on Mnemosyne (below). The Claude Code skill `container-updates` resolves versions, reads the release notes and orders the commands.
 4. Verify, then prune old images.
+5. Release check: `/release` in Claude Code. "Not yet" is the usual result; the judge rule in the skill decides.
 
 ```bash
 # What has updates?

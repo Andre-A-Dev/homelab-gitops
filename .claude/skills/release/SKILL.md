@@ -38,10 +38,15 @@ Read `CLAUDE.md` and `CLAUDE.local.md` first: they hold the general rules
    Otherwise report and stop.
 2. **Collect.** `git log <last>..HEAD --no-merges --format='%h %ad %s'
    --date=short`; `git show --stat` where a subject is unclear.
-3. **Judge.** A release needs at least one finished theme: a new host, stack
-   or capability working end to end, or a security or reliability pass.
-   Half-done work (a planned feature with only its first commits) waits.
-   If nothing qualifies, say so and stop; "not yet" is a valid result.
+3. **Judge.** A release needs at least one finished theme a reader of the
+   public mirror would notice: a new host, stack or capability working end
+   to end. Hardening, tooling and workstation changes alone don't qualify;
+   they ride along with the next one. Exception: more than about three
+   months since the last tag and the range holds a finished security or
+   reliability pass. Half-done work (a planned feature with only its first
+   commits) waits. If nothing qualifies, say so and stop; "not yet" is a
+   valid result.
+
 4. **Draft** the section at the top of `CHANGELOG.md`, below the header:
 
    ```
