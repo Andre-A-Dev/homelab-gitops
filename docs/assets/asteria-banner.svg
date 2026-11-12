@@ -1,5 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 280" width="960" height="280" role="img" aria-label="Asteria - homelab-gitops">
   <title>Asteria - homelab-gitops</title>
+  <!-- Text outlined to paths from Fira Sans Light (ASTERIA) and Fira Sans Book
+       (HOMELAB · GITOPS), SIL OFL 1.1. No font file is embedded; per OFL
+       clause 5 a document created with the font is not bound by the OFL. -->
+
   <defs>
     <filter id="blur-b" x="-50%" y="-50%" width="200%" height="200%">
       <feGaussianBlur stdDeviation="30"/>
