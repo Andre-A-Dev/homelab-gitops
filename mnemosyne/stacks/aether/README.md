@@ -87,8 +87,8 @@ Set your location in `sensors.yaml` under `settings.location`:
 ```yaml
 location:
   name: "Home"
-  latitude:  49.5897    # use TOWN-CENTRE coordinates, not your address
-  longitude: 11.0120
+  latitude:  52.5200    # use TOWN-CENTRE coordinates, not your address
+  longitude: 13.4050
 ```
 
 Horizon is configurable: `forecast_days` (1–16 daily) and `forecast_hours`
@@ -96,8 +96,9 @@ Horizon is configurable: `forecast_days` (1–16 daily) and `forecast_hours`
 a daily strip.
 
 **Privacy:** a forecast is identical for the whole town, so use town-centre
-coordinates — this keeps your home location out of the repo. `export_public.py`
-should treat these as sensitive. Until coordinates are set, the forecast tile
+coordinates — this keeps your home location out of the repo. They reach the
+public mirror unredacted; town-centre precision is accepted there, a real
+address never is. Until coordinates are set, the forecast tile
 shows a "set coordinates" prompt instead of failing.
 
 The `aether` container needs outbound HTTPS to `api.open-meteo.com`. If the

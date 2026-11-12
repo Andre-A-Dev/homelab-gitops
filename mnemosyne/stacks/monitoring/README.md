@@ -45,7 +45,7 @@ Grafana, Prometheus, and Alertmanager are on both the `monitoring` and
 | `gitea` | gitea:3000 | 15s | |
 | `meross` | meross-exporter:9114 | 30s | |
 | `shelly` | shelly-exporter:9117 | 30s | |
-| `wakapi` | wakapi:3000 `/api/metrics` | 15s | API key passed as query param |
+| `wakapi` | wakapi:3000 `/api/metrics` | 15s | Bearer auth, base64 API key from a `credentials_file` |
 | `midea` | midea-exporter:9116 | 30s | |
 
 Remote nodes (Boreas, Hephaestus, Zephyros) are scraped directly by IP.

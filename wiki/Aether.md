@@ -60,10 +60,8 @@ which can leak IP/location like any web map. Toggle it off via
 
 **Privacy note — coordinates.** `settings.location` in `sensors.yaml` holds
 real (town-centre) latitude/longitude for the forecast. `export_public.py`
-does **not** currently redact this file — the coordinates would pass through
-into the public mirror as-is. Treat `sensors.yaml` as sensitive until that
-export rule exists; don't add a real address (town-centre precision only)
-regardless.
+does not redact this file, by decision: town-centre precision is accepted in
+the public mirror. Never add a real address.
 
 ---
 

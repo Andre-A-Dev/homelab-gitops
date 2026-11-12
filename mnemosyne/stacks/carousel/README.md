@@ -117,7 +117,7 @@ carousel.home {
 }
 ```
 
-Pi-hole local DNS: `carousel.home -> 192.168.1.x`. For access from the
+Pi-hole local DNS: `carousel.home -> 192.168.1.10`. For access from the
 Remote network, add the same proxy block to the Zephyros Caddyfile
 (pointing at Mnemosyne's Tailscale IP) and a Pi-hole record on Zephyros.
 

@@ -301,13 +301,9 @@ acceptable.
 
 The Open-Meteo forecast needs a latitude/longitude, set in `sensors.yaml` under
 `settings.location`. Town-centre coordinates are used deliberately, not the
-exact address, since a forecast is identical across a town. `sensors.yaml`
-should be treated as sensitive by `export_public.py` for this reason — as of
-this writing the export script's replacement rules do not account for it, so
-the real coordinates would currently pass through into the public mirror
-unredacted. This needs a fix in `export_public.py` before the file is safe to
-publish; flagged rather than changed here per this repo's rule that the
-public-mirror tooling is not touched without a heads-up.
+exact address, since a forecast is identical across a town. That precision is
+also why `export_public.py` publishes `sensors.yaml` unredacted: town-centre
+coordinates are accepted in the public mirror, a real address is not.
 
 ---
 
