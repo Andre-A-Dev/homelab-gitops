@@ -1,3 +1,5 @@
+![Asteria - homelab-gitops](docs/assets/asteria-banner.svg)
+
 # homelab-gitops
 
 [![Validate configs](https://github.com/Andre-A-Dev/homelab-gitops/actions/workflows/validate.yml/badge.svg)](https://github.com/Andre-A-Dev/homelab-gitops/actions/workflows/validate.yml)
@@ -77,6 +79,7 @@ homelab-infra/
 ├── daidalos/                       # Host bootstrap (Debian 13 + k3s), node-exporter config
 ├── astraeus_nx/                    # CachyOS workstation: Ollama, hardware health checks
 ├── astraeus_win/                   # Windows: diagnostics script
+├── docs/assets/                    # README images
 └── scripts/                        # Repo tooling: public mirror export, secret audit, repo tree
 ```
 
