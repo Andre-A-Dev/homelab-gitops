@@ -57,6 +57,9 @@ These shaped the steps below; keep them in mind when something looks off.
 1. **Preflight:** `python3 .claude/skills/mirror-review/scripts/mirror_check.py preflight`.
    On FAIL, stop and report the fix (fish commands); do not continue the
    review on a mirror that tracks the wrong remote or holds private refs.
+   An unreadable private repo is a FAIL too: the fix is the read-only
+   `.claude/settings.local.json` in the mirror (RUNBOOK "Harden a
+   Workstation for Claude Code"), not `/add-dir`, which grants write access.
 2. **Scan:** `… mirror_check.py scan`.
    - Sync dry-run: `0 written` means the working tree equals the sanitized
      private tree. Otherwise the user has not synced yet, or the private repo

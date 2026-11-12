@@ -137,9 +137,18 @@ def preflight() -> None:
                         "sync_public.py copies the working tree, so a sync now "
                         f"publishes them: {[l[3:] for l in dirty.splitlines()]}")
     else:
-        say("WARN", f"private repo not found at {PRIVATE} (MIRROR_PRIVATE_REPO)")
+        private_missing()
 
     print(f"\nmirror: {root}\nprivate: {PRIVATE}")
+
+
+def private_missing() -> None:
+    # Without the private repo there are no leak patterns and no sync dry-run,
+    # so nothing after preflight can be trusted. In a sandboxed session the
+    # path is hidden, not absent (RUNBOOK "Harden a Workstation for Claude Code").
+    say("FAIL", f"private repo not readable at {PRIVATE} (MIRROR_PRIVATE_REPO); "
+                "in a sandboxed session add it read-only via the mirror's "
+                ".claude/settings.local.json")
 
 
 # ── scan ─────────────────────────────────────────────────────────────────────
@@ -233,6 +242,9 @@ def scan_tags(patterns: list[re.Pattern]) -> None:
 
 def scan() -> None:
     root = mirror_root()
+    if not PRIVATE.is_dir():
+        private_missing()
+        return
     sync_dry_run(root)
     patterns = load_patterns()
     scan_files(root, patterns)
