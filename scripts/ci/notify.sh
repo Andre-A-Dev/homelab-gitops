@@ -40,6 +40,10 @@ esac
 SHORT_SHA=$(echo "${GITHUB_SHA:-unknown}" | cut -c1-7)
 BRANCH="${GITHUB_REF_NAME:-unknown}"
 
+# Asteria mark from the public mirror. The ntfy app downloads the icon itself,
+# so the URL must be reachable from a phone outside the LAN (PNG/JPEG only).
+ICON="https://raw.githubusercontent.com/Andre-A-Dev/homelab-gitops/main/docs/assets/asteria-mark.png"
+
 # --fail-with-body and -S instead of a bare -s: a failed notification used to
 # produce no output whatsoever. || true keeps a delivery problem from masking
 # the actual job result.
@@ -47,6 +51,7 @@ curl -sS --fail-with-body --max-time 10 \
     -H "Title: ${TITLE}" \
     -H "Priority: ${PRIORITY}" \
     -H "Tags: ${TAGS}" \
+    -H "Icon: ${ICON}" \
     -d "Branch: ${BRANCH} - Commit: ${SHORT_SHA}" \
     "https://ntfy.sh/${NTFY_TOPIC}" \
     || echo "! ntfy delivery failed - read the run log directly"
