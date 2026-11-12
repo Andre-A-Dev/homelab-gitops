@@ -546,16 +546,16 @@ The file is copied, not symlinked: a git pull must never change sshd config. Aft
 
 ## Emergency SSH Key
 
-For the case that every client (workstations, phone) is lost at once. Passphrase-protected ed25519 key, private part only on the LUKS-encrypted USB stick `homelab-keys` (off-site; LUKS passphrase and key passphrase on paper, stored separately), public part in `authorized_keys` of `<user>` on every host. Never loaded into an agent, never kept on a workstation or in the password manager (its SSH key item type strips the passphrase on import).
+For the case that every client (workstations, phone) is lost at once. Passphrase-protected ed25519 key, private part only on the LUKS-encrypted USB sticks `homelab-keys-main` and `homelab-keys-backup` (off-site; LUKS passphrase and key passphrase on paper, stored separately), public part in `authorized_keys` of `<user>` on every host. Never loaded into an agent, never kept on a workstation or in the password manager (its SSH key item type strips the passphrase on import).
 
-Open and lock the stick (fish):
+Open and lock the stick (fish, function from the workstation dotfiles; asks for the LUKS passphrase):
 
 ```fish
-sudo cryptsetup open /dev/disk/by-label/homelab-keys homelab-keys; and sudo mount /dev/mapper/homelab-keys /mnt/keys
-sudo umount /mnt/keys; and sudo cryptsetup close homelab-keys
+homelab-keys open       # the stick plugged in; with both: homelab-keys open main|backup
+homelab-keys close
 ```
 
-Every key stick carries the label `homelab-keys`. With two plugged in, `/dev/disk/by-label/homelab-keys` points at either one: open the partition by name instead (`lsblk -o NAME,SIZE,FSTYPE,LABEL,TRAN`, then `/dev/sdX1`).
+Each stick has its own LUKS label, `homelab-keys-main` or `homelab-keys-backup`; both open as `homelab-keys` at `/mnt/keys`, so every command below works with either. Without the function: `sudo cryptsetup open /dev/disk/by-label/homelab-keys-main homelab-keys; and sudo mount /dev/mapper/homelab-keys /mnt/keys`, lock with `sudo umount /mnt/keys; and sudo cryptsetup close homelab-keys`.
 
 Use it (from any machine with OpenSSH; no repo config, no agent needed):
 
@@ -582,7 +582,7 @@ end
 
 ## Offline Key Stick
 
-Everything needed when Mnemosyne, the backup HDD and every client are gone, on the stick `homelab-keys` (GPT, LUKS2, ext4 inside). Gitea and this runbook live on Mnemosyne, so `README.txt` on the stick repeats the restore commands. Open and lock it as in [Emergency SSH Key](#emergency-ssh-key).
+Everything needed when Mnemosyne, the backup HDD and every client are gone, on both key sticks (GPT, LUKS2, ext4 inside). Gitea and this runbook live on Mnemosyne, so `README.txt` on the stick repeats the restore commands. Open and lock it as in [Emergency SSH Key](#emergency-ssh-key).
 
 | File in `/mnt/keys/homelab/` | Source |
 |---|---|
@@ -630,17 +630,18 @@ Refresh `README.txt` after changing the template (fish, from the repo root): `cp
 
 LUKS passphrase: 7 words from `xkcdpass -n 7 -d ' ' -v '[a-x]'` (`extra/xkcdpass`, about 87 bits). Lowercase `a`-`x` and spaces sit on the same keys in the German and US layouts (no `y`/`z`, no hyphen), so the stick opens on any console; words also survive copying from paper. Generate it locally, write it on paper, then `clear` the terminal. Never paste it into a chat or a file.
 
-Set up an additional or replacement stick, with the current stick open at `/mnt/keys` (fish). Same LUKS label, so every command above works with either stick. Type `YES` in capitals at the prompt, and type the passphrase from the paper at the test right after:
+Set up an additional or replacement stick, with the current stick open at `/mnt/keys` (fish). `L` is the label of the role the new stick takes. Type `YES` in capitals at the prompt, and type the passphrase from the paper at the test right after:
 
 ```fish
 bash -euo pipefail -c '
 D=/dev/sdX    # the NEW stick: lsblk -o NAME,SIZE,MODEL,TRAN
+L=homelab-keys-backup    # or homelab-keys-main
 [ "$(lsblk -dno TRAN $D)" = usb ] || { echo "$D is not a USB device - stop"; exit 1; }
 findmnt -S ${D}1 >/dev/null && udisksctl unmount -b ${D}1
 sudo wipefs -a $D
 sudo parted -s $D mklabel gpt mkpart keys 1MiB 100%
 sudo udevadm settle
-sudo cryptsetup luksFormat --type luks2 --pbkdf argon2id --pbkdf-memory 262144 --label homelab-keys ${D}1
+sudo cryptsetup luksFormat --type luks2 --pbkdf argon2id --pbkdf-memory 262144 --label $L ${D}1
 sudo cryptsetup open --test-passphrase -v ${D}1    # from the paper, not from memory
 sudo cryptsetup open ${D}1 homelab-keys-new
 sudo mkfs.ext4 -q -L keys /dev/mapper/homelab-keys-new
@@ -654,6 +655,8 @@ ls -l /mnt/keys-new/homelab
 ```
 
 `--pbkdf-memory 262144` (256 MiB) keeps the stick unlockable on a Pi 3 or the uConsole; the default is sized for the machine that formats it. Then test the new stick on its own: lock the old one, `sudo umount /mnt/keys-new; and sudo mount /dev/mapper/homelab-keys-new /mnt/keys`, run the snapshot test, lock with `sudo umount /mnt/keys; and sudo cryptsetup close homelab-keys-new`.
+
+Swap the roles of the sticks (only the LUKS label changes): `sudo cryptsetup config --label homelab-keys-main /dev/sdX1`, then replug the stick so udev renews `/dev/disk/by-label/`.
 
 No readable stick left (passphrase lost, stick dead): run the script without the `rsync` line, mount the new stick at `/mnt/keys` as above and fill it with `shared/key-stick/fill-key-stick.sh --new-key` (private repo only; `--help` lists the steps). Without `--new-key` it refuses a stick without a key: a new key locks out every other stick. It runs the blocks of this section and [Emergency SSH Key](#emergency-ssh-key): restic files, Aegis export, `README.txt`, a new emergency key that replaces the unreachable old key's line on every host, then the snapshot test. Recovery codes without a copy elsewhere have to be regenerated at each account.
 
