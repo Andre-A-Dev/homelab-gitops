@@ -24,10 +24,12 @@ Both networks use the `192.168.1.0/24` address range — a deliberate non-issue.
 ```mermaid
 graph TD
     subgraph home["Home network — 192.168.1.0/24"]
-        Mnemosyne["Mnemosyne · Pi 5<br/>192.168.1.10<br/>Primary server"]
+        Mnemosyne["Mnemosyne · Pi 5<br/>192.168.1.10<br/>Primary server, Gitea"]
         Boreas["Boreas · Pi 3B<br/>192.168.1.11<br/>DNS"]
         Hephaestus["Hephaestus · Pi 3B<br/>192.168.1.13<br/>Heating integration"]
-        FritzHome["FritzBox 5690 Pro<br/>192.168.1.1"]
+        Daidalos["Daidalos · OptiPlex<br/>k3s learning cluster"]
+        AstraeusNX["AstraeusNX<br/>Primary workstation"]
+        FritzHome["FritzBox<br/>192.168.1.1"]
     end
 
     subgraph remote["Remote network — 192.168.1.0/24"]
@@ -39,16 +41,25 @@ graph TD
         TS["100.x.x.x"]
     end
 
+    Proteus["Proteus<br/>Mobile workstation"]
     Internet["Internet / deSEC DynDNS"]
 
     Mnemosyne -- "subnet router\n.10/32 + .11/32" --> TS
-    Zephyros -- "100.y.y.y" --> TS
-    Hephaestus -. "local only" .- Mnemosyne
+    Zephyros -- "100.y.y.y\ntagged, restricted" --> TS
+    Proteus -- "away from home" --> TS
     FritzHome --> Mnemosyne
     FritzRemote --> Zephyros
     Zephyros -- "reverse proxy\nvia Tailscale" --> Mnemosyne
     Internet -- "cloud.yourdomain.dedyn.io\nblog.yourdomain.dedyn.io" --> Mnemosyne
+    AstraeusNX -- "git push" --> Mnemosyne
+    Proteus -- "git push" --> Mnemosyne
+    Boreas -- "git pull, backup" --> Mnemosyne
+    Zephyros -- "git pull, backup" --> Mnemosyne
+    Hephaestus -- "git pull" --> Mnemosyne
+    Daidalos -- "Flux pulls Git" --> Mnemosyne
 ```
+
+Every host and workstation is a Tailnet member, but only Mnemosyne advertises routes and only Zephyros is restricted by tag ([Tailscale](wiki/Tailscale.md)). Prometheus on Mnemosyne scrapes all of them ([Monitoring](wiki/Monitoring.md)).
 
 ---
 
@@ -108,7 +119,7 @@ History: while Mnemosyne booted from the SD card, both roots were redirected to 
 
 ## Gitea Over GitHub/GitLab
 
-Infrastructure configs contain internal IP addresses, domain names, and stack layouts that reveal the network topology. Storing these in a public or third-party-hosted repository creates unnecessary exposure, even without credentials.
+Infrastructure configs contain internal IP addresses, domain names, usernames and private files. The private Gitea repository keeps all of them and is the only source of truth and deploy target. The public GitHub repository is a sanitized export: real IPs and domains are replaced with placeholders and private files are left out. The host layout it still shows is published on purpose: it gives an outside attacker no way in, and it keeps the setup reviewable.
 
 Gitea runs on Mnemosyne. It is not port-forwarded. It is not reachable from the internet. Remote access, when needed, goes through Tailscale. GitLab would provide more features but requires significantly more RAM and maintenance. For a solo operator, Gitea with SQLite is the right tool.
 

@@ -167,7 +167,7 @@ Packet flow from Android to Boreas' LAN IP (`192.168.1.11`, split DNS):
 
 ## Security considerations
 
-**Tailnet membership equals LAN trust.** Mnemosyne's Caddy (`lan_only`) treats every `100.64.0.0/10` address like the home LAN, so any untagged device in the Tailnet can open every `.home` site, including those without a login of their own. The network layer is already narrow: Mnemosyne advertises only two `/32` routes (itself and Boreas), not the whole LAN, so the FritzBox, smart plugs and the printer are not reachable via Tailscale. Neither Serve nor Funnel is configured. The remaining risk is who can join the Tailnet and which `.home` services lack authentication, not open ports.
+**Tailnet membership equals LAN trust.** Mnemosyne's Caddy (`lan_only`) treats every `100.64.0.0/10` address like the home LAN, so any untagged device in the Tailnet reaches every `.home` site just like a device at home. The network layer is already narrow: Mnemosyne advertises only two `/32` routes (itself and Boreas), not the whole LAN, so the FritzBox, smart plugs and the printer are not reachable via Tailscale. Neither Serve nor Funnel is configured. The remaining risk is who can join the Tailnet and how each `.home` service authenticates its users, not open ports.
 
 ### Policy: Zephyros is tagged and restricted
 
