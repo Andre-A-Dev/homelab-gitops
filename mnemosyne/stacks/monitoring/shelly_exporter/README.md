@@ -29,7 +29,7 @@ SHELLY_HT_DEVICES=HT-Keller;192.168.1.x
 ### BLU H&T via gateway — `SHELLY_BLU_DEVICES`
 Format: `name;gateway_host;mac` (MAC address contains colons, hence semicolon separator)
 ```
-SHELLY_BLU_DEVICES=BLU-Keller;192.168.1.x;c0:2c:ed:77:df:12
+SHELLY_BLU_DEVICES=BLU-Keller;192.168.1.x;aa:bb:cc:dd:ee:ff
 ```
 
 ### Other settings
@@ -60,7 +60,7 @@ The exporter then reads the KVS via `GET /rpc/KVS.Get?key=<mac>`.
    `BLU-HT {"temperature":21.3,"humidity":48.2,"battery":91,...}`
 5. Confirm KVS entry:
    ```
-   curl "http://<gateway-ip>/rpc/KVS.Get?key=c0:2c:ed:77:df:12"
+   curl "http://<gateway-ip>/rpc/KVS.Get?key=aa:bb:cc:dd:ee:ff"
    ```
 
 To add more BLU devices, extend `CONFIG.devices` in `blu_gateway.js` and add

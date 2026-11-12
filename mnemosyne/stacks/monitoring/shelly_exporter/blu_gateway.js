@@ -17,7 +17,7 @@
 
 const CONFIG = {
     devices: [
-        { addr: "c0:2c:ed:77:df:12", name: "BLU-HT" }
+        { addr: "aa:bb:cc:dd:ee:ff", name: "BLU-HT" }
     ]
 };
 

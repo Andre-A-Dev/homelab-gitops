@@ -99,7 +99,7 @@ def parse_blu_devices() -> list[dict]:
     """
     Reads SHELLY_BLU_DEVICES env var (BLU H&T via gateway KVS).
     Format: "name;gateway_host;mac,..."
-    Example: "BLU-Keller;192.168.1.x;c0:2c:ed:77:df:12"
+    Example: "BLU-Keller;192.168.1.x;aa:bb:cc:dd:ee:ff"
     The KVS key used on the gateway equals the MAC address (set by BLU Gateway script).
     """
     raw = os.getenv("SHELLY_BLU_DEVICES", "")
