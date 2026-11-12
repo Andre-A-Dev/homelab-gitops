@@ -281,6 +281,33 @@ groups:
       summary: "{{ $labels.instance }}: Unusually high block rate"
       description: "Pi-hole is blocking {{ printf \"%.1f\" $value }}% of all queries - possible DNS issue."
 
+# -- Netatmo -----------------------------------------------------------------
+- name: netatmo
+  rules:
+
+  # Exporter outages (job netatmo) are covered by ExporterDown.
+
+  # Same failure class as PiholeExporterNoData: the exporter answers, but
+  # without sensor data. Readings older than --age-stale (default 1h) are
+  # dropped, not exported, so the payload simply vanishes while up,
+  # netatmo_up and netatmo_exporter_token_valid all stay 1
+  # (2026-10-30: ~10 h, both homes;
+  # 2026-10-13: 11 h+, Remote only). netatmo_up is no use as a signal: it
+  # drops to 0 on every 503 from the Netatmo API. A dead token ends up here
+  # too, once the cached readings go stale.
+  # One absent() per home: absent() over all series would miss a single
+  # station going dark.
+  - alert: NetatmoNoData
+    expr: |
+      absent(netatmo_sensor_temperature_celsius{home="Home"})
+      or absent(netatmo_sensor_temperature_celsius{home="Remote"})
+    for: 30m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Netatmo {{ $labels.home }}: no sensor data"
+      description: "Scrape succeeds but no readings arrive for home {{ $labels.home }}. Check `docker logs netatmo-exporter` (token errors need a re-authorization), then whether the station is online in the Netatmo app."
+
 # -- Disk Health -------------------------------------------------------------
 # smartctl_exporter runs on mnemosyne and daidalos. Device counts differ per
 # host, so nothing here aggregates globally — a bare count() would compare
