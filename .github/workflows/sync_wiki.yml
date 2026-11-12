@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - wiki/**.md
+      - docs/assets/**
       - ARCHITECTURE.md
       - RUNBOOK.md
       - SERVICES.md
@@ -39,6 +40,11 @@ jobs:
           cp ARCHITECTURE.md wiki-repo/Architecture.md
           cp RUNBOOK.md      wiki-repo/Runbook.md
           cp SERVICES.md     wiki-repo/Services.md
+          # Images: Home.md links docs/assets/ relative to the wiki root,
+          # so the folder keeps its repo path.
+          rm -rf wiki-repo/docs
+          mkdir -p wiki-repo/docs
+          cp -r docs/assets  wiki-repo/docs/
 
       - name: Commit and push wiki
         run: |
