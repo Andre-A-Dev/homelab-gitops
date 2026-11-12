@@ -19,7 +19,20 @@ The public GitHub repository is a sanitized mirror of a private Gitea repository
 
 ## Working with AI agents
 
-Changes are drafted with Claude Code under the rules in [`CLAUDE.md`](CLAUDE.md) and [`.claude/rules/`](.claude/rules/). The agent proposes and verifies; I decide, review every diff, commit and push. It never commits, deploys or sends commands to devices, and it has to back every result with real command output: no output is not proof of success. Five read-only skills support the review: [`repo-review`](.claude/skills/repo-review/) checks a diff against these rules before commit, [`deploy-check`](.claude/skills/deploy-check/) checks after a push what the deploy did and which manual steps remain, [`container-updates`](.claude/skills/container-updates/) turns pending image updates into a plan with versions and release notes for the monthly window, [`host-lifecycle`](.claude/skills/host-lifecycle/) finds every place a host is registered when adding, retiring or auditing one, and [`mirror-review`](.claude/skills/mirror-review/) checks each sync into this mirror for leaks and sanitizer artifacts and proposes commits that follow the private history. A sixth, [`release`](.claude/skills/release/), drafts the `CHANGELOG.md` section for a milestone release; I set the tags. A seventh, [`open-points`](.claude/skills/open-points/), works through the open-points list in my private notes: it checks an item's real state before starting, implements it under the same rules and closes it only after the deploy is verified. An eighth, [`security-review-live`](.claude/skills/security-review-live/), reviews the running system rather than a diff: it re-runs the regression checks from earlier reviews and looks at what changed since the last one; its check list stays private. Host-specific context (IPs, internal paths) lives in a private `CLAUDE.local.md` that is not part of this mirror.
+Changes are drafted with Claude Code under the rules in [`CLAUDE.md`](CLAUDE.md) and [`.claude/rules/`](.claude/rules/). The agent proposes and verifies; I decide, review every diff, commit and push. It never commits, deploys or sends commands to devices, and it has to back every result with real command output: no output is not proof of success. Host-specific context (IPs, internal paths) lives in a private `CLAUDE.local.md` that is not part of this mirror.
+
+Skills cover the recurring tasks. None of them commits or pushes. *Started by* `me` means the agent never runs the skill on its own. `scripts/ci/check_configs.py` fails when a skill is missing from this table or a row no longer matches its skill.
+
+| When | Skill | Started by | Result |
+|---|---|---|---|
+| Before a commit | [`repo-review`](.claude/skills/repo-review/) | me | Findings on the diff against these rules; read-only |
+| After a push | [`deploy-check`](.claude/skills/deploy-check/) | me or agent | What the deploy did and which manual steps remain; read-only |
+| Monthly update window | [`container-updates`](.claude/skills/container-updates/) | me or agent | Ordered plan for pending image updates, with versions and release notes; read-only |
+| Adding, retiring or auditing a host | [`host-lifecycle`](.claude/skills/host-lifecycle/) | me | Every place the host is registered |
+| After a sync into this mirror | [`mirror-review`](.claude/skills/mirror-review/) | me | Leaks and sanitizer artifacts, commits that follow the private history; read-only |
+| Milestone release | [`release`](.claude/skills/release/) | me | Draft of the `CHANGELOG.md` section; I set the tags |
+| Working the backlog | [`open-points`](.claude/skills/open-points/) | me | An item from the open-points list in my private notes: real state checked first, implemented under the same rules, closed only after a verified deploy |
+| Periodic security review | [`security-review-live`](.claude/skills/security-review-live/) | me | Review of the running system rather than a diff: regression checks from earlier reviews plus what changed since the last one; the check list stays private |
 
 ---
 

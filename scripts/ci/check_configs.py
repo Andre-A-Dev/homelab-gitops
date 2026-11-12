@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Structural validation for compose files, alert rules, Grafana dashboards
-and the Mnemosyne Caddyfile.
+"""Structural validation for compose files, alert rules, Grafana dashboards,
+the Mnemosyne Caddyfile and the README skill table.
 
 Run locally before pushing:
 
@@ -31,6 +31,12 @@ MONITORING = "mnemosyne/stacks/monitoring"
 DASHBOARDS = "mnemosyne/stacks/monitoring/grafana/dashboards"
 CADDYFILE = "mnemosyne/stacks/caddy/Caddyfile"
 PROFILES_FILE = "shared/compose-profiles.yml"
+SKILLS = ".claude/skills"
+README = "README.md"
+# A skill table row: | When | [`name`](.claude/skills/name/) | Started by | Result |
+SKILL_ROW = re.compile(
+    r"^\|[^|]*\|\s*\[`([^`]+)`\]\(\.claude/skills/([^)/]+)/?\)\s*\|\s*([^|]+?)\s*\|"
+)
 # Exists only in the private repo; its absence marks a public-mirror checkout,
 # where the paths it lists are missing on purpose.
 PUBLICIGNORE = "scripts/config/.publicignore"
@@ -439,6 +445,78 @@ def check_caddyfile():
     return 1
 
 
+def check_skills():
+    """Every skill needs exactly one matching row in the README skill table.
+
+    The table is the only overview of which skill to use when; a skill added
+    without a row stays invisible there. "Started by" mirrors the frontmatter
+    key disable-model-invocation: "me" when true, "me or agent" otherwise.
+    """
+    print("\n== Claude Code skills ==")
+    failures_before = len(failures)
+    skills = {}
+    for path in walk(SKILLS, lambda name, path: name == "SKILL.md"):
+        directory = os.path.dirname(path)
+        if os.path.dirname(directory) != SKILLS:
+            continue
+        name = os.path.basename(directory)
+        # Registered before parsing, so a broken frontmatter is not also
+        # reported as a README row without a skill. None skips "Started by".
+        skills[name] = None
+        with open(path) as handle:
+            parts = handle.read().split("---", 2)
+        try:
+            meta = yaml.safe_load(parts[1]) if len(parts) == 3 and not parts[0].strip() else None
+        except yaml.YAMLError as error:
+            fail(path, f"frontmatter is not valid YAML: {error}")
+            continue
+        if not isinstance(meta, dict):
+            fail(path, "no YAML frontmatter between '---' lines")
+            continue
+        if meta.get("name") != name:
+            fail(path, f"frontmatter name '{meta.get('name')}' differs from directory '{name}'")
+        skills[name] = "me" if meta.get("disable-model-invocation") is True else "me or agent"
+
+    if not skills:
+        # Silence is not success: a wrong path would pass with nothing to check.
+        fail(SKILLS, "no SKILL.md found - verify the path in this script")
+        return 0
+
+    try:
+        with open(README) as handle:
+            lines = handle.readlines()
+    except FileNotFoundError:
+        fail(README, "missing")
+        return len(skills)
+
+    rows = {}
+    for number, line in enumerate(lines, 1):
+        match = SKILL_ROW.match(line)
+        if not match:
+            continue
+        label, target, started_by = match.groups()
+        if label != target:
+            fail(README, f"line {number}: link text '{label}' points to '{target}'")
+        if target in rows:
+            fail(README, f"line {number}: second row for skill '{target}'")
+        rows[target] = (number, started_by)
+
+    for name, expected in sorted(skills.items()):
+        if name not in rows:
+            fail(README, f"skill '{name}' has no row in the skill table")
+            continue
+        number, started_by = rows[name]
+        if expected and started_by != expected:
+            fail(README, f"line {number}: '{name}' is started by '{expected}', table says '{started_by}'")
+    for name, (number, _) in sorted(rows.items()):
+        if name not in skills:
+            fail(README, f"line {number}: row for '{name}', but {SKILLS}/{name}/SKILL.md does not exist")
+
+    if len(failures) == failures_before:
+        ok(README, f"({len(skills)} skills, all in the skill table)")
+    return len(skills)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -455,7 +533,7 @@ def main():
         return 1
 
     total = (check_compose(load_profiles()) + check_alert_rules() + check_dashboards()
-             + check_caddyfile())
+             + check_caddyfile() + check_skills())
 
     print("")
     if not total:
