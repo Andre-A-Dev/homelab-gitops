@@ -560,7 +560,7 @@ Every key stick carries the label `homelab-keys`. With two plugged in, `/dev/dis
 Use it (from any machine with OpenSSH; no repo config, no agent needed):
 
 ```fish
-ssh -F /dev/null -o IdentitiesOnly=yes -o IdentityAgent=none -i /mnt/keys/homelab/id_ed25519_emergency <user>@<host-ip>
+env SSH_ASKPASS_REQUIRE=never ssh -F /dev/null -o IdentitiesOnly=yes -o IdentityAgent=none -i /mnt/keys/homelab/id_ed25519_emergency <user>@<host-ip>
 ```
 
 Create or rotate, with the stick open. Generate the key directly on the stick: a key kept in tmpfs "until copied" is gone after the next reboot.
@@ -576,7 +576,7 @@ for ip in <host-ips>
 end
 ```
 
-`ssh-keygen -y -f <key>` proves the file and its passphrase (`-lf` does not ask, it only reads the public part). Test once a year: one login per host, then check the fingerprint in `journalctl -t sshd-session | grep "Accepted publickey"`.
+`env SSH_ASKPASS_REQUIRE=never ssh-keygen -y -f <key>` proves the file and its passphrase (`-lf` does not ask, it only reads the public part). On the workstations `SSH_ASKPASS_REQUIRE=prefer` (ksshaskpass) is set session-wide: without `never`, every command here asks through ksshaskpass, which can keep the passphrase in KWallet. Test once a year: one login per host, then check the fingerprint in `journalctl -t sshd-session | grep "Accepted publickey"`.
 
 ---
 
@@ -657,7 +657,7 @@ ls -l /mnt/keys-new/homelab
 
 No readable stick left (passphrase lost, stick dead): run the script without the `rsync` line, mount the new stick at `/mnt/keys` as above and fill it with `shared/key-stick/fill-key-stick.sh --new-key` (private repo only; `--help` lists the steps). Without `--new-key` it refuses a stick without a key: a new key locks out every other stick. It runs the blocks of this section and [Emergency SSH Key](#emergency-ssh-key): restic files, Aegis export, `README.txt`, a new emergency key that replaces the unreachable old key's line on every host, then the snapshot test. Recovery codes without a copy elsewhere have to be regenerated at each account.
 
-Once a year, for every stick: open it with the passphrase read from the paper, snapshot test, `ssh-keygen -y -f /mnt/keys/homelab/id_ed25519_emergency`, Aegis export not older than the last vault change, `diff shared/key-stick/README.txt /mnt/keys/homelab/README.txt`. Reading the stick also refreshes its flash cells.
+Once a year, for every stick: open it with the passphrase read from the paper, snapshot test, `env SSH_ASKPASS_REQUIRE=never ssh-keygen -y -f /mnt/keys/homelab/id_ed25519_emergency`, Aegis export not older than the last vault change, `diff shared/key-stick/README.txt /mnt/keys/homelab/README.txt`. Reading the stick also refreshes its flash cells.
 
 ---
 
