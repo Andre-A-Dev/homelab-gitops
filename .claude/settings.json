@@ -57,6 +57,10 @@
           {
             "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/skills/mirror-review/scripts/session_title.py\" || exit 1"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/skills/open-points/scripts/session_title.py\" || exit 1"
           }
         ]
       }

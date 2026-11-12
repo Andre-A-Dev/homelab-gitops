@@ -45,8 +45,11 @@ the note.
 4. Cheap reality check of the top candidates only (one `grep`/`git log` each):
    drop or flag what is already done.
 5. Propose 2–3 with: priority, one line why now, rough size, whether a user
-   step is involved. Ask which one (AskUserQuestion), then continue with
-   "Mode: item".
+   step is involved, and the exact command to start it:
+   `/open-points <short item name>`. Stop there; don't start the work in
+   this mode. The user sends that command (here or in a fresh session), and
+   the `UserPromptSubmit` hook `scripts/session_title.py` names the session
+   after the item, so parallel sessions stay distinguishable.
 
 ## Mode: `<item>` — work it
 
