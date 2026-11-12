@@ -49,6 +49,13 @@ These shaped the steps below; keep them in mind when something looks off.
 - Splitting a sync with `git add -p` attached hunks of shared files
   (`SERVICES.md`, `appliance-alerts.yml`) to the wrong commit; the rebuild
   script avoids that.
+- A sanitizer fix in `sync_public.py` (blocklisted) changed four mirror
+  files that no private commit in the range touched. `rebuild.sh` stages
+  only files a listed commit touched, so it aborted with "changes left
+  over". Fix: before the rebuild, commit those files alone as commit 00 on
+  top of upstream (from a patch of the synced tree), then pass that commit
+  as `<upstream-sha>`. Spot it in step A.5: a changed path that maps to no
+  private commit.
 - Any `git ls-remote`/`fetch` against GitHub opens a passphrase dialog the
   user may not see. Use the local tracking ref instead.
 
