@@ -21,6 +21,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 
 import yaml
@@ -30,6 +31,9 @@ MONITORING = "mnemosyne/stacks/monitoring"
 DASHBOARDS = "mnemosyne/stacks/monitoring/grafana/dashboards"
 CADDYFILE = "mnemosyne/stacks/caddy/Caddyfile"
 PROFILES_FILE = "shared/compose-profiles.yml"
+# Exists only in the private repo; its absence marks a public-mirror checkout,
+# where the paths it lists are missing on purpose.
+PUBLICIGNORE = "scripts/config/.publicignore"
 PURPOSES = {"switched-off", "on-demand"}  # see the header of PROFILES_FILE
 
 # Update class per service (wiki: Update-Strategy). Read back by
@@ -178,10 +182,54 @@ def label_problems(service):
     return problems
 
 
+def bind_sources(compose_path, service):
+    """Return (checked, missing) for the service's relative bind-mount sources.
+
+    `missing` holds (source, error) pairs; error is empty when git answered
+    "not ignored" and the git message when it could not answer at all.
+
+    Docker creates a missing bind source as an empty root-owned directory and
+    starts the container anyway: a config file that never reached the host
+    turns into a directory nobody can delete without sudo, and the service
+    runs without its config. A missing source is fine only if it is
+    gitignored - that declares it host-local (runtime data, secrets), created
+    on the target host and never part of a checkout.
+    """
+    base = os.path.dirname(compose_path)
+    checked = 0
+    missing = []
+    for volume in service.get("volumes") or []:
+        if isinstance(volume, str):
+            source = volume.split(":", 1)[0]
+        elif isinstance(volume, dict) and volume.get("type") == "bind":
+            source = str(volume.get("source", ""))
+        else:
+            continue
+        # Absolute sources are host paths, named volumes have no leading dot.
+        if not source.startswith("."):
+            continue
+        checked += 1
+        path = os.path.normpath(os.path.join(base, source))
+        if os.path.exists(path):
+            continue
+        # The source type is unknown here, so ask for both forms: a pattern
+        # like `data/` only matches the path with a trailing slash.
+        result = subprocess.run(["git", "check-ignore", path, path + "/"],
+                                capture_output=True, text=True)
+        if result.returncode == 1:
+            missing.append((source, ""))
+        elif result.returncode != 0:
+            # 128: not a git checkout. Can't tell, so it is not "ignored".
+            missing.append((source, result.stderr.strip() or f"exit {result.returncode}"))
+    return checked, missing
+
+
 def check_compose(known_profiles):
     print("\n== docker-compose.yml ==")
     count = 0
+    binds = 0
     used = set()
+    mirror = not os.path.isfile(PUBLICIGNORE)
     # Whole repo, not only mnemosyne/stacks: the Zephyros fritz-exporter
     # crash loop (2026-10-14) came from a compose file this check never saw.
     for path in walk(".", lambda n, p: n == "docker-compose.yml"):
@@ -214,6 +262,19 @@ def check_compose(known_profiles):
                     used.add(profile)
                     if known_profiles is not None and profile not in known_profiles:
                         bad.append(f"service '{name}': profile '{profile}' not in {PROFILES_FILE}")
+                checked, missing = bind_sources(path, service or {})
+                binds += checked
+                for source, error in missing:
+                    msg = f"service '{name}': bind source '{source}' does not exist and is not gitignored"
+                    if error:
+                        bad.append(f"service '{name}': bind source '{source}' does not exist, "
+                                   f"git check-ignore failed - {error}")
+                    elif mirror:
+                        # The private CI sees the same commit and blocks the
+                        # deploy; here the source may just be a private path.
+                        warn(path, f"{msg} - excluded from the public mirror?")
+                    else:
+                        bad.append(f"{msg} - Docker would create it as an empty root-owned directory")
             if bad:
                 for problem in bad:
                     fail(path, problem)
@@ -224,7 +285,7 @@ def check_compose(known_profiles):
             # Not an error: a profile may be declared before its first use
             # (debug), or stay after the last service left it.
             warn(PROFILES_FILE, f"profile '{profile}' is declared but not used by any service")
-    print(f"  {count} compose file(s) checked")
+    print(f"  {count} compose file(s) checked, {binds} relative bind source(s)")
     return count
 
 

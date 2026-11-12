@@ -90,7 +90,7 @@ Runs on every push to `main` and on pull requests. `deploy` runs for pushes only
 
 | Step (job `validate`) | Checks | Blocks deploy |
 |---|---|---|
-| `check_configs.py` | Compose YAML, alert rules, dashboards, profile vocabulary | yes |
+| `check_configs.py` | Compose YAML, alert rules, dashboards, profile vocabulary, relative bind-mount sources exist or are gitignored | yes |
 | Env drift (`check_env_drift.py`) | `.env.example` vs. `${VAR}` references | yes |
 | promcheck | `promtool check config`/`rules`, `amtool check-config` with the tools of the running images | yes |
 | shellcheck | all `*.sh` | yes |
@@ -104,7 +104,7 @@ python3 scripts/ci/check_configs.py
 python3 scripts/ci/check_env_drift.py
 ```
 
-The public GitHub mirror runs the same two scripts plus shellcheck, the executable-bit check and actionlint (`.github/workflows/` only) in `.github/workflows/validate.yml`; promcheck and the stderr check run only in the Gitea CI. Workflow changes in `.gitea/workflows/` are linted locally:
+The public GitHub mirror runs the same two scripts plus shellcheck, the executable-bit check and actionlint (`.github/workflows/` only) in `.github/workflows/validate.yml`; promcheck and the stderr check run only in the Gitea CI. In the mirror, a missing bind-mount source is only a warning, because paths kept out of the mirror are missing on purpose. Workflow changes in `.gitea/workflows/` are linted locally:
 
 ```bash
 SHELLCHECK_OPTS=--severity=warning actionlint .gitea/workflows/*.yml .github/workflows/*.yml
