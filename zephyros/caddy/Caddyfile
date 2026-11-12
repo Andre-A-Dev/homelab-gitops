@@ -6,7 +6,6 @@
 #
 # Port 80 belongs to Caddy (Pi-hole moved to 8081), so the automatic
 # HTTP -> HTTPS redirect is active for every site.
-# After relocation: replace 100.x.x.x with Mnemosyne's local IP (one place).
 
 # -- Snippet: proxy to Mnemosyne ------------------------------------------
 # Usage: import mnemosyne <hostname>

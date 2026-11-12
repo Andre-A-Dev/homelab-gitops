@@ -84,7 +84,7 @@ Alerts defined in `mnemosyne/stacks/monitoring/prometheus/alerts.yml`:
 ### `caddy/` — standby reverse proxy
 
 **Not currently running.** This Caddyfile is a contingency config for the
-scenario where Mnemosyne moves to a different network. When active, Boreas
+case that Mnemosyne runs outside Boreas' LAN. When active, Boreas
 acts as a Tailscale subnet router and Caddy proxies `.home` domains through to
 Mnemosyne via its Tailscale IP (`100.x.x.x`).
 
@@ -92,7 +92,7 @@ Prerequisites before activating (documented in the Caddyfile header):
 1. Disable Pi-hole's built-in port 443
 2. Set Pi-hole DNS records: all `.home` → `192.168.1.11`
 3. Enable Tailscale subnet router on Boreas (`192.168.1.0/24`)
-4. Change the remote FritzBox subnet to `192.168.179.0/24` to avoid collision
+4. If Mnemosyne's network uses the same subnet, change one of them to avoid a routing collision
 
 ### msmtp — email relay (host-local)
 

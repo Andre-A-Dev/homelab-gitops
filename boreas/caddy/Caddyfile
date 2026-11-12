@@ -1,5 +1,5 @@
 # Boreas – Caddy Reverse Proxy
-# Proxies .home domains to Mnemosyne via Tailscale after relocation.
+# Proxies .home domains to Mnemosyne via Tailscale when Mnemosyne runs outside this LAN.
 {
     auto_https disable_redirects
 }
