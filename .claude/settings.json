@@ -65,5 +65,14 @@
         ]
       }
     ]
+  },
+  "sandbox": {
+    "filesystem": {
+      "allowRead": ["~/Projects/Gitea/homelab-infra"],
+      "denyRead": [
+        "~/Projects/Gitea/homelab-infra/**/.env",
+        "~/Projects/Gitea/homelab-infra/**/*.env"
+      ]
+    }
   }
 }
