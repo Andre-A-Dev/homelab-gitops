@@ -83,6 +83,11 @@ ask. Then:
 1. Search all open-points notes for an existing entry on the same topic
    (keywords, file names, service names). Found: propose updating that entry
    instead, show the old and new line.
+   Also search the ideas folder next to the open-points folder: a project
+   enters the list only once the user has decided to do it (the main list's
+   header states the rule). An undecided idea: propose a note in the ideas
+   folder instead and stop. A decided project with an idea note: the entry is
+   one line in P3 linking that note; don't copy the concept.
 2. If the text states facts (a mode, a missing alert, a failing job), check
    them cheaply; write "geprüft YYYY-MM-DD" or "nicht geprüft" into the entry.
 3. Choose the section: P0–P3 by the definitions in the note's header,
