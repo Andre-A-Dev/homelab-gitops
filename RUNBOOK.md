@@ -555,6 +555,8 @@ sudo cryptsetup open /dev/disk/by-label/homelab-keys homelab-keys; and sudo moun
 sudo umount /mnt/keys; and sudo cryptsetup close homelab-keys
 ```
 
+Every key stick carries the label `homelab-keys`. With two plugged in, `/dev/disk/by-label/homelab-keys` points at either one: open the partition by name instead (`lsblk -o NAME,SIZE,FSTYPE,LABEL,TRAN`, then `/dev/sdX1`).
+
 Use it (from any machine with OpenSSH; no repo config, no agent needed):
 
 ```fish
@@ -590,7 +592,7 @@ Everything needed when Mnemosyne, the backup HDD and every client are gone, on t
 | `id_ed25519_emergency`, `.pub` | [Emergency SSH Key](#emergency-ssh-key) |
 | `aegis-backup-<date>.json` | Aegis export, encrypted |
 | `recovery-codes.txt` | one-time codes of the external accounts, one value per line |
-| `README.txt` | file list and restore commands, no secrets |
+| `README.txt` | copy of [`shared/key-stick/README.txt`](shared/key-stick/README.txt): file list and the way back to this repo, no secrets |
 
 Before writing anything: `findmnt /mnt/keys` must show `/dev/mapper/homelab-keys`. Without the stick mounted, `/mnt/keys` is a plain directory on the workstation's unencrypted root, and btrfs snapshots keep whatever lands there.
 
@@ -624,7 +626,11 @@ scp "mnemosyne:$f" /mnt/keys/homelab/; and chmod 600 /mnt/keys/homelab/(basename
 grep -q '"slots": *null' /mnt/keys/homelab/(basename $f); and echo UNENCRYPTED; or echo encrypted
 ```
 
-Set up an additional or replacement stick, with the current stick open at `/mnt/keys` (fish). Same LUKS label, so every command above works with either stick. Type `YES` in capitals at the prompt:
+Refresh `README.txt` after changing the template (fish, from the repo root): `cp shared/key-stick/README.txt /mnt/keys/homelab/`
+
+LUKS passphrase: 7 words from `xkcdpass -n 7 -d ' ' -v '[a-x]'` (`extra/xkcdpass`, about 87 bits). Lowercase `a`-`x` and spaces sit on the same keys in the German and US layouts (no `y`/`z`, no hyphen), so the stick opens on any console; words also survive copying from paper. Generate it locally, write it on paper, then `clear` the terminal. Never paste it into a chat or a file.
+
+Set up an additional or replacement stick, with the current stick open at `/mnt/keys` (fish). Same LUKS label, so every command above works with either stick. Type `YES` in capitals at the prompt, and type the passphrase from the paper at the test right after:
 
 ```fish
 bash -euo pipefail -c '
@@ -635,10 +641,12 @@ sudo wipefs -a $D
 sudo parted -s $D mklabel gpt mkpart keys 1MiB 100%
 sudo udevadm settle
 sudo cryptsetup luksFormat --type luks2 --pbkdf argon2id --pbkdf-memory 262144 --label homelab-keys ${D}1
+sudo cryptsetup open --test-passphrase -v ${D}1    # from the paper, not from memory
 sudo cryptsetup open ${D}1 homelab-keys-new
 sudo mkfs.ext4 -q -L keys /dev/mapper/homelab-keys-new
 sudo mkdir -p /mnt/keys-new
 sudo mount /dev/mapper/homelab-keys-new /mnt/keys-new
+sudo install -d -m 700 -o "$(id -u)" -g "$(id -g)" /mnt/keys-new/homelab
 rsync -a /mnt/keys/homelab/ /mnt/keys-new/homelab/
 sync
 ls -l /mnt/keys-new/homelab
@@ -647,7 +655,9 @@ ls -l /mnt/keys-new/homelab
 
 `--pbkdf-memory 262144` (256 MiB) keeps the stick unlockable on a Pi 3 or the uConsole; the default is sized for the machine that formats it. Then test the new stick on its own: lock the old one, `sudo umount /mnt/keys-new; and sudo mount /dev/mapper/homelab-keys-new /mnt/keys`, run the snapshot test, lock with `sudo umount /mnt/keys; and sudo cryptsetup close homelab-keys-new`.
 
-Once a year, for every stick: snapshot test, `ssh-keygen -y -f /mnt/keys/homelab/id_ed25519_emergency`, Aegis export not older than the last vault change. Reading the stick also refreshes its flash cells.
+No readable stick left (passphrase lost, stick dead): run the script without the `rsync` line, mount the new stick at `/mnt/keys` as above and fill it with the blocks in this section and [Emergency SSH Key](#emergency-ssh-key): restic files, a rotated emergency key (the rotation removes the unreachable old key's line), Aegis export, `README.txt`. Recovery codes without a copy elsewhere have to be regenerated at each account. Then the snapshot test.
+
+Once a year, for every stick: open it with the passphrase read from the paper, snapshot test, `ssh-keygen -y -f /mnt/keys/homelab/id_ed25519_emergency`, Aegis export not older than the last vault change, `diff shared/key-stick/README.txt /mnt/keys/homelab/README.txt`. Reading the stick also refreshes its flash cells.
 
 ---
 
