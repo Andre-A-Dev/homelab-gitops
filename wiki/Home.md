@@ -1,3 +1,5 @@
+![Asteria - homelab-gitops](docs/assets/asteria-banner.svg)
+
 # homelab-infra Wiki
 
 Infrastructure-as-code for a privacy-first Raspberry Pi homelab. Self-hosted alternatives to cloud services across multiple hosts, managed via Docker Compose and automated with a Git-based deploy pipeline.

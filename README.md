@@ -79,7 +79,7 @@ homelab-infra/
 ├── daidalos/                       # Host bootstrap (Debian 13 + k3s), node-exporter config
 ├── astraeus_nx/                    # CachyOS workstation: Ollama, hardware health checks
 ├── astraeus_win/                   # Windows: diagnostics script
-├── docs/assets/                    # README images
+├── docs/assets/                    # Logo files: banner, mark, ntfy icon, social preview
 └── scripts/                        # Repo tooling: public mirror export, secret audit, repo tree
 ```
 

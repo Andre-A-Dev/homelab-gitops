@@ -89,7 +89,9 @@ print. Read-only `GET`s for verification are fine.
   `ARCHITECTURE.md` — English repo docs, see "Documentation"
 - `CHANGELOG.md` — release notes, one section per milestone tag; drafted by
   the `release` skill
-- `docs/assets/` — images used by the README (logo banner)
+- `docs/assets/` — Asteria logo files: README/wiki banner, mark (SVG source
+  plus the PNG used as ntfy icon), social preview source. Synced to the wiki;
+  the ntfy icon URL points at the public mirror, so keep the PNG path stable
 - `.env` — Never read .env. Always use the .env.example as reference.
 
 ## Language
