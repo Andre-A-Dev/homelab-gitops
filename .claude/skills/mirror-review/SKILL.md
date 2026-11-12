@@ -56,6 +56,10 @@ These shaped the steps below; keep them in mind when something looks off.
   top of upstream (from a patch of the synced tree), then pass that commit
   as `<upstream-sha>`. Spot it in step A.5: a changed path that maps to no
   private commit.
+- Mirror commits carried an email address other than the one on
+  `github/main`; it only showed up when GitHub rejected the push.
+  `preflight` now compares the commit identity with the upstream tip,
+  `commits` the unpushed commits.
 - Any `git ls-remote`/`fetch` against GitHub opens a passphrase dialog the
   user may not see. Use the local tracking ref instead.
 

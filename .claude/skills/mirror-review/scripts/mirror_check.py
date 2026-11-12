@@ -67,6 +67,23 @@ def upstream() -> str | None:
     return res.stdout.strip() if res.returncode == 0 else None
 
 
+def upstream_email() -> str:
+    # The published history defines the address; GitHub rejects a push with
+    # another one only if "Block command line pushes that expose my email" is
+    # on, otherwise it goes public.
+    return git("log", "-1", "--format=%ae", "@{u}")
+
+
+def identity_emails() -> set[str | None]:
+    # git var resolves config and GIT_*_EMAIL the way the next commit will
+    emails = set()
+    for var in ("GIT_AUTHOR_IDENT", "GIT_COMMITTER_IDENT"):
+        res = subprocess.run(["git", "var", var], capture_output=True, text=True)
+        m = re.search(r"<([^>]*)>", res.stdout)
+        emails.add(m.group(1) if res.returncode == 0 and m else None)
+    return emails
+
+
 # ── preflight ────────────────────────────────────────────────────────────────
 
 def preflight() -> None:
@@ -101,6 +118,14 @@ def preflight() -> None:
         if behind != "0":
             say("WARN", "behind upstream: someone pushed elsewhere, or a fetch "
                         "came from the wrong remote")
+        # The configured address is not printed: this output may end up in a
+        # public place
+        expected = upstream_email()
+        if identity_emails() == {expected}:
+            say("OK", f"commit identity email matches {up}: {expected}")
+        else:
+            say("FAIL", f"commit identity email differs from {up}: "
+                        f"git config user.email {expected}")
 
     # Release tags sit on pushed mirror commits. A tag whose commit is not in
     # the upstream history came from the private repo (or was set before push).
@@ -280,6 +305,13 @@ def commits(tree_ref: str | None) -> None:
     authors = sorted(set(git("log", "@{u}..HEAD", "--format=%an <%ae>").splitlines()))
     if authors:
         print(f"authors: {authors}")
+    expected = upstream_email()
+    for line in git("log", "@{u}..HEAD", "--format=%h %ae %ce").splitlines():
+        sha, *emails = line.split()
+        if set(emails) != {expected}:
+            say("FAIL", f"{sha} author/committer email differs from {expected}: "
+                        "fix user.email, then 'git commit --amend --no-edit "
+                        "--reset-author' (last commit) or rebuild (B.4)")
     if git("status", "--porcelain"):
         say("WARN", "working tree not clean: not everything is committed")
     if tree_ref:
