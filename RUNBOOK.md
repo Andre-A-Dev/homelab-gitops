@@ -592,7 +592,7 @@ Everything needed when Mnemosyne, the backup HDD and every client are gone, on t
 | `id_ed25519_emergency`, `.pub` | [Emergency SSH Key](#emergency-ssh-key) |
 | `aegis-backup-<date>.json` | Aegis export, encrypted |
 | `recovery-codes.txt` | one-time codes of the external accounts, one value per line |
-| `README.txt` | copy of [`shared/key-stick/README.txt`](shared/key-stick/README.txt): file list and the way back to this repo, no secrets |
+| `README.txt` | copy of `shared/key-stick/README.txt` (private repo only): file list and the way back to this repo, no secrets |
 
 Before writing anything: `findmnt /mnt/keys` must show `/dev/mapper/homelab-keys`. Without the stick mounted, `/mnt/keys` is a plain directory on the workstation's unencrypted root, and btrfs snapshots keep whatever lands there.
 
@@ -655,7 +655,7 @@ ls -l /mnt/keys-new/homelab
 
 `--pbkdf-memory 262144` (256 MiB) keeps the stick unlockable on a Pi 3 or the uConsole; the default is sized for the machine that formats it. Then test the new stick on its own: lock the old one, `sudo umount /mnt/keys-new; and sudo mount /dev/mapper/homelab-keys-new /mnt/keys`, run the snapshot test, lock with `sudo umount /mnt/keys; and sudo cryptsetup close homelab-keys-new`.
 
-No readable stick left (passphrase lost, stick dead): run the script without the `rsync` line, mount the new stick at `/mnt/keys` as above and fill it with the blocks in this section and [Emergency SSH Key](#emergency-ssh-key): restic files, a rotated emergency key (the rotation removes the unreachable old key's line), Aegis export, `README.txt`. Recovery codes without a copy elsewhere have to be regenerated at each account. Then the snapshot test.
+No readable stick left (passphrase lost, stick dead): run the script without the `rsync` line, mount the new stick at `/mnt/keys` as above and fill it with `shared/key-stick/fill-key-stick.sh` (private repo only; `--help` lists the steps). It runs the blocks of this section and [Emergency SSH Key](#emergency-ssh-key): restic files, Aegis export, `README.txt`, a new emergency key that replaces the unreachable old key's line on every host, then the snapshot test. Recovery codes without a copy elsewhere have to be regenerated at each account.
 
 Once a year, for every stick: open it with the passphrase read from the paper, snapshot test, `ssh-keygen -y -f /mnt/keys/homelab/id_ed25519_emergency`, Aegis export not older than the last vault change, `diff shared/key-stick/README.txt /mnt/keys/homelab/README.txt`. Reading the stick also refreshes its flash cells.
 
