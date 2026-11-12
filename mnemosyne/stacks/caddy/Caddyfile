@@ -3,9 +3,11 @@
 # Ghost). Caddy picks the site by SNI/Host, so without this every .home site
 # answers anyone who sends its name to the public IP. Allowed: LAN and Docker
 # networks (private_ranges) and Tailscale (100.64.0.0/10, incl. Zephyros).
-# Every .home site imports it, the public sites must not.
-# Caddy sees the real client IP for IPv4 only: an IPv6 forward to this host
-# would arrive via docker-proxy as 172.x and pass the matcher.
+# Every .home site imports it (enforced by scripts/ci/check_configs.py), the
+# public sites must not.
+# Caddy sees the real client IP for IPv4 only: IPv6 would arrive via
+# docker-proxy as 172.x and pass the matcher. That is why docker-compose.yml
+# publishes the ports on 0.0.0.0 only.
 
 (lan_only) {
   @external not remote_ip private_ranges 100.64.0.0/10

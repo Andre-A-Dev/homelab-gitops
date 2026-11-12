@@ -48,7 +48,7 @@ service.home {
 }
 ```
 
-`import lan_only` is mandatory for every `.home` site. Port 443 is forwarded from the internet for the public sites, and Caddy selects a site by SNI/Host only -- without the snippet, a `.home` site answers anyone who sends its name to the public IP. The snippet at the top of the Caddyfile aborts every connection from outside the private ranges and Tailscale (`100.64.0.0/10`).
+`import lan_only` is mandatory for every `.home` site. Port 443 is forwarded from the internet for the public sites, and Caddy selects a site by SNI/Host only -- without the snippet, a `.home` site answers anyone who sends its name to the public IP. The snippet at the top of the Caddyfile aborts every connection from outside the private ranges and Tailscale (`100.64.0.0/10`). `scripts/ci/check_configs.py` fails on a `.home` site without it. Caddy publishes its ports on IPv4 only (`0.0.0.0:443:443`): over IPv6, docker-proxy hands the connection to Caddy with a Docker gateway address, which is a private range and would pass the snippet.
 
 **Public service (Let's Encrypt):**
 

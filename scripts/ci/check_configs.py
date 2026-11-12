@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Structural validation for compose files, alert rules and Grafana dashboards.
+"""Structural validation for compose files, alert rules, Grafana dashboards
+and the Mnemosyne Caddyfile.
 
 Run locally before pushing:
 
@@ -27,6 +28,7 @@ import yaml
 STACKS = "mnemosyne/stacks"
 MONITORING = "mnemosyne/stacks/monitoring"
 DASHBOARDS = "mnemosyne/stacks/monitoring/grafana/dashboards"
+CADDYFILE = "mnemosyne/stacks/caddy/Caddyfile"
 PROFILES_FILE = "shared/compose-profiles.yml"
 PURPOSES = {"switched-off", "on-demand"}  # see the header of PROFILES_FILE
 
@@ -320,6 +322,62 @@ def check_dashboards():
     return count
 
 
+def check_caddyfile():
+    """Every .home site on Mnemosyne must import the lan_only snippet.
+
+    Port 443 is forwarded from the internet for the public sites and Caddy
+    picks the site by Host, so a .home block without the snippet answers
+    anyone who sends its name to the public IP. Nothing else stops that.
+    """
+    print("\n== Caddyfile ==")
+    try:
+        with open(CADDYFILE) as handle:
+            lines = handle.readlines()
+    except FileNotFoundError:
+        fail(CADDYFILE, "missing")
+        return 0
+
+    depth = 0
+    site = None  # (line number, addresses) of the open top-level block
+    imports = set()
+    sites = 0
+    missing = 0
+    for number, raw in enumerate(lines, 1):
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if depth == 0 and line.endswith("{"):
+            site = (number, line[:-1].strip())
+            imports = set()
+        elif depth == 1 and line.startswith("import "):
+            imports.add(line.split()[1])
+        depth += line.count("{") - line.count("}")
+        if depth < 0:
+            fail(CADDYFILE, f"line {number}: unbalanced '}}'")
+            return 1
+        if depth == 0 and site:
+            start, addresses = site
+            site = None
+            # Snippets "(name)" and the global options block "{" are no sites.
+            if not addresses or addresses.startswith("("):
+                continue
+            hosts = [a.split("://")[-1].rsplit(":", 1)[0] for a in re.split(r"[,\s]+", addresses) if a]
+            if not any(h.endswith(".home") for h in hosts):
+                continue
+            sites += 1
+            if "lan_only" not in imports:
+                missing += 1
+                fail(CADDYFILE, f"line {start}: '{addresses}' has no 'import lan_only'")
+    if depth != 0:
+        fail(CADDYFILE, "unbalanced braces at end of file")
+    elif sites == 0:
+        # Silence is not success: a parser that finds nothing would pass.
+        fail(CADDYFILE, "no .home site found - verify the parser in this script")
+    elif not missing:
+        ok(CADDYFILE, f"({sites} .home sites, all import lan_only)")
+    return 1
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -335,7 +393,8 @@ def main():
         print(f"x {STACKS} not found - is --root pointing at the repository root?")
         return 1
 
-    total = check_compose(load_profiles()) + check_alert_rules() + check_dashboards()
+    total = (check_compose(load_profiles()) + check_alert_rules() + check_dashboards()
+             + check_caddyfile())
 
     print("")
     if not total:

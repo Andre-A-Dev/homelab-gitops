@@ -6,9 +6,11 @@ services:
       homelab.update-class: "B"
     env_file:
       - .env
+    # IPv4 only: docker-proxy would hand IPv6 clients to Caddy with a Docker
+    # gateway address, which passes the lan_only snippet (see Caddyfile).
     ports:
-      - 80:80
-      - 443:443
+      - 0.0.0.0:80:80
+      - 0.0.0.0:443:443
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - /mnt/vault/caddy/data:/data
