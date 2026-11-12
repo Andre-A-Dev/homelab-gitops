@@ -89,6 +89,7 @@ print. Read-only `GET`s for verification are fine.
   `ARCHITECTURE.md` — English repo docs, see "Documentation"
 - `CHANGELOG.md` — release notes, one section per milestone tag; drafted by
   the `release` skill
+- `docs/assets/` — images used by the README (logo banner)
 - `.env` — Never read .env. Always use the .env.example as reference.
 
 ## Language
